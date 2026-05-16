@@ -2,10 +2,10 @@
   "id": "stories-000004",
   "board": "stories",
   "title": "CLI Parameter Error Shows usage",
-  "phase": "finishing",
+  "phase": "done",
   "previousPhase": null,
   "createdAt": "2026-05-16T18:27:51.667Z",
-  "updatedAt": "2026-05-16T19:15:05.321Z",
+  "updatedAt": "2026-05-16T19:16:55.020Z",
   "variables": {},
   "history": [
     {
@@ -39,6 +39,13 @@
       "at": "2026-05-16T19:15:05.321Z",
       "from": "verifying",
       "to": "finishing",
+      "mode": "normal"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-16T19:16:55.020Z",
+      "from": "finishing",
+      "to": "done",
       "mode": "normal"
     }
   ],

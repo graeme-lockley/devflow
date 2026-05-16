@@ -316,6 +316,10 @@ arguments, or an explicit help command).
 
 **Verification complete. All acceptance criteria satisfied.**
 
+### Finished (2026-05-16)
+
+Story complete. Spec updates: all three planned documentation changes applied (requirements §16.0, §16.1, §16.2; architecture §8; README CLI section). Build Notes finalized with as-built log. All tests pass (218/218), manual verification confirmed help commands and structured error format. Ready for done.
+
 ## Build Notes
 
 <!-- phase-gate: started by exit building | complete by exit finishing -->
