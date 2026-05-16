@@ -142,16 +142,20 @@ Exit 0 when the card is archivable and docs match the repo.
 
 ## Quality gate (exit finishing)
 
+Enforced by `finishing-003`, `finishing-004`, and `finishing-005` when this hop
+changed docs (see [`scripts/README.md`](../scripts/README.md): no duplicate gates
+from verifying or building).
+
 - [ ] Every Spec Updates row has status `done`, `n/a`, or justified `deferred`
       in Notes
 - [ ] Build Notes finalized (as-built + doc pointers)
+- [ ] `### Finished` subsection in Notes
 - [ ] README updated if user-facing CLI changed
-- [ ] No unchecked Acceptance Criteria
-- [ ] No open Build Tasks
 - [ ] Immutable spec docs respected (AGENTS.md)
 - [ ] Card.md sections match [story.template.md](../../assets/story.template.md)
       headings
-- [ ] `deno test` passes if any files changed in this phase
+- [ ] `deno test` passes only when this finishing hop changed docs or `src/`
+      (`finishing-005`)
 
 ## pi-mono invocation
 

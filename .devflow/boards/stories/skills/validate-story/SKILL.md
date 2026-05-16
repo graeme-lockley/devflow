@@ -157,14 +157,17 @@ Exit 0 only when all ACs are `[x]` (or waived) and all scenarios pass.
 
 ## Quality gate (exit verifying)
 
-- [ ] All Test Scenarios executed with recorded results
+Enforced by `verifying-003` and `verifying-004` (see
+[`scripts/README.md`](../scripts/README.md): no duplicate gates from building).
+
+- [ ] All Test Scenarios executed with recorded results (record in Notes; tests
+      already passed at building exit)
 - [ ] All Acceptance Criteria `[x]` or explicitly waived in line
-- [ ] `deno test` passes
+- [ ] `### Verification summary` in Notes
 - [ ] `devflow validate-card` passes for this card
 - [ ] Evidence attached when manual/UX ACs require it
 - [ ] **Spec Updates** still accurately show pending vs done (not falsely
       closed)
-- [ ] No planning or build tasks unchecked
 
 ## On failure
 

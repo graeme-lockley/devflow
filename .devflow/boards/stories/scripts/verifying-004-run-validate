@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Exit verifying: repository and card validation via devflow CLI.
+# Exit verifying: card validation only (building exit already ran deno task ci / full test suite).
 
 board="${1:?board name required}"
 card_id="${2:?card id required}"
@@ -8,10 +8,10 @@ card_id="${2:?card id required}"
 
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
 run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
-log_file="${run_dir}/verifying-validate.log"
+log_file="${run_dir}/verifying-validate-card.log"
 
 fail() {
-  echo "verifying-005: $*" >&2
+  echo "verifying-004: $*" >&2
   exit 1
 }
 
@@ -22,15 +22,10 @@ fi
 
 cd "$repo_root"
 
-echo "verifying-005: running devflow validate-card ${card_id}" >&2
+echo "verifying-004: running devflow validate-card ${card_id}" >&2
 if ! "$devflow_bin" validate-card "$card_id" >"$log_file" 2>&1; then
   fail "devflow validate-card failed (see ${log_file})"
 fi
 
-echo "verifying-005: running devflow validate" >&2
-if ! "$devflow_bin" validate >>"$log_file" 2>&1; then
-  fail "devflow validate failed (see ${log_file})"
-fi
-
-echo "verifying-005: validation passed" >&2
+echo "verifying-004: validate-card passed" >&2
 exit 0
