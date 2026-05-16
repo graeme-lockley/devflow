@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit finishing: mechanical quality checks on card.md after finish-story.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+card_md="${card_dir}/card.md"
+
+fail() {
+  echo "finishing-003: $*" >&2
+  exit 1
+}
+
+section_body() {
+  local heading="$1"
+  awk -v h="$heading" '
+    $0 == "## " h { found=1; next }
+    found && /^## / { exit }
+    found { print }
+  ' "$card_md"
+}
+
+building_task_waived() {
+  local task_line="$1"
+  printf '%s' "$task_line" | grep -qiE \
+    'user approv|requires user approval|blocked on user|if the user approv|immutable doc'
+}
+
+if [ ! -f "$card_md" ]; then
+  fail "missing card.md"
+fi
+
+if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$card_md"; then
+  fail "card.md contains merge conflict markers"
+fi
+
+if grep -qE '_To be completed in (planning|building)\.|_TBD_' "$card_md"; then
+  fail "card.md still contains planning or building placeholders"
+fi
+
+tasks=$(section_body "Build Tasks")
+unchecked_lines=$(printf '%s\n' "$tasks" | grep -E '^[0-9]+\. \[ \] ' || true)
+if [ -n "$unchecked_lines" ]; then
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    if building_task_waived "$line"; then
+      echo "finishing-003: waived unchecked task: ${line%%$'\n'}" >&2
+      continue
+    fi
+    fail "Build Tasks must all be checked [x] or waived: ${line}"
+  done <<< "$unchecked_lines"
+fi
+
+notes=$(section_body "Build Notes")
+notes_chars=$(
+  printf '%s' "$notes" \
+    | sed '/^[[:space:]]*$/d' \
+    | sed '/^<!--/d' \
+    | sed '/^_/d' \
+    | sed '/^_To be completed in building\._$/d' \
+    | wc -c | tr -d ' '
+)
+if [ "${notes_chars:-0}" -lt 40 ]; then
+  fail "Build Notes must be finalized (at least 40 chars of content)"
+fi
+
+all_notes=$(section_body "Notes")
+if ! printf '%s\n' "$all_notes" | grep -qE '^###[[:space:]]+Verification summary'; then
+  fail "Notes must include a ### Verification summary subsection"
+fi
+if ! printf '%s\n' "$all_notes" | grep -qE '^###[[:space:]]+Finished'; then
+  fail "Notes must include a ### Finished subsection"
+fi
+
+ac=$(section_body "Acceptance Criteria")
+if printf '%s\n' "$ac" | grep -qE '^[0-9]+\.[[:space:]]+\[ \] '; then
+  fail "Acceptance Criteria must all remain checked [x]"
+fi
+if ! printf '%s\n' "$ac" | grep -qE '^[0-9]+\.[[:space:]]+\[x\]'; then
+  fail "Acceptance Criteria must include at least one checked [x] item"
+fi
+
+updates=$(section_body "Spec Updates")
+row_count=0
+notes_all=$(section_body "Notes")
+
+while IFS= read -r line; do
+  [[ "$line" =~ ^\|[[:space:]]*\`([^\`]+)\`[[:space:]]*\| ]] || continue
+  doc_path="${BASH_REMATCH[1]}"
+  row_count=$((row_count + 1))
+  status=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | tr -d ' ')
+
+  case "$status" in
+    done|n/a) ;;
+    deferred)
+      if ! printf '%s\n' "$notes_all" | grep -qiE "deferred.*${doc_path}|${doc_path}.*deferred"; then
+        fail "Spec Updates marks ${doc_path} as deferred but Notes lack deferred justification"
+      fi
+      ;;
+    pending|pending*)
+      fail "Spec Updates must be completed before done (pending: ${doc_path})"
+      ;;
+    *)
+      fail "Spec Updates row has invalid or empty status: ${status:-<empty>}"
+      ;;
+  esac
+done <<< "$updates"
+
+if [ "$row_count" -lt 1 ]; then
+  fail "Spec Updates must include at least one document row"
+fi
+
+exit 0

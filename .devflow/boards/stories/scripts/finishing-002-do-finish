@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit finishing: run finish-story skill via pi.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  echo "finishing-002: DEVFLOW_SKIP_PI=1: skipping pi finish-story" >&2
+  exit 0
+fi
+
+if ! command -v pi >/dev/null 2>&1; then
+  echo "finishing-002: pi not on PATH" >&2
+  exit 1
+fi
+
+if [ -z "${DEVFLOW_HEAVY_MODEL:-}" ]; then
+  echo "finishing-002: DEVFLOW_HEAVY_MODEL is not set" >&2
+  exit 1
+fi
+
+skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/finish-story"
+exec pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print \
+  "Using the skill finish-story, please finish the story ${card_id}."
