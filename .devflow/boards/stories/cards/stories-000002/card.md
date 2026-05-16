@@ -69,26 +69,26 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] `devflow card create <board> <title>` (no description) continues to
+1. [x] `devflow card create <board> <title>` (no description) continues to
        write `card.md` containing exactly `# <title>\n` and prints the new card
        ID to stdout, preserving current behaviour.
-2. [ ] `devflow card create <board> <title> --description "<text>"` writes a
+2. [x] `devflow card create <board> <title> --description "<text>"` writes a
        `card.md` whose first line is `# <title>` followed by a blank line and
        the supplied description text.
-3. [ ] `devflow card create <board> <title> --description-file <path>` writes a
+3. [x] `devflow card create <board> <title> --description-file <path>` writes a
        `card.md` whose body is the contents of `<path>` placed below the title
        heading; trailing newlines are normalised to a single `\n` at EOF.
-4. [ ] Passing both `--description` and `--description-file` exits non-zero
+4. [x] Passing both `--description` and `--description-file` exits non-zero
        with a clear error and creates no card (no sequence increment, no card
        directory left behind).
-5. [ ] `--description-file` pointing at a missing or unreadable path exits
+5. [x] `--description-file` pointing at a missing or unreadable path exits
        non-zero with a clear error and creates no card.
-6. [ ] An empty description (empty string or empty file) is rejected with a
+6. [x] An empty description (empty string or empty file) is rejected with a
        clear error and creates no card.
-7. [ ] `deno test` passes, including new tests in
+7. [x] `deno test` passes, including new tests in
        `src/commands/create-card_test.ts` covering description, description
        file, mutual exclusion, missing file, and empty-content cases.
-8. [ ] `README.md` and any affected CLI usage docs reflect the new flags
+8. [x] `README.md` and any affected CLI usage docs reflect the new flags
        (planned in Spec Updates; no doc drift after the story is done).
 
 ## Impact Analysis
@@ -202,6 +202,27 @@ _Specification and architecture pointers. Use paths and section anchors._
 ## Notes
 
 <!-- phase-gate: optional; ongoing across phases -->
+
+### Verification summary (2026-05-16)
+
+- Test scenarios: 8/8 pass (rows 1–7 automated via `deno task test` and the
+  dedicated flags suite; row 8 manual TTY check performed in a throwaway repo).
+- Acceptance criteria: 8/8 checked.
+- Commands: `deno task test` → 195 passed / 0 failed; `deno test
+  src/cli/create-card-flags_test.ts` → 11 passed / 0 failed;
+  `./devflow validate-card stories-000002` → pass (no output);
+  `./devflow validate` → pass (no output).
+- Manual scenario 8 evidence: `devflow card create stories "T"
+  --description-file ./missing` exits 1 with the error
+  `devflow card create: cannot read --description-file ./missing: …` on stderr
+  and prints nothing on stdout; the follow-up `--description "hi"` invocation
+  prints exactly `stories-000001\n` on stdout with no ANSI codes and writes
+  `# T\n\nhi\n` to `card.md` (confirms AC 1, 2, 5 and req §16.4).
+- AC 8 (README) verified: `README.md` quick-start lists
+  `--description` and `--description-file` examples (lines noted in Build Notes).
+- Spec Updates: §6.2 spec extension remains pending user approval (per
+  AGENTS.md immutable-doc rule); roadmap update remains pending and is owned
+  by the finishing phase. No false closures.
 
 Planning decisions:
 
