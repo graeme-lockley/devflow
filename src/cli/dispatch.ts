@@ -32,6 +32,7 @@ import {
 import { parseAddCardFileArgs } from "./add-file-flags.ts";
 import { parseCardListArgs } from "./card-list-flags.ts";
 import { parseAdvanceArgs } from "./advance-flags.ts";
+import { parseCreateCardArgs } from "./create-card-flags.ts";
 import { parseLockForceArgs } from "./lock-force-flags.ts";
 import {
   parseGlobalFlags,
@@ -58,8 +59,8 @@ Usage:
 
   devflow validate
 
-  devflow card create <board> "<title>"
-  devflow create-card <board> "<title>"
+  devflow card create <board> "<title>" [--description "<text>" | --description-file <path>]
+  devflow create-card <board> "<title>" [--description "<text>" | --description-file <path>]
 
   devflow card list <board> [--phase <name>]
   devflow list-cards <board> [--phase <name>]
@@ -211,14 +212,26 @@ const handlers = new Map<string, CommandHandler>([
   [
     "card:create",
     async (positional, repoRoot, _ctx) => {
-      const [boardName, title] = positional;
-      if (!boardName || title === undefined) {
-        console.error("devflow card create: board name and title required\n");
-        console.log(USAGE.trimEnd());
+      let boardName = "";
+      let title: string | undefined;
+      let description: string | undefined;
+      try {
+        const parsed = await parseCreateCardArgs(positional);
+        boardName = parsed.boardName;
+        title = parsed.title;
+        description = parsed.description;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error(message);
         return 1;
       }
       try {
-        const cardId = await createCard(boardName, title, repoRoot);
+        const cardId = await createCard(
+          boardName,
+          title,
+          repoRoot,
+          description,
+        );
         Deno.stdout.writeSync(new TextEncoder().encode(`${cardId}\n`));
         return 0;
       } catch (e) {

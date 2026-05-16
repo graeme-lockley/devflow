@@ -167,22 +167,22 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 <!-- phase-gate: complete by exit planning | all [x] by exit building -->
 
-1. [ ] Add `src/cli/create-card-flags.ts` with `parseCreateCardArgs` covering
+1. [x] Add `src/cli/create-card-flags.ts` with `parseCreateCardArgs` covering
        `--description`, `--description-file`, mutual exclusion, missing-file
        detection, and empty-content rejection (file read happens here).
-2. [ ] Add `src/cli/create-card-flags_test.ts` covering the parser behaviour
+2. [x] Add `src/cli/create-card-flags_test.ts` covering the parser behaviour
        in isolation (no filesystem side effects beyond a tmp file).
-3. [ ] Extend `createCard` in `src/commands/create-card.ts` with an optional
+3. [x] Extend `createCard` in `src/commands/create-card.ts` with an optional
        `description?: string` parameter; when present, write
        `# <title>\n\n<description>\n` (normalising trailing newlines).
-4. [ ] Update the `card:create` handler in `src/cli/dispatch.ts` to use
+4. [x] Update the `card:create` handler in `src/cli/dispatch.ts` to use
        `parseCreateCardArgs` and forward the description; update `USAGE` to
        show the new flags.
-5. [ ] Extend `src/commands/create-card_test.ts` with the cases listed in
+5. [x] Extend `src/commands/create-card_test.ts` with the cases listed in
        Test Scenarios rows 1–3 and 5–7 (success variants, missing file,
        empty content, no temp-dir leak, `nextSequence` invariants).
-6. [ ] Update `README.md` with the new flags and a short example for each.
-7. [ ] Run `deno test` and `./devflow validate` (sanity) and fix any
+6. [x] Update `README.md` with the new flags and a short example for each.
+7. [x] Run `deno test` and `./devflow validate` (sanity) and fix any
        regressions.
 8. [ ] If the user approves the §6.2 spec extension, update
        `docs/devflow-requirements.md` accordingly (see Spec Updates / Notes).
@@ -245,6 +245,61 @@ Open questions for the user (do not block planning, but flagged):
 <!-- phase-gate: started by exit building | complete by exit finishing -->
 
 _To be completed in building._
+
+### As-built summary
+
+- **`src/cli/create-card-flags.ts` (new)** — `parseCreateCardArgs(args)` is
+  async, handles `--description <text>` / `--description-file <path>`, enforces
+  mutual exclusion, requires a value for each flag, rejects unknown extra
+  positionals, and (for `--description-file`) reads via `Deno.readTextFile`
+  with a wrapped error referencing the path. Empty input is rejected after
+  stripping trailing newlines, so both `""` and a file containing only `\n`s
+  fail with `"empty"`. All I/O happens in the flags layer **before** the board
+  lock is acquired, preserving the req §6.2 atomicity rule.
+- **`src/cli/create-card-flags_test.ts` (new)** — 11 unit tests covering
+  title-only, inline description, file description, mutual exclusion, missing
+  file, empty string, empty file, newline-only file, missing positionals,
+  unexpected positional, and `--description` with no value.
+- **`src/commands/create-card.ts`** — `createCard` gains an optional
+  `description?: string` parameter. When `description` is `undefined` the
+  written `card.md` is byte-identical to before (`# <title>\n`); when present,
+  the body is `# <title>\n\n<description trimmed of trailing newlines>\n`. No
+  changes to lock ordering, sequence handling, or temp-dir cleanup.
+- **`src/cli/dispatch.ts`** — `card:create` now calls `parseCreateCardArgs`
+  before entering the success branch; parser errors go straight to stderr with
+  exit 1 (matching the AC: no card directory, no sequence increment). USAGE
+  block now documents `[--description "<text>" | --description-file <path>]`.
+- **`src/commands/create-card_test.ts`** — added 7 tests for the new
+  behaviour: inline description write, trailing-newline normalisation, CLI
+  end-to-end with `--description-file`, mutual exclusion atomicity, missing
+  file atomicity, empty-string and empty-file atomicity. Each negative case
+  asserts `nextSequence` is unchanged and the board `cards/` directory is
+  empty (covers Test Scenario row 7's "no `.tmp` leak" requirement).
+- **`README.md`** — added two extra example lines under the quick-start
+  block showing `--description` and `--description-file`.
+
+### Deviations from Impact Analysis
+
+- None of material substance. The parser preserves backwards-compatible error
+  messages where possible (`board name and title required` matches the prior
+  dispatch-level message). Empty-content detection trims trailing newlines so a
+  file containing only `\n` is also rejected; this is consistent with AC6's
+  intent ("empty content") and is documented in the Notes section as
+  newline normalisation.
+
+### Validation
+
+- `deno task ci` (`lint`, `fmt:check`, `test`) — 195 passed, 0 failed.
+- `./devflow validate` — no output (success).
+
+### Spec Updates status
+
+- `docs/devflow-requirements.md` §6.2 — still **pending** (blocked on explicit
+  user approval per AGENTS.md immutable-doc rule). Implementation ships
+  independently per the Notes plan.
+- `README.md` — **done**.
+- `docs/implementation-roadmap.md` — left as **pending**; the roadmap is
+  updated as part of finishing, not building.
 
 ## Related Cards
 

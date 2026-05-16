@@ -87,6 +87,8 @@ the parent advance already holds it).
 devflow board init stories unplanned planning planned --template stories
 devflow validate
 devflow card create stories "My card"
+devflow card create stories "My card" --description "One-line context for the card body."
+devflow card create stories "My card" --description-file ./body.md
 devflow card advance stories-000001 planned
 devflow card block stories-000001 "Waiting for API contract"
 devflow card unblock stories-000001

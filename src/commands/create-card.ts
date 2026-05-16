@@ -13,10 +13,15 @@ export async function createCard(
   boardName: string,
   title: string,
   repoRoot: string,
+  description?: string,
 ): Promise<string> {
   if (!title.trim()) {
     throw new Error("card create requires a non-empty title");
   }
+
+  const cardMd = description === undefined
+    ? `# ${title}\n`
+    : `# ${title}\n\n${description.replace(/\n+$/, "")}\n`;
 
   let config = await loadBoardConfig(repoRoot, boardName);
 
@@ -73,7 +78,7 @@ export async function createCard(
         `${tmpDir}/state.json`,
         JSON.stringify(state, null, 2) + "\n",
       );
-      await Deno.writeTextFile(`${tmpDir}/card.md`, `# ${title}\n`);
+      await Deno.writeTextFile(`${tmpDir}/card.md`, cardMd);
 
       await Deno.rename(tmpDir, finalDir);
     } catch (e) {
