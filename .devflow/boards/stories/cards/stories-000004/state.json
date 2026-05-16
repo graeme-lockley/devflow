@@ -1,0 +1,18 @@
+{
+  "id": "stories-000004",
+  "board": "stories",
+  "title": "CLI Parameter Error Shows usage",
+  "phase": "preparing",
+  "previousPhase": null,
+  "createdAt": "2026-05-16T18:27:51.667Z",
+  "updatedAt": "2026-05-16T18:27:51.667Z",
+  "variables": {},
+  "history": [
+    {
+      "type": "created",
+      "at": "2026-05-16T18:27:51.667Z",
+      "phase": "preparing"
+    }
+  ],
+  "blocked": null
+}

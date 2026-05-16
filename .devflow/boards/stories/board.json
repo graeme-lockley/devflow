@@ -1,7 +1,7 @@
 {
   "name": "stories",
   "idPrefix": "stories",
-  "nextSequence": 4,
+  "nextSequence": 5,
   "sequenceWidth": 6,
   "phases": [
     "preparing",
@@ -12,6 +12,8 @@
     "done"
   ],
   "blockedPhase": "blocked",
+  "createdAt": "2026-05-16T11:28:15.074Z",
+  "updatedAt": "2026-05-16T18:27:51.667Z",
   "phaseScripts": {
     "building": {
       "loop": {
@@ -23,7 +25,5 @@
         "maxRounds": 5
       }
     }
-  },
-  "createdAt": "2026-05-16T11:28:15.074Z",
-  "updatedAt": "2026-05-16T15:50:41.044Z"
+  }
 }
