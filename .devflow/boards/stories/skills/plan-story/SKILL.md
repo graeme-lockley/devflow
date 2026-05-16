@@ -87,7 +87,7 @@ Before writing:
    `card.md`.
 
 If preparing sections are missing or placeholder-only, stop with exit 1 and
-report that **create-story** must run first.
+report that **prepare-story** must run first.
 
 ## Procedure
 

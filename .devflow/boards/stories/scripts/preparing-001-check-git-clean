@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Exit preparing: working tree must be clean before create-story runs.
+# Exit preparing: working tree must be clean before prepare-story runs.
 
 board="${1:?board name required}"
 card_id="${2:?card id required}"

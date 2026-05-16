@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Exit preparing: after create-story, only this card's directory may have changed.
+# Exit preparing: after prepare-story, only this card's directory may have changed.
 
 board="${1:?board name required}"
 card_id="${2:?card id required}"
@@ -38,7 +38,7 @@ fi
 
 porcelain=$(git status --porcelain)
 if [ -z "$porcelain" ]; then
-  echo "preparing-003: expected changes under ${card_rel}/ after create-story" >&2
+  echo "preparing-003: expected changes under ${card_rel}/ after prepare-story" >&2
   exit 1
 fi
 

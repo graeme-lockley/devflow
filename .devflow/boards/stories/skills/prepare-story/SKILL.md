@@ -1,9 +1,9 @@
 ---
-name: create-story
-version: 1.1.0
+name: prepare-story
+version: 1.2.0
 description: >-
-  Creates or refreshes a Devflow story card in the preparing phase using the canonical
-  story template: description, objectives, draft acceptance criteria, and spec references.
+  Prepares a Devflow story card in the preparing phase using the canonical story
+  template: description, objectives, draft acceptance criteria, and spec references.
   Use when a new card needs content or when advancing out of preparing.
 outputs:
   - Updated card.md with preparing-phase sections per story template
@@ -16,7 +16,7 @@ forbids:
   - git push
 ---
 
-# Create a Story
+# Prepare a Story
 
 Populates **preparing** content for a story card from a short description and
 full repository context (`README.md`, `docs/`, `src/`). Uses the canonical
@@ -129,8 +129,9 @@ later skills depend on structure). Do not omit sections.
 ## pi invocation
 
 ```bash
-pi run --skill .devflow/boards/stories/skills/create-story \
-  --board stories --card <card-id>
+pi --skill .devflow/boards/stories/skills/prepare-story \
+  --model "${DEVFLOW_HEAVY_MODEL}" --print \
+  "Using the skill prepare-story, please prepare the story <card-id>."
 ```
 
 `preparing-002-do-create-story` requires `pi` on `PATH` (exit 1 if missing). Set

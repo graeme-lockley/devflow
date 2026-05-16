@@ -3,7 +3,7 @@
 As a story author (human or agent), I want `devflow card create` to accept an
 initial description—either inline or from a file—so that the freshly created
 `card.md` already carries the body content that downstream skills such as
-`preparing-002-do-create-story` need, instead of starting from just a title.
+`preparing-002-do-create-story` / **prepare-story** need, instead of starting from just a title.
 
 ## Current State
 
@@ -15,7 +15,7 @@ initial description—either inline or from a file—so that the freshly created
 - The CLI parser/dispatch path (`src/cli/parser.ts`, `src/cli/dispatch.ts`,
   `src/commands/create-card.ts`) has no flag for description input and no
   file-attachment plumbing during creation.
-- Skills like `create-story` rely on a hand-edited prose body in `card.md`
+- Skills like `prepare-story` rely on a hand-edited prose body in `card.md`
   before they can populate the preparing template (`StoryDetail` input). Today
   that prose has to be added in a separate manual step after `card create`.
 - A separate command, `devflow card add-file` (`src/commands/add-card-file.ts`),
@@ -127,7 +127,7 @@ _Breaking changes, TTY vs machine output, locks, performance, dependencies._
 - Decide in planning whether `add-card-file` should be reused to also attach
   the source file under `files/`, or whether description input is purely
   inlined into `card.md` and attachments remain a separate concern.
-- Confirm interaction (if any) with skill `create-story`: does it need to be
+- Confirm interaction (if any) with skill `prepare-story`: does it need to be
   taught to skip the title-only fallback once a description is already present?
 
 ## Build Notes

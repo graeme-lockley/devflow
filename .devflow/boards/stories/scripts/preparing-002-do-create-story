@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Exit preparing: run create-story skill via pi.
+# Exit preparing: run prepare-story skill via pi.
 
 board="${1:?board name required}"
 card_id="${2:?card id required}"
 
 if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
-  echo "DEVFLOW_SKIP_PI=1: skipping pi create-story" >&2
+  echo "DEVFLOW_SKIP_PI=1: skipping pi prepare-story" >&2
   exit 0
 fi
 
@@ -15,6 +15,6 @@ if ! command -v pi >/dev/null 2>&1; then
   exit 1
 fi
 
-skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/create-story"
+skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/prepare-story"
 exec pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print \
-  "Using the skill create-story, please create the story ${card_id}."
+  "Using the skill prepare-story, please prepare the story ${card_id}."
