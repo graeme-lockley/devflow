@@ -1,0 +1,41 @@
+---
+description: Use Conventional Commits for all git commit messages
+alwaysApply: true
+---
+
+# Conventional Commits
+
+When creating or suggesting git commits in this repository, use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
+
+Format:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+- **feat:** new feature (MINOR in SemVer)
+- **fix:** bug fix (PATCH)
+- **docs:** documentation only
+- **chore:** maintenance (deps, tooling) with no production code change
+- **test:** tests only
+- **refactor:** code change that is neither a fix nor a feature
+- **build** / **ci:** build system or CI changes
+
+Use lowercase types. Keep the subject line imperative and under ~72 characters. Add a body when context is needed.
+
+Breaking changes: append `!` after type/scope (`feat(api)!: ...`) or add a `BREAKING CHANGE:` footer.
+
+Examples:
+
+```
+feat(cli): add init-board command
+fix(board): release lock when script exits non-zero
+docs: document conventional commit messages
+chore: add deno.lock
+```
+
+Do not commit unless the user explicitly asks. When they do, follow this format.
