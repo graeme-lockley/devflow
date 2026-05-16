@@ -16,11 +16,11 @@ if ! command -v pi >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ -z "${DEVFLOW_HEAVY_MODEL:-}" ]; then
-  echo "verifying-002: DEVFLOW_HEAVY_MODEL is not set" >&2
+if [ -z "${DEVFLOW_MEDIUM_MODEL:-}" ]; then
+  echo "verifying-002: DEVFLOW_MEDIUM_MODEL is not set" >&2
   exit 1
 fi
 
 skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/validate-story"
-exec pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print \
+exec pi --skill "$skill_dir" --model "${DEVFLOW_MEDIUM_MODEL}" --print \
   "Using the skill validate-story, please verify the story ${card_id}."
