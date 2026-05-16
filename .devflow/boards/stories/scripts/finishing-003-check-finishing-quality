@@ -60,7 +60,7 @@ while IFS= read -r line; do
   case "$status" in
     done|n/a) ;;
     deferred)
-      if ! printf '%s\n' "$notes_all" | grep -qiE "deferred.*${doc_path}|${doc_path}.*deferred"; then
+      if ! stories_notes_deferred_justified "$doc_path" "$notes_all"; then
         fail "Spec Updates marks ${doc_path} as deferred but Notes lack deferred justification"
       fi
       ;;

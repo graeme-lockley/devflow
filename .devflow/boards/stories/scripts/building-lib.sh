@@ -9,6 +9,32 @@ stories_spec_update_status() {
   printf '%s' "$raw" | awk '{print $1}'
 }
 
+# True when ## Notes documents a deferred Spec Updates row for doc_path.
+stories_notes_deferred_justified() {
+  local doc_path="$1"
+  local notes="$2"
+  local base="${doc_path##*/}"
+
+  if printf '%s\n' "$notes" | grep -qiE "deferred.*${doc_path}|${doc_path}.*deferred"; then
+    return 0
+  fi
+  if printf '%s\n' "$notes" | grep -qiE "deferred.*${base}|${base}.*deferred"; then
+    return 0
+  fi
+  case "$doc_path" in
+    docs/devflow-requirements.md)
+      if printf '%s\n' "$notes" | grep -qiE 'deferred.*requirements|requirements.*deferred'; then
+        return 0
+      fi
+      ;;
+  esac
+  if printf '%s\n' "$notes" | grep -qi 'deferred' \
+    && printf '%s\n' "$notes" | grep -qF "$doc_path"; then
+    return 0
+  fi
+  return 1
+}
+
 # Populates BUILDING_ALLOWED_DOC_PATHS from Spec Updates (done|pending rows).
 building_collect_allowed_doc_paths() {
   local card_md="$1"

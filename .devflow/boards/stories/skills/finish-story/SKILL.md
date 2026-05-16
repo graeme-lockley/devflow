@@ -1,6 +1,6 @@
 ---
 name: finish-story
-version: 1.1.0
+version: 1.1.1
 description: >-
   Completes the finishing phase of a Devflow story card by finalizing Spec Updates,
   README changes, Build Notes, and release readiness. Use when advancing out of
@@ -91,7 +91,7 @@ For each row in **Spec Updates**:
 | Planned                    | Action                                                                       |
 | -------------------------- | ---------------------------------------------------------------------------- |
 | `none` / N/A               | Set status `n/a`                                                             |
-| `pending`                  | Apply the documented change, or mark `deferred` with reason in **Notes**     |
+| `pending`                  | Apply the documented change, or mark `deferred` with reason in **Notes** (mention the document path or e.g. `requirements` for `docs/devflow-requirements.md`) |
 | Doc requires user approval | Do not edit; set status `blocked` and exit 1 unless approval is in **Notes** |
 
 **Immutable docs** (`docs/devflow-requirements.md`, `docs/architecture.md`,
