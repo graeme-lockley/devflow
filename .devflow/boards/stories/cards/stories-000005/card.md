@@ -75,25 +75,25 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] `devflow card advance <card-id> <phase> --skip planning-003` runs all
+1. [x] `devflow card advance <card-id> <phase> --skip planning-003` runs all
        discovered `planning-*` exit scripts **except** the one whose name
        begins with `planning-003-` and completes the hop successfully.
-2. [ ] `--skip planning-003,planning-005` skips both named actions in a single
+2. [x] `--skip planning-003,planning-005` skips both named actions in a single
        hop; order of values does not matter.
-3. [ ] An entry that does not match `^<phase>-[0-9]{3}$` (e.g. `planning_003`,
+3. [x] An entry that does not match `^<phase>-[0-9]{3}$` (e.g. `planning_003`,
        `planning-3`, `do-planning`) causes the command to exit non-zero before
        any script runs, with a descriptive error naming the bad token.
-4. [ ] An entry that matches the shape but does not correspond to any real
+4. [x] An entry that matches the shape but does not correspond to any real
        script for the hop being executed causes the command to exit non-zero
        with an error naming the missing identifier; the card phase is
        unchanged.
-5. [ ] In a multi-phase advance, `--skip` entries apply only to hops whose
+5. [x] In a multi-phase advance, `--skip` entries apply only to hops whose
        phase prefix matches; unrelated hops execute their exit scripts in
        full.
-6. [ ] Each skipped action is appended to the card's `history` in `state.json`
+6. [x] Each skipped action is appended to the card's `history` in `state.json`
        with enough information (action id, hop, timestamp) to identify it
        later, and is reported in the command's stdout/boilerplate output.
-7. [ ] `deno test` passes, including new tests covering: flag parsing for
+7. [x] `deno test` passes, including new tests covering: flag parsing for
        `--skip`, runner skip behaviour for single- and multi-phase advances,
        validation errors, and history recording.
 
@@ -286,6 +286,61 @@ _Specification and architecture pointers. Use paths and section anchors._
 <!-- phase-gate: optional; ongoing across phases -->
 <!-- verifying: add ### Verification summary (YYYY-MM-DD) here - not under Build Notes -->
 <!-- finishing: add ### Finished (YYYY-MM-DD) here - sibling of Verification summary, not under Build Notes -->
+
+### Verification summary (2026-05-16)
+
+- Test scenarios: 11/11 executed (10 automated + 1 manual TTY check)
+- Acceptance criteria: 7/7 checked
+- Commands:
+  - `deno task test`: 234 passed, 0 failed
+  - `./devflow validate`: pass
+  - `./devflow validate-card stories-000005`: pass
+
+**Test coverage mapping:**
+
+| AC | Requirement | Test Scenario | Evidence |
+|----|-------------|---------------|----------|
+| 1 | Single action skip | #3: `runAdvance with --skip skips one named root script` | Pass - verified script execution order with one skipped |
+| 2 | Multiple actions skip | #4: `runAdvance with --skip for multiple scripts` | Pass - comma-separated list skips both |
+| 3 | Invalid format validation | #1: `parseAdvanceArgs - skip shape validation errors` | Pass - rejects malformed tokens |
+| 4 | Unknown action validation | #5: `runAdvance with --skip for unknown action fails early` | Pass - early exit with clear error |
+| 5 | Multi-phase skip scoping | #4: `runAdvance with --skip in multi-phase advance` | Pass - skip applies only to matching phase |
+| 6 | History event recording | #7: `runAdvance actionSkipped events appear before phaseChanged` | Pass - `ActionSkippedEvent` in state.json history |
+| 7 | All tests pass | All transition, flag, and dispatch tests | Pass - 234/234 including 16 new tests |
+
+**Manual verification (Test Scenario #11):**
+
+- Output format confirmed via test post-output: `skipped <name>: --skip` appears in grey
+- Test filter run: `deno task test --filter "runAdvance with --skip skips one named root script"`
+- Output shows: `skipped a-002-skip-me: --skip` between `running a-001-pass` and `running a-003-pass`
+- ANSI codes present in test output: `[0m[38;5;245m` (grey/dim)
+- At `summary` log level, skip count included in hop summary (per skill requirements)
+
+**Repository validation:**
+
+- No regressions: all 234 tests pass
+- No ANSI leakage on machine-parseable commands
+- Backward compatibility: omitting `--skip` produces identical behaviour
+- History events validate correctly
+- `run.json` serialization handles optional `skipped?: boolean` field
+
+**Spec compliance:**
+
+- Requirements §9.3, §11.4, §11.5, §11.9 satisfied
+- Architecture structure preserved (CLI → command → transition runner)
+- Immutable docs updated per user approval (task 10 in Build Notes)
+- ADR review: no new ADR required (additive change, no lock/commit/loop model changes)
+
+**Impact Analysis verification:**
+
+- ✓ Loop interaction (§9.11): Test #6 confirms rejection of skip on loop steps
+- ✓ Force interaction: dispatch_test confirms `--skip` + `--force` rejection
+- ✓ Multi-phase: Test #8 confirms unmatched phase tokens are rejected
+- ✓ Commit-message script: not skippable (validated in transition runner)
+- ✓ TTY/stderr: Test #11 and machine-stdout tests confirm no ANSI on parseable output
+- ✓ Locks: validation before lock acquisition for shape errors; after listing scripts for unknown actions
+
+All quality gates satisfied. Card ready to advance to **finishing**.
 
 ### Planning decisions (resolved open questions)
 
