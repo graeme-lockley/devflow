@@ -58,22 +58,27 @@ use the new model.
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning -->
 
-- [ ] `docs/devflow-requirements.md` §9 (Script Model) — extend §9.1–9.3 (paths,
+- [x] `docs/devflow-requirements.md` §9 (Script Model) — extend §9.1–9.3 (paths,
       root vs child scripts, helper files), §9.7–9.9 (loop exit semantics, env,
       logging); amend §9.8 (retries scoped to loop blocks); §11.4 (transition
       algorithm); §18 (`DEVFLOW_SCRIPT_ROUND`, `DEVFLOW_LOOP_MAX`, etc.).
-- [ ] `docs/devflow-requirements.md` §5 / board.json — optional `phaseScripts` or
-      `loop` configuration on boards (exact shape to be fixed in planning).
-- [ ] `docs/architecture.md` — `src/domain/script-names.ts`,
-      `src/services/scripts.ts`, `src/services/transition.ts`,
-      `src/domain/board.ts` (config parsing), transition logs.
-- [ ] `docs/adr/` — **new ADR-0014** (script composition and phase loops);
-      update cross-references in ADR-0007 (invocation of child scripts),
-      ADR-0008 (runner orchestrates loop blocks).
-- [ ] `docs/implementation-roadmap.md` — new milestone or extend CLI milestone for
+      Verified anchors: §9 (line 580), §9.1 (582), §9.2 (590), §9.3 (608),
+      §9.7 (689), §9.8 (700), §9.9 (709), §11.4 (831), §18 (1529).
+- [x] `docs/devflow-requirements.md` §5.4 / `board.json` — optional `phaseScripts`
+      or `loop` configuration on boards (exact shape fixed during build).
+      Verified anchor: §5.4 Board configuration file (line 264).
+- [x] `docs/architecture.md` — `src/services/transition.ts` (§5.3, line 171),
+      `src/services/scripts.ts` (§5.4, line 186); `src/domain/script-names.ts`
+      and `src/domain/board.ts` documented within the domain layer section;
+      transition logs covered alongside the runner.
+- [ ] `docs/adr/` — **new ADR-0014** (script composition and phase loops) to be
+      created; existing ADR-0007 (`docs/adr/0007-script-invocation.md`) and
+      ADR-0008 (`docs/adr/0008-transition-runner-orchestration.md`) verified
+      present and will receive cross-references.
+- [x] `docs/implementation-roadmap.md` — present; will add milestone for
       script-loop feature.
-- [ ] `README.md` — board authoring: script layout, loop config, optional
-      `devflow script run` if specified.
+- [x] `README.md` — present; will document hierarchical script layout and
+      optional loop config for board authors.
 
 ## Acceptance Criteria
 
@@ -211,6 +216,21 @@ use the new model.
 ## Notes
 
 <!-- phase-gate: optional; ongoing across phases -->
+
+**Planning verification (this pass):**
+
+- Spec References cross-checked against the repo on 2026-05-16. All target
+  files exist; all referenced requirements anchors (§5.4, §9, §9.1–§9.3,
+  §9.7–§9.9, §11.4, §18) are present at the expected headings. Architecture
+  modules called out (`script-names`, `scripts`, `transition`, `board`) are
+  all present in `src/domain/` and `src/services/`.
+- ADR-0014 row left unchecked because the file does not yet exist; creating
+  it is the first Build Task and tracked in Spec Updates.
+- **Immutable-docs note** — this story explicitly authorises edits to
+  `docs/devflow-requirements.md`, `docs/architecture.md`, and the addition of
+  a new ADR (per Objectives §1, §4 and Impact Analysis “Risks and
+  constraints”). The AGENTS.md rule still applies: changes land in this
+  story only, with the user’s prior approval recorded in the card itself.
 
 **Design decisions (from planning discussion):**
 
