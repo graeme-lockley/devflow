@@ -34,8 +34,7 @@ backward phase), acquires locks, calls `transition.runAdvance`, releases locks.
 **Positive**
 
 - Algorithm is unit-testable with mock script and git services.
-- [`implementation-roadmap.md`](../implementation-roadmap.md) can land M5 (no
-  git) before M6.
+- Transition orchestration can be tested before full Git integration (req §11).
 
 **Negative**
 

@@ -103,8 +103,7 @@ For each row in **Spec Updates**:
 - Otherwise set status `n/a` and explain in **Notes** that behaviour matches
   existing spec.
 
-**Allowed without special approval:** `README.md`,
-`docs/implementation-roadmap.md` checklist items when part of the agreed story.
+**Allowed without special approval:** `README.md` when part of the agreed story.
 
 After each edit:
 
@@ -130,12 +129,7 @@ Update `README.md` when:
 
 Keep table style consistent with existing README CLI section.
 
-### 5. Roadmap (optional)
-
-If the story completes an item in `docs/implementation-roadmap.md`, mark `[x]`
-only when the implementation truly matches the milestone description.
-
-### 6. Card hygiene
+### 5. Card hygiene
 
 - Remove stale `_placeholder_` or `_TBD_` text from any section (including
   `_To be completed in building._` under **Build Notes**).
@@ -158,7 +152,7 @@ Story complete. Spec updates: <summary>. Ready for done.
 Do **not** append `### Finished` after `### As-built summary` or
 `### Spec Updates status` in **Build Notes**—those are the wrong section.
 
-### 7. Final checks
+### 6. Final checks
 
 ```bash
 deno test

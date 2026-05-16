@@ -41,4 +41,3 @@ Lower layers must not import from higher layers.
 ## References
 
 - [`architecture.md` §2–3](../architecture.md#2-layered-structure)
-- [`implementation-roadmap.md` M0](../implementation-roadmap.md#m0--foundation)

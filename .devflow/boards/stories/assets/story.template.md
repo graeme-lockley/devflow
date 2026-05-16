@@ -23,7 +23,6 @@ _Specification and architecture pointers. Use paths and section anchors._
 - [ ] `docs/devflow-requirements.md` — _section(s)_
 - [ ] `docs/architecture.md` — _area(s)_
 - [ ] `docs/adr/` — _ADR id(s), or N/A_
-- [ ] `docs/implementation-roadmap.md` — _milestone(s), or N/A_
 
 ## Acceptance Criteria
 

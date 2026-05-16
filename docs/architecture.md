@@ -2,7 +2,6 @@
 
 **Status:** Architecture sketch\
 **Specification:** [`devflow-requirements.md`](./devflow-requirements.md)\
-**Build plan:** [`implementation-roadmap.md`](./implementation-roadmap.md)\
 **Decisions:** [`adr/README.md`](./adr/README.md)
 
 This document describes how the Devflow **CLI implementation** is structured.

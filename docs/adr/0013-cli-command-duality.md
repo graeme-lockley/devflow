@@ -45,5 +45,4 @@ type.
 ## References
 
 - Requirements [§16.0](../devflow-requirements.md#160-command-index)
-- [`implementation-roadmap.md` M0](../implementation-roadmap.md#m0--foundation)
 - Supersedes informal CLI in `idea.md`

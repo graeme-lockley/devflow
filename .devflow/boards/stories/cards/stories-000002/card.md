@@ -62,10 +62,6 @@ _Specification and architecture pointers. Use paths and section anchors._
 - [x] `docs/adr/` — no existing ADR governs CLI flag naming or description
       input; no new ADR required (this is an additive CLI change, not a
       hard-to-reverse architectural decision).
-- [x] `docs/implementation-roadmap.md` — `card create` is part of the
-      already-shipped core CLI milestone; this story is an enhancement and does
-      not introduce a new milestone.
-
 ## Acceptance Criteria
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
@@ -199,7 +195,6 @@ _Specification and architecture pointers. Use paths and section anchors._
 | `docs/architecture.md`           | None. CLI surface only; no module boundary or dependency direction changes.                                                                                           | n/a                                                                                                               |
 | `docs/adr/`                      | None. Additive CLI flag; no new architectural decision.                                                                                                               | n/a                                                                                                               |
 | `README.md`                      | Document `--description` and `--description-file` under the `card create` usage section; include one inline and one file example.                                     | done (README.md lines 90–91)                                                                                      |
-| `docs/implementation-roadmap.md` | Note completion of this enhancement under the existing card-create milestone if/when the roadmap is updated as part of this story.                                    | n/a (existing `card create` milestone already `[x]`; this story is an additive enhancement, no new milestone row) |
 
 ## Notes
 
@@ -225,13 +220,12 @@ _Specification and architecture pointers. Use paths and section anchors._
 - AC 8 (README) verified: `README.md` quick-start lists `--description` and
   `--description-file` examples (lines noted in Build Notes).
 - Spec Updates: §6.2 spec extension remains pending user approval (per AGENTS.md
-  immutable-doc rule); roadmap update remains pending and is owned by the
-  finishing phase. No false closures.
+  immutable-doc rule). No false closures.
 
 ### Finished (2026-05-16)
 
 Story complete. Spec updates: README done; requirements §6.2 deferred (no user
-approval, tracked as follow-up); architecture/ADR/roadmap n/a. No code or doc
+approval, tracked as follow-up); architecture/ADR n/a. No code or doc
 changes in this finishing hop beyond Spec Updates table reconciliation and
 Notes; verification summary from 2026-05-16 stands. Ready for done.
 
@@ -328,9 +322,6 @@ Open questions for the user (do not block planning, but flagged):
   user approval per AGENTS.md immutable-doc rule). Implementation ships
   independently per the Notes plan.
 - `README.md` — **done**.
-- `docs/implementation-roadmap.md` — **n/a**. The existing `card create`
-  milestone row is already `[x]`; this story is an additive enhancement with no
-  new milestone to track.
 
 ## Related Cards
 

@@ -55,10 +55,6 @@ _Specification and architecture pointers. Use paths and section anchors._
       in `services/console.ts` to keep ANSI policy in one place.
 - [x] `docs/adr/` — N/A. No new architectural decision; reuses ADR-0011
       console/TTY rules already encoded in `services/console.ts`.
-- [x] `docs/implementation-roadmap.md` — not tracked as a separate milestone;
-      this is a cosmetic follow-up to the already-shipped `board show` and
-      `card list` commands. Roadmap update not required.
-
 ## Acceptance Criteria
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->

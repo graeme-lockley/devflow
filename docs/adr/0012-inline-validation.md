@@ -44,4 +44,3 @@ Do **not** introduce JSON Schema or Zod in the initial implementation.
 ## References
 
 - Requirements [§17](../devflow-requirements.md#17-validation-requirements)
-- [`implementation-roadmap.md` M1, M2, M7](../implementation-roadmap.md)

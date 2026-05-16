@@ -95,9 +95,8 @@ devflow card unblock stories-000001
 ```
 
 See [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) for the
-full specification and
-[`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md) for build
-status.
+full specification and [`docs/architecture.md`](./docs/architecture.md) for
+implementation structure.
 
 ## Typical flow
 
