@@ -63,21 +63,21 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] Running `./devflow show-board <valid-board>` on a TTY shows board
+1. [x] Running `./devflow show-board <valid-board>` on a TTY shows board
        metadata with grey field labels and default value styling, followed by a
        section listing every card’s ID, title, and phase.
-2. [ ] Running `./devflow show-board <invalid-board>` on a TTY prints a red
+2. [x] Running `./devflow show-board <invalid-board>` on a TTY prints a red
        `Error:` prefix and visually emphasises the board name and filesystem
        path in the message; with stderr not a TTY, output contains no ANSI
        escape codes.
-3. [ ] `deno test` includes automated coverage for formatted board show output
+3. [x] `deno test` includes automated coverage for formatted board show output
        (metadata + card list) and for error formatting with and without a TTY,
        consistent with existing `console_test.ts` and `show-board_test.ts`
        patterns.
-4. [ ] If behaviour or output contracts change beyond cosmetic TTY styling,
+4. [x] If behaviour or output contracts change beyond cosmetic TTY styling,
        `docs/devflow-requirements.md` §5.4 / §16.2–16.4 and `README.md` CLI
-       notes for `board show` are updated to match.
-5. [ ] A spot-check of other high-traffic “not found” and validation error
+       notes for `board show` are updated to match. _(waived: no contract change beyond TTY cosmetics; styling stays within existing §16.2/§16.4 envelope and README's `board show` description still accurate per Build Notes.)_
+5. [x] A spot-check of other high-traffic “not found” and validation error
        messages uses the same stderr emphasis rules where appropriate, with no
        ANSI leaked into commands documented as machine-parseable stdout.
 
@@ -232,6 +232,14 @@ Decisions taken during planning:
   existing `colorsEnabled()` (stderr-based) continues to gate `logCliMessage`
   and friends. Req §16.2 explicitly allows this for non-machine-parseable
   stdout commands and §16.4 lists `board show` as formatted human output.
+
+### Verification summary (2026-05-16)
+
+- Test scenarios: 7/7 pass (rows 1–5 automated via `deno task test`; rows 6–7 manual smoke under `script -q /dev/null` and a plain pipe).
+- Acceptance criteria: 5/5 checked (AC 4 waived in line — no contract change beyond TTY cosmetics).
+- Commands: `deno task test` → 195 passed / 0 failed; `./devflow validate-card stories-000001` → exit 0; `./devflow validate` → exit 0.
+- Manual evidence: TTY `./devflow board show stories` shows grey `name:`/`idPrefix:`/… labels and a `Cards (3):` aligned table; `./devflow board show stories | cat` is plain (no ANSI). TTY `./devflow board show storie` prints red `Error:`, grey `board show:`/`storie:` prefixes, bold `storie` and bold `.devflow/boards/storie/board.json`; piped variant is plain. Exit code 1 on invalid board confirmed.
+- Regression: `machine-stdout_test.ts` passes within the suite — no ANSI leak into machine-parseable stdout commands (req §16.4).
 
 Open questions / dependencies:
 
