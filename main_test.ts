@@ -1,53 +1,62 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { createBoardState } from "./src/board/state.ts";
+import { createBoardConfig } from "./src/domain/board.ts";
+import { validateIdentifier } from "./src/domain/identifiers.ts";
 import { initBoard } from "./src/commands/init-board.ts";
-import { validatePathSegment } from "./src/identifiers.ts";
-import { boardRoot, boardStateFile } from "./src/paths.ts";
-import { runCli } from "./src/cli.ts";
+import { boardConfigFile, boardRoot } from "./src/infra/paths.ts";
+import { runCli } from "./src/cli/dispatch.ts";
+import { withTempGitRepo } from "./test/helpers/git-repo.ts";
 
-Deno.test("createBoardState builds column definitions only", () => {
-  assertEquals(createBoardState(["a", "b"]), {
-    columns: [{ name: "a" }, { name: "b" }],
+Deno.test("createBoardConfig builds spec board.json shape", () => {
+  const fixed = new Date("2026-05-16T07:00:00.000Z");
+  assertEquals(createBoardConfig("stories", ["todo", "done"], fixed), {
+    name: "stories",
+    idPrefix: "stories",
+    nextSequence: 1,
+    sequenceWidth: 6,
+    phases: ["todo", "done"],
+    blockedPhase: "blocked",
+    createdAt: "2026-05-16T07:00:00.000Z",
+    updatedAt: "2026-05-16T07:00:00.000Z",
   });
 });
 
-Deno.test("validatePathSegment rejects empty and path separators", () => {
-  assertEquals(validatePathSegment("", "column"), "column name must not be empty");
+Deno.test("validateIdentifier rejects invalid and reserved names", () => {
+  assertEquals(validateIdentifier("", "phase"), "phase name must not be empty");
   assertEquals(
-    validatePathSegment("a/b", "board"),
-    'invalid board name "a/b": must not contain / or \\',
+    validateIdentifier("Sprint-42", "board"),
+    'invalid board name "Sprint-42": must match ^[a-z][a-z0-9_]*$',
   );
-  assertEquals(validatePathSegment(".", "board"), 'invalid board name "."');
-  assertEquals(validatePathSegment("ok", "column"), null);
+  assertEquals(validateIdentifier("blocked", "phase"), 'phase name "blocked" is reserved');
+  assertEquals(validateIdentifier("todo", "phase"), null);
 });
 
-Deno.test("initBoard creates layout and state.json", async () => {
+Deno.test("initBoard creates spec layout and board.json", async () => {
   const dir = await Deno.makeTempDir();
-  await initBoard("stories", ["column1", "column2", "column3"], dir);
+  await initBoard("stories", ["todo", "done"], dir);
 
-  for (const sub of ["state", "scripts", "skills"]) {
+  for (const sub of ["cards", "scripts", "skills"]) {
     const s = await Deno.stat(`${dir}/${boardRoot("stories")}/${sub}`);
     assertEquals(s.isDirectory, true);
   }
 
-  const raw = await Deno.readTextFile(`${dir}/${boardStateFile("stories")}`);
-  assertEquals(JSON.parse(raw), {
-    columns: [
-      { name: "column1" },
-      { name: "column2" },
-      { name: "column3" },
-    ],
-  });
+  const raw = await Deno.readTextFile(`${dir}/${boardConfigFile("stories")}`);
+  const config = JSON.parse(raw);
+  assertEquals(config.name, "stories");
+  assertEquals(config.phases, ["todo", "done"]);
+  assertEquals(config.blockedPhase, "blocked");
+  assertEquals(config.sequenceWidth, 6);
 });
 
-Deno.test("initBoard supports arbitrary board names", async () => {
+Deno.test("initBoard rejects invalid board name", async () => {
   const dir = await Deno.makeTempDir();
-  await initBoard("sprint-42", ["todo"], dir);
-  const raw = await Deno.readTextFile(`${dir}/${boardStateFile("sprint-42")}`);
-  assertEquals(JSON.parse(raw).columns[0].name, "todo");
+  await assertRejects(
+    () => initBoard("Sprint-42", ["todo"], dir),
+    Error,
+    "must match",
+  );
 });
 
-Deno.test("initBoard fails when state.json already exists", async () => {
+Deno.test("initBoard fails when board.json already exists", async () => {
   const dir = await Deno.makeTempDir();
   await initBoard("stories", ["a"], dir);
   await assertRejects(
@@ -57,19 +66,91 @@ Deno.test("initBoard fails when state.json already exists", async () => {
   );
 });
 
-Deno.test("runCli init board", async () => {
+Deno.test("initBoard ensures gitignore lock entries", async () => {
+  const dir = await Deno.makeTempDir();
+  await initBoard("stories", ["todo"], dir);
+  const gitignore = await Deno.readTextFile(`${dir}/.gitignore`);
+  assertEquals(gitignore.includes(".devflow/.lock/"), true);
+  assertEquals(gitignore.includes(".devflow/**/.lock/"), true);
+});
+
+Deno.test("runCli board init in git repo", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      assertEquals(
+        await runCli(["board", "init", "stories", "todo", "done"]),
+        0,
+      );
+      const raw = await Deno.readTextFile(boardConfigFile("stories"));
+      const config = JSON.parse(raw);
+      assertEquals(config.phases, ["todo", "done"]);
+    } finally {
+      Deno.chdir(original);
+    }
+  });
+});
+
+Deno.test("runCli init-board synonym", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      assertEquals(
+        await runCli(["init-board", "stories", "todo", "done"]),
+        0,
+      );
+      const raw = await Deno.readTextFile(boardConfigFile("stories"));
+      assertEquals(JSON.parse(raw).phases, ["todo", "done"]);
+    } finally {
+      Deno.chdir(original);
+    }
+  });
+});
+
+Deno.test("runCli fails outside git repository", async () => {
   const dir = await Deno.makeTempDir();
   const original = Deno.cwd();
   try {
     Deno.chdir(dir);
-    assertEquals(await runCli(["init", "stories", "todo", "done"]), 0);
-    const raw = await Deno.readTextFile(boardStateFile("stories"));
-    const state = JSON.parse(raw);
-    assertEquals(state.columns.map((c: { name: string }) => c.name), [
-      "todo",
-      "done",
-    ]);
+    assertEquals(await runCli(["board", "init", "stories", "todo"]), 1);
   } finally {
     Deno.chdir(original);
+    await Deno.remove(dir, { recursive: true });
   }
+});
+
+Deno.test("runCli rejects verbose and summary together", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      assertEquals(
+        await runCli([
+          "--verbose",
+          "--summary",
+          "board",
+          "init",
+          "stories",
+          "todo",
+        ]),
+        1,
+      );
+    } finally {
+      Deno.chdir(original);
+    }
+  });
+});
+
+Deno.test("runCli unknown command", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      assertEquals(await runCli(["card", "create", "stories", "x"]), 1);
+    } finally {
+      Deno.chdir(original);
+    }
+  });
 });

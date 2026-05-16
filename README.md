@@ -34,9 +34,10 @@ Full behaviour is specified in [`docs/devflow-requirements.md`](./docs/devflow-r
   templates/            # bundled board templates (e.g. stories)
 ```
 
-Add to `.gitignore`:
+Add to `.gitignore` (also ensured automatically on `board init`):
 
 ```gitignore
+.devflow/.lock/
 .devflow/**/.lock/
 ```
 
@@ -44,32 +45,23 @@ Add to `.gitignore`:
 
 Commands use **object-first** form. Each command has a **verb-command** synonym (`board init` → `init-board`).
 
-Global flags (all commands): `--ignore-lock`, `--verbose`, `--summary`.
+### Implemented (M0)
+
+| Command | Notes |
+|---------|--------|
+| `devflow` | Prints usage |
+| `devflow board init` / `init-board` | Creates `board.json`, `cards/`, `scripts/`, `skills/`; requires a Git repo |
+
+Global flags: `--verbose`, `--summary` (parsed; full console behaviour in M7). `--ignore-lock` is rejected until card commands exist.
 
 ```bash
-# Board
-devflow board init stories unplanned planning planned building built verifying verified finishing finished
-devflow init-board stories unplanned planning planned building built verifying verified finishing finished --template stories
-devflow board list
-devflow board show stories
-
-# Card
-devflow card create stories "Add beneficiary validation"
-devflow card advance stories-000001 planned
-devflow card show stories-000001
-devflow card dir stories-000001
-devflow card block stories-000001 "Waiting for API contract"
-devflow card unblock stories-000001
-
-# Variables (use --ignore-lock when called from a script during card advance)
-devflow variable set stories-000001 SESSION_ID "abc" --ignore-lock
-devflow variable get stories-000001 SESSION_ID
-
-devflow card rename stories-000001 "New title"
-
-# Validation
-devflow validate
+devflow board init stories todo planning done
+devflow init-board stories todo planning done
 ```
+
+### Planned (not yet implemented)
+
+`board list`, `board show`, `board validate`, `--template`, card commands, `card advance`, variables, locks, and `devflow validate` — see [`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md).
 
 Git commits are created only by `card advance` (one per successful phase hop). Other commands do not commit.
 
@@ -105,7 +97,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 
 ```bash
 ./devflow
-deno test
+deno test --allow-read --allow-write --allow-run --allow-env
 ```
 
-The CLI is being built to match the requirements specification. Until that work is complete, only a subset of commands may be available.
+The CLI is being built to match the requirements specification. M0 foundation is complete; see the roadmap for what ships next.

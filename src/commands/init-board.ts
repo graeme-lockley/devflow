@@ -1,53 +1,76 @@
-import { createBoardState } from "../board/state.ts";
-import { validatePathSegment } from "../identifiers.ts";
+import { createBoardConfig } from "../domain/board.ts";
+import { validateIdentifier } from "../domain/identifiers.ts";
+import { ensureDevflowGitignoreEntries } from "../infra/gitignore.ts";
 import {
+  boardCardsDir,
+  boardConfigFile,
   boardScriptsDir,
   boardSkillsDir,
-  boardStateDir,
-  boardStateFile,
-} from "../paths.ts";
+  boardsRoot,
+  devflowRoot,
+} from "../infra/paths.ts";
+
+async function assertDirectory(path: string, label: string): Promise<void> {
+  try {
+    const stat = await Deno.stat(path);
+    if (!stat.isDirectory) {
+      throw new Error(`${label} exists but is not a directory`);
+    }
+  } catch (e) {
+    if (e instanceof Deno.errors.NotFound) return;
+    throw e;
+  }
+}
 
 export async function initBoard(
   boardName: string,
-  columnNames: string[],
-  cwd = Deno.cwd(),
+  phaseNames: string[],
+  repoRoot = Deno.cwd(),
 ): Promise<void> {
-  const boardErr = validatePathSegment(boardName, "board");
+  const boardErr = validateIdentifier(boardName, "board");
   if (boardErr) throw new Error(boardErr);
 
-  if (columnNames.length === 0) {
-    throw new Error("init requires at least one column name");
+  if (phaseNames.length === 0) {
+    throw new Error("board init requires at least one phase name");
   }
 
-  for (const name of columnNames) {
-    const err = validatePathSegment(name, "column");
+  for (const name of phaseNames) {
+    const err = validateIdentifier(name, "phase");
     if (err) throw new Error(err);
   }
 
-  const stateRel = boardStateFile(boardName);
-  const statePath = `${cwd}/${stateRel}`;
+  const devflowPath = `${repoRoot}/${devflowRoot()}`;
+  const boardsPath = `${repoRoot}/${boardsRoot()}`;
+  await assertDirectory(devflowPath, devflowRoot());
+  await assertDirectory(boardsPath, boardsRoot());
+
+  const configRel = boardConfigFile(boardName);
+  const configPath = `${repoRoot}/${configRel}`;
   try {
-    await Deno.stat(statePath);
+    await Deno.stat(configPath);
     throw new Error(
-      `board "${boardName}" already exists at ${stateRel}; remove it before re-initializing`,
+      `board "${boardName}" already exists at ${configRel}; remove it before re-initializing`,
     );
   } catch (e) {
     if (!(e instanceof Deno.errors.NotFound)) throw e;
   }
 
   const dirs = [
-    `${cwd}/${boardStateDir(boardName)}`,
-    `${cwd}/${boardScriptsDir(boardName)}`,
-    `${cwd}/${boardSkillsDir(boardName)}`,
+    `${repoRoot}/${boardsRoot()}`,
+    `${repoRoot}/${boardCardsDir(boardName)}`,
+    `${repoRoot}/${boardScriptsDir(boardName)}`,
+    `${repoRoot}/${boardSkillsDir(boardName)}`,
   ];
 
   for (const dir of dirs) {
     await Deno.mkdir(dir, { recursive: true });
   }
 
-  const state = createBoardState(columnNames);
+  const config = createBoardConfig(boardName, phaseNames);
   await Deno.writeTextFile(
-    statePath,
-    JSON.stringify(state, null, 2) + "\n",
+    configPath,
+    JSON.stringify(config, null, 2) + "\n",
   );
+
+  await ensureDevflowGitignoreEntries(repoRoot);
 }

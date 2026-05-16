@@ -1,4 +1,4 @@
-import { runCli } from "./src/cli.ts";
+import { runCli } from "./src/cli/dispatch.ts";
 
 if (import.meta.main) {
   const status = await runCli(Deno.args);

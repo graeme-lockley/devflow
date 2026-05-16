@@ -2,4 +2,4 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec deno run --allow-read --allow-write "${ROOT}/main.ts" "$@"
+exec deno run --allow-read --allow-write --allow-run --allow-env "${ROOT}/main.ts" "$@"

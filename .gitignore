@@ -1,2 +1,5 @@
 .boards/
 .devflow/
+
+.devflow/.lock/
+.devflow/**/.lock/

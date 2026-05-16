@@ -13,18 +13,18 @@ This roadmap turns the requirements specification into a **command-ordered build
 
 ## Current state (baseline)
 
-The repository has early scaffolding that **does not yet match** the specification:
+**M0 complete.** Foundation matches the specification for paths, identifiers, git root, CLI parsing, and `board init`.
 
 | Area | Status | Gap |
 |------|--------|-----|
-| Layout | `[~]` | Code uses `.devflow/<board>/`; spec requires `.devflow/boards/<board>/` |
-| Board file | `[~]` | Code uses `state.json` with `columns`; spec requires `board.json` with `phases` |
-| CLI | `[~]` | Legacy `devflow init`; spec uses object-first `board init` / `init-board` |
-| Identifiers | `[~]` | Path-segment validation only; spec requires `^[a-z][a-z0-9_]*$` |
-| Git root | `[ ]` | Not resolved |
-| Cards, transitions, locks, validate | `[ ]` | Not implemented |
+| Layout | `[x]` | `.devflow/boards/<board>/` |
+| Board file | `[x]` | `board.json` with `phases` |
+| CLI | `[x]` | `board init` / `init-board`; global flags parsed |
+| Identifiers | `[x]` | `^[a-z][a-z0-9_]*$` |
+| Git root | `[x]` | Resolved via `git rev-parse` |
+| Cards, transitions, locks, validate | `[ ]` | M2+ |
 
-Milestone **M0** realigns the foundation before feature work proceeds.
+Next milestone: **M1** (board lifecycle, templates, `board list` / `show` / `validate`).
 
 ---
 
@@ -56,22 +56,22 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 
 ### Deliverables
 
-- [ ] Resolve Git repository root before any command ([§4.3](./devflow-requirements.md#43-repository-workspace))
-- [ ] Path helpers: `.devflow/boards/<name>/`, templates, locks ([§4.1](./devflow-requirements.md#41-required-layout))
-- [ ] Identifier validation: `^[a-z][a-z0-9_]*$` for board and phase names ([§5.2](./devflow-requirements.md#52-identifiers))
-- [ ] CLI parser: object-first commands + verb-command synonyms ([§16.0](./devflow-requirements.md#160-command-index))
-- [ ] Global flags: `--verbose`, `--summary` (mutually exclusive), default `info` ([§16.1](./devflow-requirements.md#161-global-flags))
-- [ ] Ensure `.gitignore` entries for lock directories on `board init` ([§4.2](./devflow-requirements.md#42-git-ignore-entries))
-- [ ] **Realign** `board init` / `init-board`: `board.json`, `cards/` directory, remove legacy layout
-- [ ] Update tests and README to match spec layout
+- [x] Resolve Git repository root before any command ([§4.3](./devflow-requirements.md#43-repository-workspace))
+- [x] Path helpers: `.devflow/boards/<name>/`, templates, locks ([§4.1](./devflow-requirements.md#41-required-layout))
+- [x] Identifier validation: `^[a-z][a-z0-9_]*$` for board and phase names ([§5.2](./devflow-requirements.md#52-identifiers))
+- [x] CLI parser: object-first commands + verb-command synonyms ([§16.0](./devflow-requirements.md#160-command-index))
+- [x] Global flags: `--verbose`, `--summary` (mutually exclusive), default `info` ([§16.1](./devflow-requirements.md#161-global-flags))
+- [x] Ensure `.gitignore` entries for lock directories on `board init` ([§4.2](./devflow-requirements.md#42-git-ignore-entries))
+- [x] **Realign** `board init` / `init-board`: `board.json`, `cards/` directory, remove legacy layout
+- [x] Update tests and README to match spec layout
 
 ### Commands (M0)
 
 | Command | Spec | Status |
 |---------|------|--------|
-| `devflow` (usage) | §16.0 | `[ ]` |
-| `devflow board init` / `init-board` | §5.1, §5.2, §5.3, §5.5 | `[~]` |
-| Synonym routing for all registered commands | §16.0 | `[ ]` |
+| `devflow` (usage) | §16.0 | `[x]` |
+| `devflow board init` / `init-board` | §5.1, §5.2, §5.3, §5.5 | `[x]` |
+| Synonym routing for all registered commands | §16.0 | `[x]` |
 
 ### Done when
 
@@ -294,9 +294,9 @@ Cross-reference: [§16.0 command index](./devflow-requirements.md#160-command-in
 
 | Command | Milestone | Status |
 |---------|-----------|--------|
-| `devflow` | M0 | `[ ]` |
+| `devflow` | M0 | `[x]` |
 | `devflow validate` | M7 | `[ ]` |
-| `devflow board init` | M0/M1 | `[~]` |
+| `devflow board init` | M0/M1 | `[x]` |
 | `devflow board list` | M1 | `[ ]` |
 | `devflow board show` | M1 | `[ ]` |
 | `devflow board validate` | M1 | `[ ]` |
