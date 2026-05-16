@@ -11,7 +11,9 @@ Deno.test("validateBoardOnDisk passes for initialized board", async () => {
 Deno.test("validateBoardOnDisk reports missing skills directory", async () => {
   const dir = await Deno.makeTempDir();
   await initBoard("stories", ["todo"], dir);
-  await Deno.remove(`${dir}/.devflow/boards/stories/skills`, { recursive: true });
+  await Deno.remove(`${dir}/.devflow/boards/stories/skills`, {
+    recursive: true,
+  });
 
   const problems = await validateBoardOnDisk(dir, "stories");
   assertEquals(

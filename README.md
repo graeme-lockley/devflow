@@ -1,20 +1,27 @@
 # Devflow
 
-Devflow is a deterministic workflow harness for filesystem-backed development boards. Work moves through an ordered sequence of **phases** as **cards**. At each phase boundary, Devflow runs board-defined shell scripts, then updates card state and creates a Git commit.
+Devflow is a deterministic workflow harness for filesystem-backed development
+boards. Work moves through an ordered sequence of **phases** as **cards**. At
+each phase boundary, Devflow runs board-defined shell scripts, then updates card
+state and creates a Git commit.
 
-Scripts may perform mechanical checks or invoke tools such as `pi-mono` with board-local **skills**. Devflow owns orchestration, locking, history, and Git commits. Scripts signal success or failure with exit codes; they do not commit during transitions.
+Scripts may perform mechanical checks or invoke tools such as `pi-mono` with
+board-local **skills**. Devflow owns orchestration, locking, history, and Git
+commits. Scripts signal success or failure with exit codes; they do not commit
+during transitions.
 
-Full behaviour is specified in [`docs/devflow-requirements.md`](./docs/devflow-requirements.md).
+Full behaviour is specified in
+[`docs/devflow-requirements.md`](./docs/devflow-requirements.md).
 
 ## Concepts
 
-| Concept | Description |
-|---------|-------------|
-| **Board** | Ordered phases, scripts, skills, and cards under `.devflow/boards/<name>/` |
-| **Card** | A unit of work with `state.json`, `card.md`, optional `files/`, and `logs/` |
-| **Phase** | A step on the board; scripts run when **leaving** a phase (exit actions) |
-| **Transition** | Advancing a card one or more phases via `devflow card advance` |
-| **Blocked** | Exceptional phase (`blocked`) for cards waiting on external input |
+| Concept        | Description                                                                 |
+| -------------- | --------------------------------------------------------------------------- |
+| **Board**      | Ordered phases, scripts, skills, and cards under `.devflow/boards/<name>/`  |
+| **Card**       | A unit of work with `state.json`, `card.md`, optional `files/`, and `logs/` |
+| **Phase**      | A step on the board; scripts run when **leaving** a phase (exit actions)    |
+| **Transition** | Advancing a card one or more phases via `devflow card advance`              |
+| **Blocked**    | Exceptional phase (`blocked`) for cards waiting on external input           |
 
 ## Layout
 
@@ -43,19 +50,21 @@ Add to `.gitignore` (also ensured automatically on `board init`):
 
 ## CLI
 
-Commands use **object-first** form. Each command has a **verb-command** synonym (`board init` → `init-board`).
+Commands use **object-first** form. Each command has a **verb-command** synonym
+(`board init` → `init-board`).
 
 ### Implemented (M0 + M1)
 
-| Command | Notes |
-|---------|--------|
-| `devflow` | Prints usage |
-| `devflow board init` / `init-board` | Creates board layout; `--template`, `--sequence-width`; repo lock |
-| `devflow board list` / `list-boards` | Board names, one per line (plain stdout) |
-| `devflow board show` / `show-board` | Board metadata on stdout |
-| `devflow board validate` / `validate-board` | §17.1 checks; exit 0 when valid |
+| Command                                     | Notes                                                             |
+| ------------------------------------------- | ----------------------------------------------------------------- |
+| `devflow`                                   | Prints usage                                                      |
+| `devflow board init` / `init-board`         | Creates board layout; `--template`, `--sequence-width`; repo lock |
+| `devflow board list` / `list-boards`        | Board names, one per line (plain stdout)                          |
+| `devflow board show` / `show-board`         | Board metadata on stdout                                          |
+| `devflow board validate` / `validate-board` | §17.1 checks; exit 0 when valid                                   |
 
-Global flags: `--verbose`, `--summary` (parsed; full console behaviour in M7). `--ignore-lock` is rejected until card commands exist.
+Global flags: `--verbose`, `--summary` (parsed; full console behaviour in M7).
+`--ignore-lock` is rejected until card commands exist.
 
 ```bash
 devflow board init stories unplanned planning planned --template stories
@@ -66,31 +75,38 @@ devflow board validate stories
 
 ### Planned (not yet implemented)
 
-Card commands, `card advance`, variables, lock release commands, and `devflow validate` — see [`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md).
+Card commands, `card advance`, variables, lock release commands, and
+`devflow validate` — see
+[`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md).
 
-Git commits are created only by `card advance` (one per successful phase hop). Other commands do not commit.
+Git commits are created only by `card advance` (one per successful phase hop).
+Other commands do not commit.
 
-See [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) for the full specification.
+See [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) for the
+full specification.
 
 ## Typical flow
 
 1. Initialize a board (optionally from the `stories` template).
 2. Create a card; it starts in the first phase.
 3. Run `devflow card advance <card-id> <target-phase>` to move forward.
-4. For each phase hop, Devflow runs exit scripts, optional `<phase>.commit-message`, updates `state.json`, then `git add -A` and `git commit`.
+4. For each phase hop, Devflow runs exit scripts, optional
+   `<phase>.commit-message`, updates `state.json`, then `git add -A` and
+   `git commit`.
 5. Commit setup work (new boards, cards, variables) manually before advancing.
-6. On failure, the card stays in place; fix the issue and advance again, or use `--force` where allowed.
+6. On failure, the card stays in place; fix the issue and advance again, or use
+   `--force` where allowed.
 
 Advance one card at a time per repository.
 
 ## This repository
 
-| Path | Purpose |
-|------|---------|
-| [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) | Requirements specification |
-| [`main.ts`](./main.ts) | CLI entry point |
-| [`src/`](./src/) | TypeScript implementation |
-| [`devflow`](./devflow) | Shell wrapper (`deno run main.ts`) |
+| Path                                                             | Purpose                            |
+| ---------------------------------------------------------------- | ---------------------------------- |
+| [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) | Requirements specification         |
+| [`main.ts`](./main.ts)                                           | CLI entry point                    |
+| [`src/`](./src/)                                                 | TypeScript implementation          |
+| [`devflow`](./devflow)                                           | Shell wrapper (`deno run main.ts`) |
 
 ## Requirements
 
@@ -98,11 +114,36 @@ Advance one card at a time per repository.
 
 ## Development
 
-Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) — see [`AGENTS.md`](./AGENTS.md).
+Commit messages follow
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) — see
+[`AGENTS.md`](./AGENTS.md).
 
 ```bash
 ./devflow
-deno test --allow-read --allow-write --allow-run --allow-env
+deno lint
+deno fmt --check
+deno task test
 ```
 
-The CLI is being built to match the requirements specification. M0 foundation is complete; see the roadmap for what ships next.
+Or run the full CI checks locally:
+
+```bash
+deno task ci
+```
+
+### Git hooks
+
+Install the pre-commit hook (runs `deno lint` and `deno fmt --check`):
+
+```bash
+./scripts/setup-git-hooks.sh
+```
+
+### Continuous integration
+
+GitHub Actions runs the same checks on push and pull requests: `deno lint`,
+`deno fmt --check`, and `deno task test` (see
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
+
+The CLI is being built to match the requirements specification. M1 board
+lifecycle is complete; see the roadmap for what ships next.

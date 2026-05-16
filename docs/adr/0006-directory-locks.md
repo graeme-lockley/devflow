@@ -1,29 +1,34 @@
 # ADR-0006: Directory-based locks via `mkdir`
 
-**Status:** Accepted  
+**Status:** Accepted\
 **Date:** 2026-05-16
 
 ## Context
 
-Multiple processes may run Devflow (operator + agent, or nested `devflow` from scripts). We need mutual exclusion for board sequence allocation, card mutation, and repository-wide `git add` during advance.
+Multiple processes may run Devflow (operator + agent, or nested `devflow` from
+scripts). We need mutual exclusion for board sequence allocation, card mutation,
+and repository-wide `git add` during advance.
 
-Requirements ([§14.4](../devflow-requirements.md#144-lock-implementation)): use **atomic directory creation**, not lock files.
+Requirements ([§14.4](../devflow-requirements.md#144-lock-implementation)): use
+**atomic directory creation**, not lock files.
 
 ## Decision
 
 Implement locks as **`.lock/` directories**:
 
-| Lock | Path |
-|------|------|
-| Repository | `.devflow/.lock/` |
-| Board | `.devflow/boards/<board>/.lock/` |
-| Card | `.devflow/boards/<board>/cards/<card-id>/.lock/` |
+| Lock       | Path                                             |
+| ---------- | ------------------------------------------------ |
+| Repository | `.devflow/.lock/`                                |
+| Board      | `.devflow/boards/<board>/.lock/`                 |
+| Card       | `.devflow/boards/<board>/cards/<card-id>/.lock/` |
 
-Acquire: `Deno.mkdir(lockPath)` — success means lock held.  
-Release: `Deno.remove(lockPath)` in `finally`.  
+Acquire: `Deno.mkdir(lockPath)` — success means lock held.\
+Release: `Deno.remove(lockPath)` in `finally`.\
 Stale locks: manual `devflow lock release*` commands.
 
-`--ignore-lock` skips acquire only (does not delete existing lock dirs) for nested CLI during advance ([§16.1](../devflow-requirements.md#161-global-flags)).
+`--ignore-lock` skips acquire only (does not delete existing lock dirs) for
+nested CLI during advance
+([§16.1](../devflow-requirements.md#161-global-flags)).
 
 ## Consequences
 
@@ -31,7 +36,8 @@ Stale locks: manual `devflow lock release*` commands.
 
 - `mkdir` atomicity is well-defined on POSIX and common filesystems.
 - Lock paths are visible and debuggable.
-- Matches `.gitignore` rules ([§4.2](../devflow-requirements.md#42-git-ignore-entries)).
+- Matches `.gitignore` rules
+  ([§4.2](../devflow-requirements.md#42-git-ignore-entries)).
 
 **Negative**
 

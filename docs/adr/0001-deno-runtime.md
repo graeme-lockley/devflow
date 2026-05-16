@@ -1,13 +1,16 @@
 # ADR-0001: Deno as the sole runtime
 
-**Status:** Accepted  
+**Status:** Accepted\
 **Date:** 2026-05-16
 
 ## Context
 
-Devflow is a CLI tool that orchestrates shell scripts, filesystem state, and Git. We need a runtime that is easy to install, supports TypeScript without a separate build step, and provides built-in testing.
+Devflow is a CLI tool that orchestrates shell scripts, filesystem state, and
+Git. We need a runtime that is easy to install, supports TypeScript without a
+separate build step, and provides built-in testing.
 
-Alternatives considered: Node.js (requires bundling or ts-node), Rust (higher implementation cost for a script-orchestration tool), Go (similar).
+Alternatives considered: Node.js (requires bundling or ts-node), Rust (higher
+implementation cost for a script-orchestration tool), Go (similar).
 
 ## Decision
 
@@ -28,7 +31,8 @@ Implement Devflow in **Deno** with:
 **Negative**
 
 - Operators must install Deno (document in README).
-- Script execution requires `--allow-run` (and typically `--allow-env` for `DEVFLOW_*` propagation).
+- Script execution requires `--allow-run` (and typically `--allow-env` for
+  `DEVFLOW_*` propagation).
 
 ## References
 

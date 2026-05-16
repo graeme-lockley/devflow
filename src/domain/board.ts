@@ -54,7 +54,9 @@ export async function loadBoardConfig(
     raw = await Deno.readTextFile(path);
   } catch (e) {
     if (e instanceof Deno.errors.NotFound) {
-      throw new Error(`board "${boardName}" not found at ${boardConfigFile(boardName)}`);
+      throw new Error(
+        `board "${boardName}" not found at ${boardConfigFile(boardName)}`,
+      );
     }
     throw e;
   }
@@ -88,7 +90,9 @@ export function parseBoardConfig(raw: unknown, boardName: string): BoardConfig {
 
   for (const key of required) {
     if (!(key in o)) {
-      throw new Error(`board "${boardName}": board.json missing required field "${key}"`);
+      throw new Error(
+        `board "${boardName}": board.json missing required field "${key}"`,
+      );
     }
   }
 
@@ -101,11 +105,17 @@ export function parseBoardConfig(raw: unknown, boardName: string): BoardConfig {
   if (typeof o.nextSequence !== "number" || !Number.isInteger(o.nextSequence)) {
     throw new Error(`board "${boardName}": "nextSequence" must be an integer`);
   }
-  if (typeof o.sequenceWidth !== "number" || !Number.isInteger(o.sequenceWidth)) {
+  if (
+    typeof o.sequenceWidth !== "number" || !Number.isInteger(o.sequenceWidth)
+  ) {
     throw new Error(`board "${boardName}": "sequenceWidth" must be an integer`);
   }
-  if (!Array.isArray(o.phases) || !o.phases.every((p) => typeof p === "string")) {
-    throw new Error(`board "${boardName}": "phases" must be an array of strings`);
+  if (
+    !Array.isArray(o.phases) || !o.phases.every((p) => typeof p === "string")
+  ) {
+    throw new Error(
+      `board "${boardName}": "phases" must be an array of strings`,
+    );
   }
   if (typeof o.blockedPhase !== "string") {
     throw new Error(`board "${boardName}": "blockedPhase" must be a string`);

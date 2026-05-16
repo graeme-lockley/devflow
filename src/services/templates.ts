@@ -78,7 +78,9 @@ export async function resolveTemplateDirOrThrow(
 ): Promise<string> {
   const dir = await resolveTemplateDir(templateName, repoRoot);
   if (!(await templateHasScriptsAndSkills(dir))) {
-    throw new Error(`template "${templateName}" is missing scripts/ or skills/`);
+    throw new Error(
+      `template "${templateName}" is missing scripts/ or skills/`,
+    );
   }
   return dir;
 }

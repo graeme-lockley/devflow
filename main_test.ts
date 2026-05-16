@@ -26,7 +26,10 @@ Deno.test("validateIdentifier rejects invalid and reserved names", () => {
     validateIdentifier("Sprint-42", "board"),
     'invalid board name "Sprint-42": must match ^[a-z][a-z0-9_]*$',
   );
-  assertEquals(validateIdentifier("blocked", "phase"), 'phase name "blocked" is reserved');
+  assertEquals(
+    validateIdentifier("blocked", "phase"),
+    'phase name "blocked" is reserved',
+  );
   assertEquals(validateIdentifier("todo", "phase"), null);
 });
 

@@ -44,13 +44,17 @@ Deno.test("validateBoardConfig rejects blocked in phases", () => {
 Deno.test("validateBoardConfig rejects invalid sequenceWidth", () => {
   const config = createBoardConfig("stories", ["todo"], { sequenceWidth: 0 });
   assertEquals(
-    validateBoardConfig(config, "stories").some((p) => p.includes("sequenceWidth")),
+    validateBoardConfig(config, "stories").some((p) =>
+      p.includes("sequenceWidth")
+    ),
     true,
   );
 
   const tooWide = createBoardConfig("stories", ["todo"], { sequenceWidth: 13 });
   assertEquals(
-    validateBoardConfig(tooWide, "stories").some((p) => p.includes("sequenceWidth")),
+    validateBoardConfig(tooWide, "stories").some((p) =>
+      p.includes("sequenceWidth")
+    ),
     true,
   );
 });

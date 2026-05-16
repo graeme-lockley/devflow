@@ -1,11 +1,13 @@
 # Devflow Architecture
 
-**Status:** Architecture sketch  
-**Specification:** [`devflow-requirements.md`](./devflow-requirements.md)  
-**Build plan:** [`implementation-roadmap.md`](./implementation-roadmap.md)  
+**Status:** Architecture sketch\
+**Specification:** [`devflow-requirements.md`](./devflow-requirements.md)\
+**Build plan:** [`implementation-roadmap.md`](./implementation-roadmap.md)\
 **Decisions:** [`adr/README.md`](./adr/README.md)
 
-This document describes how the Devflow **CLI implementation** is structured. Behavioural rules live in the requirements specification; this document covers **module boundaries**, **data flow**, and **dependency direction** only.
+This document describes how the Devflow **CLI implementation** is structured.
+Behavioural rules live in the requirements specification; this document covers
+**module boundaries**, **data flow**, and **dependency direction** only.
 
 ---
 
@@ -37,13 +39,15 @@ This document describes how the Devflow **CLI implementation** is structured. Be
               └────────────────┘    └───────────────┘
 ```
 
-Devflow is a **single-process CLI**. There is no server, database, or background worker. Durability is the Git-tracked filesystem under `.devflow/`.
+Devflow is a **single-process CLI**. There is no server, database, or background
+worker. Durability is the Git-tracked filesystem under `.devflow/`.
 
 ---
 
 ## 2. Layered structure
 
-Dependencies flow **downward** only (higher layers may not be imported by lower layers).
+Dependencies flow **downward** only (higher layers may not be imported by lower
+layers).
 
 ```text
 ┌─────────────────────────────────────────┐
@@ -64,13 +68,13 @@ Dependencies flow **downward** only (higher layers may not be imported by lower 
 └─────────────────────────────────────────┘
 ```
 
-| Layer | Responsibility | Must not |
-|-------|----------------|----------|
-| **cli** | argv → command + flags; usage strings | Implement business rules |
-| **commands** | Orchestrate one user action; exit codes | Run scripts directly (delegate) |
-| **services** | Cross-cutting workflows (advance, locks) | Parse raw argv |
-| **domain** | Types, validation, state transitions | Spawn subprocesses |
-| **infra** | Paths, I/O primitives, git root | Know about specific commands |
+| Layer        | Responsibility                           | Must not                        |
+| ------------ | ---------------------------------------- | ------------------------------- |
+| **cli**      | argv → command + flags; usage strings    | Implement business rules        |
+| **commands** | Orchestrate one user action; exit codes  | Run scripts directly (delegate) |
+| **services** | Cross-cutting workflows (advance, locks) | Parse raw argv                  |
+| **domain**   | Types, validation, state transitions     | Spawn subprocesses              |
+| **infra**    | Paths, I/O primitives, git root          | Know about specific commands    |
 
 ---
 
@@ -112,7 +116,8 @@ src/
   paths.ts              # (legacy — merge into infra/ in M0)
 ```
 
-Tests live beside modules (`*_test.ts`) or under `test/` for integration fixtures (fake boards, stub scripts).
+Tests live beside modules (`*_test.ts`) or under `test/` for integration
+fixtures (fake boards, stub scripts).
 
 ---
 
@@ -132,7 +137,10 @@ argv
   → exit code + stdout/stderr
 ```
 
-**Git root:** All path operations are relative to the repository root ([§4.3](./devflow-requirements.md#43-repository-workspace)). The CLI may `Deno.chdir` to root once per invocation or pass `root` into every infra helper ([ADR-0003](./adr/0003-git-root-workspace.md)).
+**Git root:** All path operations are relative to the repository root
+([§4.3](./devflow-requirements.md#43-repository-workspace)). The CLI may
+`Deno.chdir` to root once per invocation or pass `root` into every infra helper
+([ADR-0003](./adr/0003-git-root-workspace.md)).
 
 ---
 
@@ -141,12 +149,15 @@ argv
 ### 5.1 CLI (`src/cli/`)
 
 - Parse `devflow board init …` and `devflow init-board …` to the same handler.
-- Reject unsupported flag combinations before work starts ([§16.1](./devflow-requirements.md#161-global-flags)).
-- Set `DEVFLOW_LOG_LEVEL` for nested invocations ([§16.2](./devflow-requirements.md#162-console-output)).
+- Reject unsupported flag combinations before work starts
+  ([§16.1](./devflow-requirements.md#161-global-flags)).
+- Set `DEVFLOW_LOG_LEVEL` for nested invocations
+  ([§16.2](./devflow-requirements.md#162-console-output)).
 
 ### 5.2 Commands (`src/commands/`)
 
-Thin adapters: validate arguments, call domain + services, map errors to exit codes. Example:
+Thin adapters: validate arguments, call domain + services, map errors to exit
+codes. Example:
 
 ```text
 card-advance.ts
@@ -169,41 +180,56 @@ for each single-phase hop:
   git commit hop (git service) — M6
 ```
 
-Owns **orchestration** only. Does not embed script-matching regex (delegates to `scripts.ts`).
+Owns **orchestration** only. Does not embed script-matching regex (delegates to
+`scripts.ts`).
 
 ### 5.4 Script service (`src/services/scripts.ts`)
 
-- List executable files in `scripts/` matching phase patterns ([§9.3](./devflow-requirements.md#93-script-execution-order)).
-- Invoke with `Deno.Command` or direct execution per [ADR-0007](./adr/0007-script-invocation.md).
-- Stream stdout/stderr to console per log level; always write full transcript to `logs/` ([§15](./devflow-requirements.md#15-logs), [§16.2](./devflow-requirements.md#162-console-output)).
-- Forward signals to child ([§14.5](./devflow-requirements.md#145-lock-cleanup-and-signals)).
+- List executable files in `scripts/` matching phase patterns
+  ([§9.3](./devflow-requirements.md#93-script-execution-order)).
+- Invoke with `Deno.Command` or direct execution per
+  [ADR-0007](./adr/0007-script-invocation.md).
+- Stream stdout/stderr to console per log level; always write full transcript to
+  `logs/` ([§15](./devflow-requirements.md#15-logs),
+  [§16.2](./devflow-requirements.md#162-console-output)).
+- Forward signals to child
+  ([§14.5](./devflow-requirements.md#145-lock-cleanup-and-signals)).
 
 ### 5.5 Git service (`src/services/git.ts`)
 
-- Detect dirty git state blocking advance ([§13.8](./devflow-requirements.md#138-git-preconditions)).
-- `git add -A` and `git commit` after successful hop ([§13.5](./devflow-requirements.md#135-per-hop-lifecycle)).
-- Surface git failures without rolling back card state ([§13.7](./devflow-requirements.md#137-git-commit-failure)).
+- Detect dirty git state blocking advance
+  ([§13.8](./devflow-requirements.md#138-git-preconditions)).
+- `git add -A` and `git commit` after successful hop
+  ([§13.5](./devflow-requirements.md#135-per-hop-lifecycle)).
+- Surface git failures without rolling back card state
+  ([§13.7](./devflow-requirements.md#137-git-commit-failure)).
 
 ### 5.6 Lock service (`src/services/locks.ts`)
 
-- `mkdir` lock directories; `rmdir` on release ([§14.4](./devflow-requirements.md#144-lock-implementation)).
-- Register signal handlers once per process ([ADR-0010](./adr/0010-signal-forwarding.md)).
+- `mkdir` lock directories; `rmdir` on release
+  ([§14.4](./devflow-requirements.md#144-lock-implementation)).
+- Register signal handlers once per process
+  ([ADR-0010](./adr/0010-signal-forwarding.md)).
 
 ### 5.7 Board / card stores (`src/domain/`)
 
 - Load and validate `board.json` / `state.json`.
 - Atomic write via infra ([ADR-0005](./adr/0005-atomic-json-writes.md)).
-- **Single writer** for `state.json` — only Devflow commands mutate it ([§6.5](./devflow-requirements.md#65-ownership-of-card-files)).
+- **Single writer** for `state.json` — only Devflow commands mutate it
+  ([§6.5](./devflow-requirements.md#65-ownership-of-card-files)).
 
 ### 5.8 Validation (`src/domain/validate.ts` or `commands/validate-*.ts`)
 
-- Pure functions mirroring [§17](./devflow-requirements.md#17-validation-requirements).
+- Pure functions mirroring
+  [§17](./devflow-requirements.md#17-validation-requirements).
 - `validate` command aggregates board + card checks without modifying files.
 
 ### 5.9 Console output (`src/services/console.ts`)
 
-- `info` / `verbose` / `summary` behaviour ([§16.2](./devflow-requirements.md#162-console-output)).
-- Colour on stderr/boilerplate; plain stdout for machine-parseable command output.
+- `info` / `verbose` / `summary` behaviour
+  ([§16.2](./devflow-requirements.md#162-console-output)).
+- Colour on stderr/boilerplate; plain stdout for machine-parseable command
+  output.
 
 ---
 
@@ -237,13 +263,18 @@ card advance
 
 ### 6.3 Nested CLI from scripts
 
-Scripts call `devflow variable set … --ignore-lock`. The child process is a **new** Deno invocation; it must not deadlock on locks held by the parent ([§14.1](./devflow-requirements.md#141-locking-model), [§16.1](./devflow-requirements.md#161-global-flags)).
+Scripts call `devflow variable set … --ignore-lock`. The child process is a
+**new** Deno invocation; it must not deadlock on locks held by the parent
+([§14.1](./devflow-requirements.md#141-locking-model),
+[§16.1](./devflow-requirements.md#161-global-flags)).
 
 ---
 
 ## 7. Templates
 
-Built-in templates ship with the Devflow package (location TBD: `templates/stories/` at repo root or embedded path resolved from `import.meta.url`).
+Built-in templates ship with the Devflow package (location TBD:
+`templates/stories/` at repo root or embedded path resolved from
+`import.meta.url`).
 
 Copy order ([§5.6](./devflow-requirements.md#56-board-templates)):
 
@@ -258,13 +289,13 @@ Copy order ([§5.6](./devflow-requirements.md#56-board-templates)):
 
 ## 8. Error handling conventions
 
-| Situation | Exit code | Stdout | Stderr |
-|-----------|-----------|--------|--------|
-| Success | 0 | Machine output when specified | Optional info (grey/green) |
-| Usage / flag error | non-zero | — | Error + usage |
-| Validation failure | non-zero | — | Red error details |
-| Lock held | non-zero | — | Lock path |
-| Script failure | non-zero | — | Script name, log path ([§11.5](./devflow-requirements.md#115-failure-behaviour)) |
+| Situation          | Exit code | Stdout                        | Stderr                                                                           |
+| ------------------ | --------- | ----------------------------- | -------------------------------------------------------------------------------- |
+| Success            | 0         | Machine output when specified | Optional info (grey/green)                                                       |
+| Usage / flag error | non-zero  | —                             | Error + usage                                                                    |
+| Validation failure | non-zero  | —                             | Red error details                                                                |
+| Lock held          | non-zero  | —                             | Lock path                                                                        |
+| Script failure     | non-zero  | —                             | Script name, log path ([§11.5](./devflow-requirements.md#115-failure-behaviour)) |
 
 Use typed errors in domain/services; commands map them to messages and codes.
 
@@ -272,12 +303,12 @@ Use typed errors in domain/services; commands map them to messages and codes.
 
 ## 9. Deno runtime
 
-| Concern | Approach |
-|---------|----------|
-| Entry | `main.ts` → `runCli(Deno.args)` |
-| Subprocesses | `Deno.Command` for `git` and script execution |
-| Permissions | `--allow-read --allow-write --allow-run --allow-env` (document in README) |
-| Tests | `deno test` with temp dirs; no network |
+| Concern      | Approach                                                                  |
+| ------------ | ------------------------------------------------------------------------- |
+| Entry        | `main.ts` → `runCli(Deno.args)`                                           |
+| Subprocesses | `Deno.Command` for `git` and script execution                             |
+| Permissions  | `--allow-read --allow-write --allow-run --allow-env` (document in README) |
+| Tests        | `deno test` with temp dirs; no network                                    |
 
 See [ADR-0001](./adr/0001-deno-runtime.md).
 
@@ -288,10 +319,13 @@ See [ADR-0001](./adr/0001-deno-runtime.md).
 - No plugin system beyond shell scripts in `scripts/`.
 - No embedded LLM runtime (scripts invoke `pi-mono` externally).
 - No caching layer over filesystem state.
-- No migration tool for legacy `.devflow/<board>/` layout (M0 is a clean break for this repo).
+- No migration tool for legacy `.devflow/<board>/` layout (M0 is a clean break
+  for this repo).
 
 ---
 
 ## 11. Relation to ADRs
 
-Architecture choices that need a recorded rationale are in [`docs/adr/`](./adr/README.md). When implementation diverges from an ADR, update the ADR or add a superseding ADR before changing code.
+Architecture choices that need a recorded rationale are in
+[`docs/adr/`](./adr/README.md). When implementation diverges from an ADR, update
+the ADR or add a superseding ADR before changing code.

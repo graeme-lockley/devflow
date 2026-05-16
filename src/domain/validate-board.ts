@@ -63,7 +63,9 @@ export function validateBoardConfig(
   }
 
   if (config.blockedPhase !== "blocked") {
-    problems.push(`blockedPhase must be "blocked", got "${config.blockedPhase}"`);
+    problems.push(
+      `blockedPhase must be "blocked", got "${config.blockedPhase}"`,
+    );
   }
 
   if (
@@ -108,7 +110,11 @@ export async function validateBoardOnDisk(
   try {
     const stat = await Deno.stat(boardDir);
     if (!stat.isDirectory) {
-      problems.push(`board directory exists but is not a directory: ${boardRoot(boardName)}`);
+      problems.push(
+        `board directory exists but is not a directory: ${
+          boardRoot(boardName)
+        }`,
+      );
       return problems;
     }
   } catch (e) {
@@ -119,7 +125,11 @@ export async function validateBoardOnDisk(
     throw e;
   }
 
-  const requiredPaths: { label: string; rel: string; kind: "file" | "directory" }[] = [
+  const requiredPaths: {
+    label: string;
+    rel: string;
+    kind: "file" | "directory";
+  }[] = [
     { label: "board.json", rel: boardConfigFile(boardName), kind: "file" },
     { label: "scripts", rel: boardScriptsDir(boardName), kind: "directory" },
     { label: "skills", rel: boardSkillsDir(boardName), kind: "directory" },

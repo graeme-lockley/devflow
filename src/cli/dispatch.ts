@@ -12,7 +12,8 @@ import {
 } from "./flags.ts";
 import { parseCommand } from "./parser.ts";
 
-export const USAGE = `devflow — deterministic workflow harness for development boards
+export const USAGE =
+  `devflow — deterministic workflow harness for development boards
 
 Usage:
   devflow board init <board> <phase> [<phase> ...] [--sequence-width N] [--template NAME]

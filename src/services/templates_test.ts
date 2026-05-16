@@ -1,7 +1,11 @@
 import { assertEquals } from "@std/assert";
 import { initBoard } from "../commands/init-board.ts";
 import { devflowPackageRoot } from "../infra/package-root.ts";
-import { boardScriptsDir, boardSkillsDir, templatesRoot } from "../infra/paths.ts";
+import {
+  boardScriptsDir,
+  boardSkillsDir,
+  templatesRoot,
+} from "../infra/paths.ts";
 import { resolveTemplateDir } from "./templates.ts";
 
 Deno.test("resolveTemplateDir finds built-in stories template", async () => {
@@ -26,8 +30,7 @@ Deno.test("initBoard with template copies scripts and skills", async () => {
   await initBoard("stories", ["todo"], dir, { template: "stories" });
 
   const scriptPath = `${dir}/${boardScriptsDir("stories")}/planning-001-stub`;
-  const skillPath =
-    `${dir}/${boardSkillsDir("stories")}/plan-story/SKILL.md`;
+  const skillPath = `${dir}/${boardSkillsDir("stories")}/plan-story/SKILL.md`;
   await Deno.stat(scriptPath);
   await Deno.stat(skillPath);
 });

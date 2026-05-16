@@ -1,11 +1,13 @@
 # ADR-0004: Layered CLI module structure
 
-**Status:** Accepted  
+**Status:** Accepted\
 **Date:** 2026-05-16
 
 ## Context
 
-The CLI will grow to ~20 commands, a transition runner, script execution, Git integration, and locking. A flat `src/` tree will become hard to navigate and test.
+The CLI will grow to ~20 commands, a transition runner, script execution, Git
+integration, and locking. A flat `src/` tree will become hard to navigate and
+test.
 
 ## Decision
 

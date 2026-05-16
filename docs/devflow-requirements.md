@@ -1,19 +1,30 @@
 # Devflow Requirements Document
 
-**Product:** Devflow  
-**Status:** Requirements specification  
+**Product:** Devflow\
+**Status:** Requirements specification
 
 ---
 
 ## 1. Purpose
 
-Devflow is a deterministic workflow harness for managing filesystem-backed development boards and AI-assisted delivery workflows.
+Devflow is a deterministic workflow harness for managing filesystem-backed
+development boards and AI-assisted delivery workflows.
 
-The core purpose of Devflow is to allow a user or agent to advance work cards through a defined sequence of phases while running a controlled sequence of shell scripts at each phase boundary. These scripts may perform either deterministic actions, such as file validation and Git checks, or non-deterministic actions, such as invoking an LLM through `pi-mono` with a specific skill.
+The core purpose of Devflow is to allow a user or agent to advance work cards
+through a defined sequence of phases while running a controlled sequence of
+shell scripts at each phase boundary. These scripts may perform either
+deterministic actions, such as file validation and Git checks, or
+non-deterministic actions, such as invoking an LLM through `pi-mono` with a
+specific skill.
 
-Devflow itself is responsible for workflow orchestration, card state, locking, history, and transition sequencing. LLMs are deliberately kept out of orchestration. They operate only inside explicitly defined scripts, with bounded input, bounded purpose, and deterministic success/failure signalling through process exit codes.
+Devflow itself is responsible for workflow orchestration, card state, locking,
+history, and transition sequencing. LLMs are deliberately kept out of
+orchestration. They operate only inside explicitly defined scripts, with bounded
+input, bounded purpose, and deterministic success/failure signalling through
+process exit codes.
 
-Devflow produces an auditable, Git-backed workflow with manual recovery when transitions fail.
+Devflow produces an auditable, Git-backed workflow with manual recovery when
+transitions fail.
 
 ---
 
@@ -29,15 +40,22 @@ Devflow
   └── Script / skill execution model
 ```
 
-A **board** defines an ordered sequence of phases and owns its own cards, scripts, skills, and configuration.
+A **board** defines an ordered sequence of phases and owns its own cards,
+scripts, skills, and configuration.
 
-A **card** is a durable unit of work. It has machine-readable state, a human/agent-readable markdown body, optional attached files, and execution logs.
+A **card** is a durable unit of work. It has machine-readable state, a
+human/agent-readable markdown body, optional attached files, and execution logs.
 
-A **transition** is the process of advancing a card from one phase to another. Transitions are deterministic and are controlled by Devflow.
+A **transition** is the process of advancing a card from one phase to another.
+Transitions are deterministic and are controlled by Devflow.
 
-A **script** is an executable task associated with a phase. Scripts are run in lexical order when leaving a phase. Scripts may perform mechanical work, invoke LLM tools, validate outputs, or modify repository files. Devflow creates Git commits after successful hops; scripts must not commit during transitions.
+A **script** is an executable task associated with a phase. Scripts are run in
+lexical order when leaving a phase. Scripts may perform mechanical work, invoke
+LLM tools, validate outputs, or modify repository files. Devflow creates Git
+commits after successful hops; scripts must not commit during transitions.
 
-A **skill** is a prompt/tooling package used by scripts, typically when invoking `pi-mono`.
+A **skill** is a prompt/tooling package used by scripts, typically when invoking
+`pi-mono`.
 
 ---
 
@@ -55,30 +73,39 @@ Devflow must follow these principles:
    - LLMs must not manage the workflow.
 
 3. **Filesystem durability**
-   - Boards, cards, scripts, skills, logs, and attachments are stored on the filesystem.
+   - Boards, cards, scripts, skills, logs, and attachments are stored on the
+     filesystem.
    - The filesystem is the primary durable store.
 
 4. **Git-backed workflow**
    - Devflow boards live inside a Git repository.
-   - Scripts may run Git read-only checks; Devflow creates commits only on successful normal phase hops during `card advance`.
-   - Each hop runs `git add -A` from the repository root, then `git commit`. Repository cleanliness before advance is a script concern, not enforced by Devflow.
+   - Scripts may run Git read-only checks; Devflow creates commits only on
+     successful normal phase hops during `card advance`.
+   - Each hop runs `git add -A` from the repository root, then `git commit`.
+     Repository cleanliness before advance is a script concern, not enforced by
+     Devflow.
 
 5. **Committed progress**
-   - Each successful phase hop is committed. Earlier hops in a multi-phase advance are not rolled back when a later hop fails.
-   - The card remains in the phase reached by the last successful hop; the working tree reflects all script effects up to the failure.
+   - Each successful phase hop is committed. Earlier hops in a multi-phase
+     advance are not rolled back when a later hop fails.
+   - The card remains in the phase reached by the last successful hop; the
+     working tree reflects all script effects up to the failure.
 
 6. **Agent-friendly access**
    - Agents must be able to locate and edit card workspaces directly.
-   - Devflow must provide commands that expose card directories and card content.
+   - Devflow must provide commands that expose card directories and card
+     content.
 
 7. **Auditability**
-   - Every phase change, block, unblock, force move, failure, and relevant workflow event must be recorded in card history.
+   - Every phase change, block, unblock, force move, failure, and relevant
+     workflow event must be recorded in card history.
    - Script output must be captured in logs.
 
 8. **Failure containment**
    - If a transition fails, the card remains in its current phase.
    - Devflow does not automatically retry failed transitions or scripts.
-   - Recovery is manual: inspect logs, repair the card workspace, then run `devflow card advance` or `--force` where allowed.
+   - Recovery is manual: inspect logs, repair the card workspace, then run
+     `devflow card advance` or `--force` where allowed.
 
 9. **Low ceremony**
    - Devflow provides a composable CLI.
@@ -125,11 +152,13 @@ The required filesystem layout is:
           logs/
 ```
 
-Board paths use `.devflow/boards/<board-name>/`. Top-level Devflow paths (for example `.devflow/templates/`) are not board directories.
+Board paths use `.devflow/boards/<board-name>/`. Top-level Devflow paths (for
+example `.devflow/templates/`) are not board directories.
 
 ### 4.2 Git ignore entries
 
-Devflow uses **lock directories** only (section 14.4), not lock files. The project `.gitignore` must include:
+Devflow uses **lock directories** only (section 14.4), not lock files. The
+project `.gitignore` must include:
 
 ```gitignore
 .devflow/.lock/
@@ -138,15 +167,22 @@ Devflow uses **lock directories** only (section 14.4), not lock files. The proje
 
 `board init` and repository validation must ensure these entries exist.
 
-No other paths under `.devflow/` are ignored by default. Logs, card state, scripts, skills, and attachments are committed like any other project files.
+No other paths under `.devflow/` are ignored by default. Logs, card state,
+scripts, skills, and attachments are committed like any other project files.
 
 ### 4.3 Repository workspace
 
-- A Git repository may contain **multiple Devflow boards** under `.devflow/boards/`.
-- Board scripts may read or update artefacts on other boards in the same repository when workflow requires it.
-- `.devflow/` must live at the **repository root** (the root of the Git work tree).
-- Devflow commands must be run with the current working directory at that repository root, or Devflow must resolve the Git root and treat it as the working directory before any operation.
-- Devflow does not coordinate parallel card advancement in one repository. Operators advance one card at a time.
+- A Git repository may contain **multiple Devflow boards** under
+  `.devflow/boards/`.
+- Board scripts may read or update artefacts on other boards in the same
+  repository when workflow requires it.
+- `.devflow/` must live at the **repository root** (the root of the Git work
+  tree).
+- Devflow commands must be run with the current working directory at that
+  repository root, or Devflow must resolve the Git root and treat it as the
+  working directory before any operation.
+- Devflow does not coordinate parallel card advancement in one repository.
+  Operators advance one card at a time.
 
 ---
 
@@ -170,11 +206,16 @@ The command creates:
   cards/
 ```
 
-Every board has an exceptional phase named `blocked`. It is not passed as a phase argument and is not part of the forward sequence. `board init` must reject `blocked` if it appears in `<phase...>`.
+Every board has an exceptional phase named `blocked`. It is not passed as a
+phase argument and is not part of the forward sequence. `board init` must reject
+`blocked` if it appears in `<phase...>`.
 
-`board init` does not create a Git commit. Operators commit new board structure manually when ready.
+`board init` does not create a Git commit. Operators commit new board structure
+manually when ready.
 
-If `.devflow/` or `.devflow/boards/` does not exist, `board init` creates it. A Git work tree must already exist; Devflow does not run `git init`. If `.devflow` or `.devflow/boards` exists but is not a directory, the command fails.
+If `.devflow/` or `.devflow/boards/` does not exist, `board init` creates it. A
+Git work tree must already exist; Devflow does not run `git init`. If `.devflow`
+or `.devflow/boards` exists but is not a directory, the command fails.
 
 ### 5.2 Identifiers
 
@@ -184,7 +225,8 @@ Board names and phase names must match:
 ^[a-z][a-z0-9_]*$
 ```
 
-Hyphens are not allowed. Card IDs and script names use hyphens as separators; `idPrefix` equals the board name.
+Hyphens are not allowed. Card IDs and script names use hyphens as separators;
+`idPrefix` equals the board name.
 
 The name `blocked` is reserved and must not appear in `<phase...>`.
 
@@ -214,7 +256,8 @@ stories-0002
 stories-0003
 ```
 
-`sequenceWidth` must be an integer from `1` to `12`. Changing `sequenceWidth` affects only future card IDs; existing card IDs are never renamed.
+`sequenceWidth` must be an integer from `1` to `12`. Changing `sequenceWidth`
+affects only future card IDs; existing card IDs are never renamed.
 
 The width is stored in `board.json`.
 
@@ -260,7 +303,9 @@ Example:
 
 ### 5.6 Board templates
 
-Devflow must ship at least one built-in template (minimum: `stories`) containing example `scripts/`, `skills/`, and documentation for the standard story workflow.
+Devflow must ship at least one built-in template (minimum: `stories`) containing
+example `scripts/`, `skills/`, and documentation for the standard story
+workflow.
 
 Board initialization supports:
 
@@ -275,11 +320,17 @@ Template sources, in precedence order:
 2. Built-in templates shipped with Devflow
 ```
 
-Template content is copied into the new board's `scripts/` and `skills/` directories.
+Template content is copied into the new board's `scripts/` and `skills/`
+directories.
 
 ### 5.7 Sequence exhaustion
 
-Card IDs use a zero-padded numeric suffix constrained by `sequenceWidth`. When `nextSequence` would exceed the maximum representable value for that width (for example `999999` at width `6`), **card creation must fail** with a non-zero exit code and a clear error. Recovery requires manual intervention (for example increasing `sequenceWidth` in `board.json` with operator care, or archival of the board).
+Card IDs use a zero-padded numeric suffix constrained by `sequenceWidth`. When
+`nextSequence` would exceed the maximum representable value for that width (for
+example `999999` at width `6`), **card creation must fail** with a non-zero exit
+code and a clear error. Recovery requires manual intervention (for example
+increasing `sequenceWidth` in `board.json` with operator care, or archival of
+the board).
 
 ---
 
@@ -301,7 +352,8 @@ stories-000042
 
 The card ID has no semantic meaning beyond uniqueness and stable identification.
 
-Devflow resolves the board from a card ID by matching the prefix before the final `-<sequence>` segment to `idPrefix` (which equals the board name).
+Devflow resolves the board from a card ID by matching the prefix before the
+final `-<sequence>` segment to `idPrefix` (which equals the board name).
 
 ### 6.2 Card creation
 
@@ -326,13 +378,18 @@ Devflow must:
 11. return the card ID to stdout;
 12. exit `0` on success.
 
-`card create` does not create a Git commit. Operators commit new cards manually before running `card advance`.
+`card create` does not create a Git commit. Operators commit new cards manually
+before running `card advance`.
 
-Card creation must not consume `nextSequence` if the card directory is not finalized. While holding the board lock, Devflow prepares the card workspace, updates `board.json`, and commits the directory into place atomically.
+Card creation must not consume `nextSequence` if the card directory is not
+finalized. While holding the board lock, Devflow prepares the card workspace,
+updates `board.json`, and commits the directory into place atomically.
 
-Devflow writes `board.json` and card `state.json` atomically: write to a temporary file in the same directory, then rename into place.
+Devflow writes `board.json` and card `state.json` atomically: write to a
+temporary file in the same directory, then rename into place.
 
-If any step fails, Devflow exits non-zero and avoids leaving inconsistent state where possible.
+If any step fails, Devflow exits non-zero and avoids leaving inconsistent state
+where possible.
 
 Example output:
 
@@ -399,11 +456,13 @@ files/     = human/agent/script-owned attachments
 logs/      = Devflow/script-owned execution logs
 ```
 
-Agents and scripts must not edit `state.json` directly. Use Devflow commands to update variables, block or unblock cards, or advance phases.
+Agents and scripts must not edit `state.json` directly. Use Devflow commands to
+update variables, block or unblock cards, or advance phases.
 
 ### 6.6 Card body
 
-Devflow does not mandate `card.md` structure. Board scripts and skills enforce structure per phase.
+Devflow does not mandate `card.md` structure. Board scripts and skills enforce
+structure per phase.
 
 When a card is created, `card.md` contains only the card title:
 
@@ -413,13 +472,16 @@ When a card is created, `card.md` contains only the card title:
 
 ### 6.7 Card title and rename
 
-The card title is stored in `state.json` at creation. Board scripts may require `card.md` to stay consistent with `state.json`.
+The card title is stored in `state.json` at creation. Board scripts may require
+`card.md` to stay consistent with `state.json`.
 
-`devflow card rename <card-id> "<title>"` updates the title in `state.json` and the level-1 heading in `card.md`. It does not create a Git commit.
+`devflow card rename <card-id> "<title>"` updates the title in `state.json` and
+the level-1 heading in `card.md`. It does not create a Git commit.
 
 ### 6.8 Timestamps
 
-All persisted timestamps use UTC ISO 8601 with a `Z` suffix, for example `2026-05-16T07:42:18Z`.
+All persisted timestamps use UTC ISO 8601 with a `Z` suffix, for example
+`2026-05-16T07:42:18Z`.
 
 ---
 
@@ -427,7 +489,9 @@ All persisted timestamps use UTC ISO 8601 with a `Z` suffix, for example `2026-0
 
 Card variables are stored in the `variables` object inside card `state.json`.
 
-Variables allow scripts to persist small values during workflow execution, such as session IDs, generated artefact names, temporary references, or external tool identifiers.
+Variables allow scripts to persist small values during workflow execution, such
+as session IDs, generated artefact names, temporary references, or external tool
+identifiers.
 
 ### 7.1 Get variable
 
@@ -460,9 +524,13 @@ Behaviour:
 
 Values are stored as strings.
 
-`variable set` does not create a Git commit. Changes made during a transition are included in that transition's commit. Changes made outside a transition remain uncommitted until the operator commits or a later `card advance` includes them.
+`variable set` does not create a Git commit. Changes made during a transition
+are included in that transition's commit. Changes made outside a transition
+remain uncommitted until the operator commits or a later `card advance` includes
+them.
 
-Scripts invoked during a transition that call `devflow variable set` or `devflow card add-file` must pass `--ignore-lock` (section 16.1).
+Scripts invoked during a transition that call `devflow variable set` or
+`devflow card add-file` must pass `--ignore-lock` (section 16.1).
 
 Example:
 
@@ -486,7 +554,8 @@ Devflow must copy the file into:
 .devflow/boards/stories/cards/stories-000042/files/
 ```
 
-If a file with the same name already exists, Devflow must fail unless `--overwrite` is passed:
+If a file with the same name already exists, Devflow must fail unless
+`--overwrite` is passed:
 
 ```bash
 devflow card add-file stories-000042 ./api-contract.pdf --overwrite
@@ -501,7 +570,8 @@ devflow card add-file stories-000042 ./api-contract.pdf --overwrite
 - existing destination requires --overwrite.
 ```
 
-`card add-file` does not create a Git commit. Files added during a transition are included in that transition's commit.
+`card add-file` does not create a Git commit. Files added during a transition
+are included in that transition's commit.
 
 Attachment events must be recorded in card history.
 
@@ -539,13 +609,15 @@ planning-005-check-git-status
 
 Exit scripts are executed in lexical order.
 
-For a card leaving `planning`, Devflow runs all **executable** files in the board `scripts/` directory whose names match:
+For a card leaving `planning`, Devflow runs all **executable** files in the
+board `scripts/` directory whose names match:
 
 ```text
 ^<phase>-[0-9]{3}-[a-z0-9][a-z0-9-]*$
 ```
 
-The commit-message script for phase `planning` matches `^planning\.commit-message$` and is invoked separately (section 13).
+The commit-message script for phase `planning` matches
+`^planning\.commit-message$` and is invoked separately (section 13).
 
 Example matches for phase `planning`:
 
@@ -562,7 +634,9 @@ planning-backup-001-foo          # wrong shape
 README                           # not a phase script
 ```
 
-The glob `planning-*` is descriptive only. Implementations must use the pattern above so that `planning.commit-message` is never included in the exit-script sequence. The commit-message script is invoked separately (section 13).
+The glob `planning-*` is descriptive only. Implementations must use the pattern
+above so that `planning.commit-message` is never included in the exit-script
+sequence. The commit-message script is invoked separately (section 13).
 
 ### 9.4 Script arguments
 
@@ -590,7 +664,11 @@ Scripts can read card variables using:
 devflow variable get stories-000042 SESSION_ID
 ```
 
-During a transition, scripts may call `devflow variable set` and `devflow card add-file` with `--ignore-lock` when the parent command already holds the card lock. Scripts must not call `devflow card advance`, `devflow card block`, `devflow card unblock`, or `devflow card rename` from within a transition.
+During a transition, scripts may call `devflow variable set` and
+`devflow card add-file` with `--ignore-lock` when the parent command already
+holds the card lock. Scripts must not call `devflow card advance`,
+`devflow card block`, `devflow card unblock`, or `devflow card rename` from
+within a transition.
 
 ### 9.5 Cross-board script behaviour
 
@@ -605,7 +683,8 @@ During a transition, scripts may call `devflow variable set` and `devflow card a
 
 Devflow executes board scripts as local trusted code. Scripts are not sandboxed.
 
-Scripts must not write secrets, credentials, or tokens to stdout or stderr because transition logs are committed by default.
+Scripts must not write secrets, credentials, or tokens to stdout or stderr
+because transition logs are committed by default.
 
 ### 9.7 Script success and failure
 
@@ -620,9 +699,12 @@ If any script fails, Devflow must stop the transition immediately.
 
 ### 9.8 Execution unit and retries
 
-Scripts run only as part of phase transitions. Devflow does not provide a command to run scripts in isolation.
+Scripts run only as part of phase transitions. Devflow does not provide a
+command to run scripts in isolation.
 
-Scripts are not idempotent. Devflow does not retry failed scripts. The card remains in its current phase until an operator runs `devflow card advance` again or uses another allowed recovery command.
+Scripts are not idempotent. Devflow does not retry failed scripts. The card
+remains in its current phase until an operator runs `devflow card advance` again
+or uses another allowed recovery command.
 
 ### 9.9 Script execution environment
 
@@ -637,9 +719,12 @@ When Devflow invokes any script (exit script or commit-message script):
 
 ### 9.10 Concurrent edits during transitions
 
-Humans and agents may edit `card.md`, `files/`, and repository source while Devflow is idle.
+Humans and agents may edit `card.md`, `files/`, and repository source while
+Devflow is idle.
 
-Editing card or repository files **during** an active transition for that card is unsupported. Devflow assumes this does not happen. Behaviour if files change mid-run is undefined.
+Editing card or repository files **during** an active transition for that card
+is unsupported. Devflow assumes this does not happen. Behaviour if files change
+mid-run is undefined.
 
 ---
 
@@ -678,11 +763,16 @@ Devflow does not interpret skill contents. Skills are consumed by scripts.
 
 ### 10.1 pi-mono integration
 
-`pi-mono` is an **external** tool, not part of the Devflow core. Board scripts invoke it with explicit arguments, stdin/stdout, and a skill path under the board's `skills/` directory.
+`pi-mono` is an **external** tool, not part of the Devflow core. Board scripts
+invoke it with explicit arguments, stdin/stdout, and a skill path under the
+board's `skills/` directory.
 
-Devflow does not install or configure `pi-mono`. Board templates include a reference script that invokes `pi-mono` with a skill path, propagates exit codes, and documents model selection and timeouts.
+Devflow does not install or configure `pi-mono`. Board templates include a
+reference script that invokes `pi-mono` with a skill path, propagates exit
+codes, and documents model selection and timeouts.
 
-Scripts that call `pi-mono` must treat non-zero exit codes as transition failures. Token limits, timeouts, and model choice are script responsibilities.
+Scripts that call `pi-mono` must treat non-zero exit codes as transition
+failures. Token limits, timeouts, and model choice are script responsibilities.
 
 ---
 
@@ -690,7 +780,8 @@ Scripts that call `pi-mono` must treat non-zero exit codes as transition failure
 
 ### 11.1 Exit-action semantics
 
-Phase scripts are **exit actions**: they run when leaving that phase (see section 9.3 for naming and matching).
+Phase scripts are **exit actions**: they run when leaving that phase (see
+section 9.3 for naming and matching).
 
 ### 11.2 Advancing a card
 
@@ -702,7 +793,8 @@ devflow card advance stories-000042 building
 
 ### 11.3 Multi-phase advance
 
-If a card is in `unplanned` and the target phase is `building`, Devflow must advance through each intermediate phase.
+If a card is in `unplanned` and the target phase is `building`, Devflow must
+advance through each intermediate phase.
 
 Given:
 
@@ -724,11 +816,17 @@ planning  -> planned
 planned   -> building
 ```
 
-For each single-phase hop, Devflow runs the exit scripts for the current phase, then performs **one Git commit** for that hop (section 13). A multi-phase advance therefore produces **one commit per phase transition**, not a single squashed commit.
+For each single-phase hop, Devflow runs the exit scripts for the current phase,
+then performs **one Git commit** for that hop (section 13). A multi-phase
+advance therefore produces **one commit per phase transition**, not a single
+squashed commit.
 
-Example: advancing from `unplanned` to `finished` creates one commit when leaving `unplanned`, another when leaving `planning`, and so on.
+Example: advancing from `unplanned` to `finished` creates one commit when
+leaving `unplanned`, another when leaving `planning`, and so on.
 
-In a multi-phase advance, successful earlier hops are not rolled back when a later hop fails. The card remains in the phase reached by the last successful hop.
+In a multi-phase advance, successful earlier hops are not rolled back when a
+later hop fails. The card remains in the phase reached by the last successful
+hop.
 
 ### 11.4 Transition algorithm
 
@@ -756,7 +854,8 @@ Normal advance behaviour:
 12. Exit 0.
 ```
 
-Both locks are held for the entire `card advance` command, including all script executions and Git operations in a multi-phase advance.
+Both locks are held for the entire `card advance` command, including all script
+executions and Git operations in a multi-phase advance.
 
 ### 11.5 Failure behaviour
 
@@ -772,9 +871,13 @@ If a script fails, Devflow must:
 - Print the failing script name and log path.
 ```
 
-A failed transition may leave the repository work tree dirty (script modifications, logs, and a `transitionFailed` entry in `state.json`). Devflow does not roll back script side effects. Operators inspect the run log, repair the workspace, and retry or commit manually.
+A failed transition may leave the repository work tree dirty (script
+modifications, logs, and a `transitionFailed` entry in `state.json`). Devflow
+does not roll back script side effects. Operators inspect the run log, repair
+the workspace, and retry or commit manually.
 
-Failed-run logs remain in `logs/`. If not removed, they are included in a later successful transition commit.
+Failed-run logs remain in `logs/`. If not removed, they are included in a later
+successful transition commit.
 
 Example failure output:
 
@@ -912,7 +1015,8 @@ If the card is not blocked, Devflow must exit non-zero.
 
 ### 13.1 Git repository
 
-Devflow operates only inside a Git work tree. Devflow validates this before board operations.
+Devflow operates only inside a Git work tree. Devflow validates this before
+board operations.
 
 ### 13.2 When Devflow commits
 
@@ -927,7 +1031,8 @@ variable set                                no commit
 board init                                  no commit
 ```
 
-Operators commit card creation, variables, and board setup manually before running `card advance`.
+Operators commit card creation, variables, and board setup manually before
+running `card advance`.
 
 ### 13.3 Transition commit rules
 
@@ -939,9 +1044,11 @@ Operators commit card creation, variables, and board setup manually before runni
 
 ### 13.4 Commit-message scripts
 
-For phase `planning`, the commit-message script is named `planning.commit-message`. It is not an exit script (section 9.3).
+For phase `planning`, the commit-message script is named
+`planning.commit-message`. It is not an exit script (section 9.3).
 
-The commit-message script receives the same arguments and environment variables as other scripts (sections 9.4, 18).
+The commit-message script receives the same arguments and environment variables
+as other scripts (sections 9.4, 18).
 
 ```text
 stdout     commit message
@@ -956,11 +1063,15 @@ If `<phase>.commit-message` is absent, Devflow uses:
 Advance <card-id> from <from-phase> to <to-phase>
 ```
 
-If the script exists and exits non-zero, the hop fails: phase unchanged, no commit, `transitionFailed` recorded when safe.
+If the script exists and exits non-zero, the hop fails: phase unchanged, no
+commit, `transitionFailed` recorded when safe.
 
-If the script exits `0` but stdout is empty or whitespace-only, Devflow treats this as commit-message failure.
+If the script exits `0` but stdout is empty or whitespace-only, Devflow treats
+this as commit-message failure.
 
-Commit-message script stdout is captured as data. It is not streamed to the console. Stderr is diagnostics and follows the active log level (section 16.2). Captured stdout is written to `commit-message.txt` in the run directory.
+Commit-message script stdout is captured as data. It is not streamed to the
+console. Stderr is diagnostics and follows the active log level (section 16.2).
+Captured stdout is written to `commit-message.txt` in the run directory.
 
 ### 13.5 Per-hop lifecycle
 
@@ -974,11 +1085,14 @@ For each single-phase hop during `card advance`:
 5. Run git commit with the captured message.
 ```
 
-`DEVFLOW_FROM_PHASE` and `DEVFLOW_TO_PHASE` reflect the hop; `state.json` is updated before the commit.
+`DEVFLOW_FROM_PHASE` and `DEVFLOW_TO_PHASE` reflect the hop; `state.json` is
+updated before the commit.
 
 ### 13.6 Staging scope
 
-Each transition commit runs `git add -A` from the repository root and includes all changes in the work tree. The only `.devflow` paths excluded from Git are lock directories (section 4.2). Logs are committed.
+Each transition commit runs `git add -A` from the repository root and includes
+all changes in the work tree. The only `.devflow` paths excluded from Git are
+lock directories (section 4.2). Logs are committed.
 
 ### 13.7 Git commit failure
 
@@ -992,11 +1106,14 @@ If `git commit` fails after Devflow has updated card state for the hop:
 - exit non-zero with the Git error and run log path.
 ```
 
-Recovery is manual: inspect Git status, repair the repository, and commit or correct state as needed.
+Recovery is manual: inspect Git status, repair the repository, and commit or
+correct state as needed.
 
 ### 13.8 Git preconditions
 
-Before `card advance` runs scripts, Devflow must verify the repository is not in an unresolved merge, rebase, cherry-pick, or revert operation. If such a state is detected, the command fails before scripts run.
+Before `card advance` runs scripts, Devflow must verify the repository is not in
+an unresolved merge, rebase, cherry-pick, or revert operation. If such a state
+is detected, the command fails before scripts run.
 
 ### 13.9 Example commit-message script
 
@@ -1020,11 +1137,15 @@ EOF
 
 ### 14.1 Locking model
 
-Devflow acquires locks at the **command** level, not inside individual scripts or script steps.
+Devflow acquires locks at the **command** level, not inside individual scripts
+or script steps.
 
-Because `git add -A` uses the repository-wide Git index, `card advance` acquires both a repository operation lock and a card lock.
+Because `git add -A` uses the repository-wide Git index, `card advance` acquires
+both a repository operation lock and a card lock.
 
-Nested `devflow` invocations from scripts (for example `devflow variable set ... --ignore-lock`) skip lock acquisition when `--ignore-lock` is passed (section 16.1).
+Nested `devflow` invocations from scripts (for example
+`devflow variable set ... --ignore-lock`) skip lock acquisition when
+`--ignore-lock` is passed (section 16.1).
 
 ### 14.2 Lock paths
 
@@ -1041,19 +1162,21 @@ Nested `devflow` invocations from scripts (for example `devflow variable set ...
 
 ### 14.3 Commands and locks
 
-| Command | Locks |
-|---------|-------|
-| `board init` | repository (`.devflow/.lock/`) |
-| `card create` | board |
-| `card advance` | repository + card |
-| `card block`, `card unblock`, `card rename` | card |
-| `variable set`, `card add-file` | card |
+| Command                                     | Locks                          |
+| ------------------------------------------- | ------------------------------ |
+| `board init`                                | repository (`.devflow/.lock/`) |
+| `card create`                               | board                          |
+| `card advance`                              | repository + card              |
+| `card block`, `card unblock`, `card rename` | card                           |
+| `variable set`, `card add-file`             | card                           |
 
-Read-only commands (`show`, `list`, `dir`, `get`, `validate`) do not acquire locks.
+Read-only commands (`show`, `list`, `dir`, `get`, `validate`) do not acquire
+locks.
 
 ### 14.4 Lock implementation
 
-Devflow uses **atomic directory creation** (`mkdir`) for all locks. Lock files are not used.
+Devflow uses **atomic directory creation** (`mkdir`) for all locks. Lock files
+are not used.
 
 Acquisition:
 
@@ -1063,7 +1186,10 @@ Acquisition:
 3. If creation fails because the directory already exists, another holder has the lock, the command must fail with a clear error—unless `--ignore-lock` was passed (section 16.1).
 ```
 
-`--ignore-lock` does not remove an existing `.lock/` directory; it only allows the current command to proceed without acquiring the lock. Use only when the caller already holds the lock (typically a Devflow script invoked during `card advance`).
+`--ignore-lock` does not remove an existing `.lock/` directory; it only allows
+the current command to proceed without acquiring the lock. Use only when the
+caller already holds the lock (typically a Devflow script invoked during
+`card advance`).
 
 Release:
 
@@ -1084,7 +1210,9 @@ SIGTERM
 SIGHUP
 ```
 
-If Devflow receives a signal while a child script is running, it forwards the signal to the child, waits briefly for graceful termination, then forces termination if needed.
+If Devflow receives a signal while a child script is running, it forwards the
+signal to the child, waits briefly for graceful termination, then forces
+termination if needed.
 
 On handling interruption, Devflow must:
 
@@ -1103,7 +1231,8 @@ devflow lock release-board    removes a board .lock/
 devflow lock release-repo     removes .devflow/.lock/
 ```
 
-All accept `--force`. Devflow warns that releasing an active lock may corrupt workflow state.
+All accept `--force`. Devflow warns that releasing an active lock may corrupt
+workflow state.
 
 ---
 
@@ -1128,7 +1257,8 @@ logs/<timestamp>-advance-<from>-<to>/
   commit-message.txt
 ```
 
-`<timestamp>` uses UTC with hyphens in place of colons, for example `2026-05-16T07-42-18Z-advance-planning-planned`.
+`<timestamp>` uses UTC with hyphens in place of colons, for example
+`2026-05-16T07-42-18Z-advance-planning-planned`.
 
 A multi-phase advance creates one run directory per hop (successful or failed).
 
@@ -1160,48 +1290,52 @@ A multi-phase advance creates one run directory per hop (successful or failed).
 
 ### 15.4 Script output
 
-Devflow captures script stdout and stderr in `output.log` within the run directory.
+Devflow captures script stdout and stderr in `output.log` within the run
+directory.
 
 ---
 
 ## 16. CLI Requirements
 
-Object-first commands are canonical. Hyphenated verb-command aliases are provided for agent convenience (for example `board init` → `init-board`).
+Object-first commands are canonical. Hyphenated verb-command aliases are
+provided for agent convenience (for example `board init` → `init-board`).
 
 All commands:
 
 - run relative to the Git repository root (section 4.3);
 - accept global flags (section 16.1);
 - use exit code `0` on success and non-zero on failure unless noted;
-- keep machine-parseable primary output on stdout free of colour codes (section 16.2).
+- keep machine-parseable primary output on stdout free of colour codes (section
+  16.2).
 
 ### 16.0 Command index
 
-| Command | Synonym | Purpose |
-|---------|---------|---------|
-| `devflow` | — | Print usage; exit `0` |
-| `devflow validate` | `validate` | Validate repository, all boards, all cards |
-| `devflow board init` | `init-board` | Create a board |
-| `devflow board list` | `list-boards` | List boards |
-| `devflow board show` | `show-board` | Show board metadata |
-| `devflow board validate` | `validate-board` | Validate one board |
-| `devflow card create` | `create-card` | Create a card |
-| `devflow card list` | `list-cards` | List cards on a board |
-| `devflow card show` | `show-card` | Show card metadata and `card.md` |
-| `devflow card dir` | `card-dir` | Print absolute card directory path |
-| `devflow card add-file` | `add-card-file` | Attach a file to a card |
-| `devflow card advance` | `advance-card` | Advance card phase (transition runner) |
-| `devflow card block` | `block-card` | Block a card |
-| `devflow card unblock` | `unblock-card` | Unblock a card |
-| `devflow card rename` | `rename-card` | Rename a card |
-| `devflow card validate` | `validate-card` | Validate one card |
-| `devflow variable get` | `get-variable` | Read a card variable |
-| `devflow variable set` | `set-variable` | Write a card variable |
-| `devflow lock release` | `release-lock` | Release stale card lock |
-| `devflow lock release-board` | `release-board-lock` | Release stale board lock |
-| `devflow lock release-repo` | `release-repo-lock` | Release stale repository lock |
+| Command                      | Synonym              | Purpose                                    |
+| ---------------------------- | -------------------- | ------------------------------------------ |
+| `devflow`                    | —                    | Print usage; exit `0`                      |
+| `devflow validate`           | `validate`           | Validate repository, all boards, all cards |
+| `devflow board init`         | `init-board`         | Create a board                             |
+| `devflow board list`         | `list-boards`        | List boards                                |
+| `devflow board show`         | `show-board`         | Show board metadata                        |
+| `devflow board validate`     | `validate-board`     | Validate one board                         |
+| `devflow card create`        | `create-card`        | Create a card                              |
+| `devflow card list`          | `list-cards`         | List cards on a board                      |
+| `devflow card show`          | `show-card`          | Show card metadata and `card.md`           |
+| `devflow card dir`           | `card-dir`           | Print absolute card directory path         |
+| `devflow card add-file`      | `add-card-file`      | Attach a file to a card                    |
+| `devflow card advance`       | `advance-card`       | Advance card phase (transition runner)     |
+| `devflow card block`         | `block-card`         | Block a card                               |
+| `devflow card unblock`       | `unblock-card`       | Unblock a card                             |
+| `devflow card rename`        | `rename-card`        | Rename a card                              |
+| `devflow card validate`      | `validate-card`      | Validate one card                          |
+| `devflow variable get`       | `get-variable`       | Read a card variable                       |
+| `devflow variable set`       | `set-variable`       | Write a card variable                      |
+| `devflow lock release`       | `release-lock`       | Release stale card lock                    |
+| `devflow lock release-board` | `release-board-lock` | Release stale board lock                   |
+| `devflow lock release-repo`  | `release-repo-lock`  | Release stale repository lock              |
 
-Synonym forms place arguments in the same order as the object-first command, with the verb-command name replacing `devflow <object> <verb>`. Example:
+Synonym forms place arguments in the same order as the object-first command,
+with the verb-command name replacing `devflow <object> <verb>`. Example:
 
 ```bash
 devflow board init stories unplanned planning planned
@@ -1210,15 +1344,17 @@ devflow init-board stories unplanned planning planned
 
 ### 16.1 Global flags
 
-| Flag | Commands | Effect |
-|------|----------|--------|
+| Flag            | Commands                             | Effect                                                                                                                 |
+| --------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | `--ignore-lock` | `variable set`, `card add-file` only | Skip lock acquisition. Required when called from a script during `card advance`. Other commands must reject this flag. |
-| `--verbose` | all | Console output level `verbose` (section 16.2). |
-| `--summary` | all | Console output level `summary` (section 16.2). |
+| `--verbose`     | all                                  | Console output level `verbose` (section 16.2).                                                                         |
+| `--summary`     | all                                  | Console output level `summary` (section 16.2).                                                                         |
 
-Nested `devflow` invocations from scripts may pass `--verbose`, `--summary`, or `--ignore-lock` where supported.
+Nested `devflow` invocations from scripts may pass `--verbose`, `--summary`, or
+`--ignore-lock` where supported.
 
-`--verbose` and `--summary` are mutually exclusive. If both are passed, Devflow must exit non-zero with an error.
+`--verbose` and `--summary` are mutually exclusive. If both are passed, Devflow
+must exit non-zero with an error.
 
 Default when neither flag is passed: output level `info` (section 16.2).
 
@@ -1226,11 +1362,11 @@ Default when neither flag is passed: output level `info` (section 16.2).
 
 When stderr/stdout is a TTY, Devflow uses **ANSI colour escape codes**:
 
-| Role | Colour | Examples |
-|------|--------|----------|
-| Success | Green | Command completed, phase advanced, card created |
-| Error | Red | Validation failure, script exit non-zero, lock held |
-| Boilerplate | Grey | Timestamps, “Running …”, lock paths, debug detail |
+| Role        | Colour | Examples                                            |
+| ----------- | ------ | --------------------------------------------------- |
+| Success     | Green  | Command completed, phase advanced, card created     |
+| Error       | Red    | Validation failure, script exit non-zero, lock held |
+| Boilerplate | Grey   | Timestamps, “Running …”, lock paths, debug detail   |
 
 **`info`** (default):
 
@@ -1256,38 +1392,44 @@ When stderr/stdout is a TTY, Devflow uses **ANSI colour escape codes**:
 - Omit grey boilerplate except where needed to report an error context.
 ```
 
-Devflow sets `DEVFLOW_LOG_LEVEL` to the active level (`info`, `verbose`, or `summary`) on every script invocation (section 18). Nested `devflow` commands inherit the parent level unless overridden by flags.
+Devflow sets `DEVFLOW_LOG_LEVEL` to the active level (`info`, `verbose`, or
+`summary`) on every script invocation (section 18). Nested `devflow` commands
+inherit the parent level unless overridden by flags.
 
-**Machine output:** Commands whose primary stdout must be parsed by scripts or agents (`card create`, `card dir`, `variable get`, `board list`, `card list`, and similar) must emit plain text without colour codes on that stdout line, even when colours are enabled on stderr.
+**Machine output:** Commands whose primary stdout must be parsed by scripts or
+agents (`card create`, `card dir`, `variable get`, `board list`, `card list`,
+and similar) must emit plain text without colour codes on that stdout line, even
+when colours are enabled on stderr.
 
 Disable colours when stdout or stderr is not a TTY.
 
 ### 16.3 Command reference
 
-Command behaviour is defined in the sections cited below. Each command exits `0` on success unless stated otherwise.
+Command behaviour is defined in the sections cited below. Each command exits `0`
+on success unless stated otherwise.
 
-| Command | Section |
-|---------|---------|
-| `devflow board init` | 5.1, 5.2, 5.5 |
-| `devflow board list` | Prints board names, one per line |
-| `devflow board show` | 5.4 — formatted metadata on stdout |
-| `devflow card rename` | 6.7 |
-| `devflow board validate` | 17.1 |
-| `devflow card create` | 6.2, 5.7 |
-| `devflow card list` | Prints card IDs; `--phase` filters |
-| `devflow card show` | 6.4, 16.4 — YAML frontmatter + card.md |
-| `devflow card dir` | Absolute path on stdout |
-| `devflow card add-file` | 8 |
-| `devflow card advance` | 11, 13 |
-| `devflow card block` | 12.1 |
-| `devflow card unblock` | 12.2 |
-| `devflow card validate` | 17.2 |
-| `devflow variable get` | 7.1 |
-| `devflow variable set` | 7.2 |
-| `devflow lock release` | 14.6 |
-| `devflow lock release-board` | 14.6 |
-| `devflow lock release-repo` | 14.6 |
-| `devflow validate` | 17 |
+| Command                      | Section                                |
+| ---------------------------- | -------------------------------------- |
+| `devflow board init`         | 5.1, 5.2, 5.5                          |
+| `devflow board list`         | Prints board names, one per line       |
+| `devflow board show`         | 5.4 — formatted metadata on stdout     |
+| `devflow card rename`        | 6.7                                    |
+| `devflow board validate`     | 17.1                                   |
+| `devflow card create`        | 6.2, 5.7                               |
+| `devflow card list`          | Prints card IDs; `--phase` filters     |
+| `devflow card show`          | 6.4, 16.4 — YAML frontmatter + card.md |
+| `devflow card dir`           | Absolute path on stdout                |
+| `devflow card add-file`      | 8                                      |
+| `devflow card advance`       | 11, 13                                 |
+| `devflow card block`         | 12.1                                   |
+| `devflow card unblock`       | 12.2                                   |
+| `devflow card validate`      | 17.2                                   |
+| `devflow variable get`       | 7.1                                    |
+| `devflow variable set`       | 7.2                                    |
+| `devflow lock release`       | 14.6                                   |
+| `devflow lock release-board` | 14.6                                   |
+| `devflow lock release-repo`  | 14.6                                   |
+| `devflow validate`           | 17                                     |
 
 ### 16.4 Command output formats
 
@@ -1318,7 +1460,8 @@ updatedAt: 2026-05-16T07:30:00Z
 
 ## 17. Validation Requirements
 
-Validation commands report problems on stderr. They do not modify files. Exit `0` when all checks pass; exit non-zero otherwise.
+Validation commands report problems on stderr. They do not modify files. Exit
+`0` when all checks pass; exit non-zero otherwise.
 
 ### 17.1 Board validation
 
@@ -1367,7 +1510,8 @@ Card validation must check:
 - card IDs are unique within the board.
 ```
 
-Board validation must also report any card whose ID suffix does not match the board `sequenceWidth` (wrong padding length).
+Board validation must also report any card whose ID suffix does not match the
+board `sequenceWidth` (wrong padding length).
 
 ### 17.3 Repository validation
 
@@ -1384,7 +1528,9 @@ Since Git is mandatory, Devflow must validate:
 
 ## 18. Environment Variables for Scripts
 
-When Devflow invokes **any** script (exit script or `<phase>.commit-message`), it must set the following environment variables in addition to positional arguments.
+When Devflow invokes **any** script (exit script or `<phase>.commit-message`),
+it must set the following environment variables in addition to positional
+arguments.
 
 Required positional arguments:
 
@@ -1411,15 +1557,18 @@ DEVFLOW_REPO_ROOT     # Git work tree root (same as the script working directory
 
 `DEVFLOW_LOG_LEVEL` reflects the active Devflow console output mode:
 
-| Value | Set when |
-|-------|----------|
-| `info` | Neither `--verbose` nor `--summary` (default) |
-| `verbose` | `--verbose` |
-| `summary` | `--summary` |
+| Value     | Set when                                      |
+| --------- | --------------------------------------------- |
+| `info`    | Neither `--verbose` nor `--summary` (default) |
+| `verbose` | `--verbose`                                   |
+| `summary` | `--summary`                                   |
 
-Scripts may read `DEVFLOW_LOG_LEVEL` to adjust their own logging. During a multi-phase advance, `DEVFLOW_RUN_DIR` points to the current hop's run directory only.
+Scripts may read `DEVFLOW_LOG_LEVEL` to adjust their own logging. During a
+multi-phase advance, `DEVFLOW_RUN_DIR` points to the current hop's run directory
+only.
 
-Devflow passes the same log level to nested `devflow` invocations unless the child command passes `--verbose` or `--summary`.
+Devflow passes the same log level to nested `devflow` invocations unless the
+child command passes `--verbose` or `--summary`.
 
 ---
 
@@ -1473,7 +1622,9 @@ If currently in `unplanned`, this advances:
 unplanned -> planning -> planned
 ```
 
-For each hop it runs that phase's exit scripts (for example `unplanned-001-*` verification scripts, then `planning-001-*` through `planning-005-*`), then each phase's commit-message script if present, then **one Git commit per hop**.
+For each hop it runs that phase's exit scripts (for example `unplanned-001-*`
+verification scripts, then `planning-001-*` through `planning-005-*`), then each
+phase's commit-message script if present, then **one Git commit per hop**.
 
 ### 19.6 Block card
 
@@ -1488,4 +1639,3 @@ devflow card unblock stories-000001
 ```
 
 The card returns to its previous phase.
-
