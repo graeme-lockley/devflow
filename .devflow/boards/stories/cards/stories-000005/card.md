@@ -342,6 +342,10 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 All quality gates satisfied. Card ready to advance to **finishing**.
 
+### Finished (2026-05-16)
+
+Story complete. All Spec Updates applied: `docs/devflow-requirements.md` (§9.3, §11.4, §11.5, §11.9, §13, §15.3, §16.0/§16.1 updated with `--skip` semantics and `actionSkipped` history event), `docs/architecture.md` (CLI flag parsing and transition runner skip logic documented), and `README.md` (advance command table and example with `--skip` flag added). `--skip` flag implementation delivers selective exit-action skipping during phase transitions, preserving backward compatibility and adding 16 new test cases. All 234 tests pass. Ready for done.
+
 ### Planning decisions (resolved open questions)
 
 - **`--skip` + `--force`**: forbidden at CLI dispatch. §11.8 already states
