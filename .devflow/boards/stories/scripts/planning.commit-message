@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Capture commit message for planning → building (req §13.4). stdout only.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board"
+
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+title=$(grep -m1 '^# ' "${card_dir}/card.md" 2>/dev/null | sed 's/^# //' || true)
+title="${title:-$card_id}"
+
+fallback_message() {
+  printf 'docs(stories): plan %s — %s\n' "$card_id" "$title"
+}
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  fallback_message
+  exit 0
+fi
+
+if ! command -v pi >/dev/null 2>&1; then
+  echo "planning.commit-message: pi not on PATH" >&2
+  exit 1
+fi
+
+if [ -z "${DEVFLOW_LIGHT_MODEL:-}" ]; then
+  echo "planning.commit-message: DEVFLOW_LIGHT_MODEL is not set" >&2
+  exit 1
+fi
+
+skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/commit-message"
+exec pi --skill "$skill_dir" --model "${DEVFLOW_LIGHT_MODEL}" --print \
+  "Using the commit-message skill, write a Conventional Commits message for card ${card_id} transitioning from planning to building. Output only the commit message on stdout."

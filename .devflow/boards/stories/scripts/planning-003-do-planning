@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit planning: run plan-story skill via pi.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  echo "DEVFLOW_SKIP_PI=1: skipping pi plan-story" >&2
+  exit 0
+fi
+
+if ! command -v pi >/dev/null 2>&1; then
+  echo "planning-003: pi not on PATH" >&2
+  exit 1
+fi
+
+skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/plan-story"
+exec pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print \
+  "Using the skill plan-story, please plan the story ${card_id}."
