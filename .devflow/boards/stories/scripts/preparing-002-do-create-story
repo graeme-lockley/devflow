@@ -16,4 +16,5 @@ if ! command -v pi >/dev/null 2>&1; then
 fi
 
 skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/create-story"
-exec pi run --skill "$skill_dir" --board "$board" --card "$card_id"
+exec pi --skill "$skill_dir" --model "github-copilot/claude-opus-4.6" \
+  "Using the skill create-story, please create the story ${card_id}."
