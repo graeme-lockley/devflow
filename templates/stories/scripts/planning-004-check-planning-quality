@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Lightweight planning quality check on card.md content.
+card_md="${DEVFLOW_CARD_DIR:?}/card.md"
+min_chars=10
+size=$(wc -c < "$card_md" | tr -d ' ')
+if [ "$size" -lt "$min_chars" ]; then
+  echo "card.md too short for planning quality check (${size} < ${min_chars})" >&2
+  exit 1
+fi
+exit 0

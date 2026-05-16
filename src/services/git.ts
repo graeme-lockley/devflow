@@ -1,5 +1,7 @@
 /** Git preconditions and commits for advance (req §13, ADR-0009). */
 
+import { logVerbose } from "./console.ts";
+
 const GIT_STATE_MARKERS = [
   "MERGE_HEAD",
   "REBASE_HEAD",
@@ -39,6 +41,7 @@ async function runGit(
   repoRoot: string,
   args: string[],
 ): Promise<{ code: number; stderr: string }> {
+  logVerbose(`git ${args.join(" ")}`);
   const result = await new Deno.Command("git", {
     args,
     cwd: repoRoot,

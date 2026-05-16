@@ -1,5 +1,5 @@
 import { advanceRunDir } from "../infra/paths.ts";
-import { getLogLevel } from "./console.ts";
+import { getLogLevel, logInfo } from "./console.ts";
 
 export interface RunScriptRecord {
   name: string;
@@ -57,6 +57,12 @@ export async function createTransitionRun(
   };
 }
 
+function streamScriptToConsole(stdout: string, stderr: string): void {
+  const enc = new TextEncoder();
+  if (stdout) Deno.stderr.writeSync(enc.encode(stdout));
+  if (stderr) Deno.stderr.writeSync(enc.encode(stderr));
+}
+
 export async function appendScriptOutput(
   run: TransitionRunContext,
   scriptName: string,
@@ -64,11 +70,9 @@ export async function appendScriptOutput(
   stderr: string,
 ): Promise<void> {
   const level = getLogLevel();
-  if (level === "verbose") {
-    if (stdout) Deno.stderr.writeSync(new TextEncoder().encode(stdout));
-    if (stderr) Deno.stderr.writeSync(new TextEncoder().encode(stderr));
-  } else if (level === "info") {
-    console.error(`running ${scriptName}`);
+  if (level === "info" || level === "verbose") {
+    logInfo(`running ${scriptName}`);
+    streamScriptToConsole(stdout, stderr);
   }
 
   const logPath = `${run.runDirAbs}/output.log`;

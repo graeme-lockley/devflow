@@ -4,6 +4,7 @@ import {
   devflowRoot,
   repoLockDir,
 } from "../infra/paths.ts";
+import { logVerbose } from "./console.ts";
 import { setInterruptHandler } from "./signals.ts";
 
 export interface AcquireCardLockOptions {
@@ -96,6 +97,7 @@ export async function acquireRepoLock(repoRoot: string): Promise<void> {
     throw e;
   }
   trackAcquire(repoRoot, { kind: "repo" });
+  logVerbose(`acquired repository lock at ${repoLockDir()}`);
 }
 
 export async function releaseRepoLock(
@@ -115,6 +117,7 @@ export async function releaseRepoLock(
     throw e;
   }
   if (untrack) untrackRelease(lock);
+  logVerbose(`released repository lock at ${repoLockDir()}`);
 }
 
 export async function acquireBoardLock(
@@ -140,6 +143,9 @@ export async function acquireBoardLock(
     throw e;
   }
   trackAcquire(repoRoot, { kind: "board", boardName });
+  logVerbose(
+    `acquired board lock for "${boardName}" at ${boardLockDir(boardName)}`,
+  );
 }
 
 export async function releaseBoardLock(
@@ -160,6 +166,7 @@ export async function releaseBoardLock(
     throw e;
   }
   if (untrack) untrackRelease(lock);
+  logVerbose(`released board lock for "${boardName}"`);
 }
 
 /** Returns true if this process acquired the card lock (false when ignoreLock). */
@@ -193,6 +200,9 @@ export async function acquireCardLock(
     throw e;
   }
   trackAcquire(repoRoot, { kind: "card", boardName, cardId });
+  logVerbose(
+    `acquired card lock for "${cardId}" at ${cardLockDir(boardName, cardId)}`,
+  );
   return true;
 }
 
@@ -215,6 +225,7 @@ export async function releaseCardLock(
     throw e;
   }
   if (untrack) untrackRelease(lock);
+  logVerbose(`released card lock for "${cardId}"`);
 }
 
 async function lockExists(path: string): Promise<boolean> {

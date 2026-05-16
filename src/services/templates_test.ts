@@ -29,7 +29,9 @@ Deno.test("initBoard with template copies scripts and skills", async () => {
   const dir = await Deno.makeTempDir();
   await initBoard("stories", ["todo"], dir, { template: "stories" });
 
-  const scriptPath = `${dir}/${boardScriptsDir("stories")}/planning-001-stub`;
+  const scriptPath = `${dir}/${
+    boardScriptsDir("stories")
+  }/planning-001-check-git-empty-status`;
   const skillPath = `${dir}/${boardSkillsDir("stories")}/plan-story/SKILL.md`;
   await Deno.stat(scriptPath);
   await Deno.stat(skillPath);

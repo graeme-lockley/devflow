@@ -5,6 +5,7 @@ export interface ParsedCommand {
 }
 
 const SYNONYMS: Record<string, { object: string; verb: string }> = {
+  validate: { object: "repo", verb: "validate" },
   "init-board": { object: "board", verb: "init" },
   "list-boards": { object: "board", verb: "list" },
   "show-board": { object: "board", verb: "show" },

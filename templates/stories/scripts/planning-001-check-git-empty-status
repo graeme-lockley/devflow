@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit planning: no tracked changes outside .devflow/ (logs dirs may appear mid-advance).
+dirty=$(git status --porcelain | grep -v '^.. \.devflow/' || true)
+if [ -n "$dirty" ]; then
+  echo "git working tree has changes outside .devflow/" >&2
+  echo "$dirty" >&2
+  exit 1
+fi
+exit 0

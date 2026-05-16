@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+board="$1"
+card_id="$2"
+title=$(grep -m1 '^# ' "${DEVFLOW_CARD_DIR}/card.md" | sed 's/^# //')
+printf 'Plan %s: %s\n' "$card_id" "${title:-$card_id}"

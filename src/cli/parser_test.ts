@@ -1,6 +1,14 @@
 import { assertEquals } from "@std/assert";
 import { parseCommand } from "./parser.ts";
 
+Deno.test("parseCommand validate synonym (req §17)", () => {
+  assertEquals(parseCommand(["validate"]), {
+    object: "repo",
+    verb: "validate",
+    positional: [],
+  });
+});
+
 Deno.test("parseCommand canonical board init", () => {
   assertEquals(parseCommand(["board", "init", "stories", "todo"]), {
     object: "board",

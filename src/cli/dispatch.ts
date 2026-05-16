@@ -14,12 +14,13 @@ import { showBoard } from "../commands/show-board.ts";
 import { showCard } from "../commands/show-card.ts";
 import { validateBoardCommand } from "../commands/validate-board-cmd.ts";
 import { validateCardCommand } from "../commands/validate-card-cmd.ts";
+import { validateCommand } from "../commands/validate-cmd.ts";
 import { releaseBoardLockCommand } from "../commands/release-board-lock.ts";
 import { releaseCardLockCommand } from "../commands/release-card-lock.ts";
 import { releaseRepoLockCommand } from "../commands/release-repo-lock.ts";
 import { resolveGitRoot } from "../infra/git-root.ts";
 import { boardRoot } from "../infra/paths.ts";
-import { resetLogLevel, setLogLevel } from "../services/console.ts";
+import { logError, resetLogLevel, setLogLevel } from "../services/console.ts";
 import { parseAddCardFileArgs } from "./add-file-flags.ts";
 import { parseCardListArgs } from "./card-list-flags.ts";
 import { parseAdvanceArgs } from "./advance-flags.ts";
@@ -46,6 +47,8 @@ Usage:
 
   devflow board validate <board>
   devflow validate-board <board>
+
+  devflow validate
 
   devflow card create <board> "<title>"
   devflow create-card <board> "<title>"
@@ -117,6 +120,18 @@ type CommandHandler = (
 const IGNORE_LOCK_COMMANDS = new Set(["variable:set", "card:add-file"]);
 
 const handlers = new Map<string, CommandHandler>([
+  [
+    "repo:validate",
+    async (_positional, repoRoot, _ctx) => {
+      try {
+        return await validateCommand(repoRoot);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        logError(`devflow validate: ${message}`);
+        return 1;
+      }
+    },
+  ],
   [
     "board:init",
     async (positional, repoRoot, _ctx) => {
@@ -320,7 +335,7 @@ const handlers = new Map<string, CommandHandler>([
           console.error(result.message);
         }
         if (result.failureOutput) {
-          console.error(result.failureOutput);
+          logError(result.failureOutput);
         }
         return result.exitCode;
       } catch (e) {

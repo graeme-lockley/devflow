@@ -239,7 +239,9 @@ Deno.test("runCli M1 e2e: init template, validate, list, show", async () => {
       assertEquals(await runCli(["board", "list"]), 0);
       assertEquals(await runCli(["board", "show", "stories"]), 0);
 
-      const script = `${dir}/${boardRoot("stories")}/scripts/planning-001-stub`;
+      const script = `${dir}/${
+        boardRoot("stories")
+      }/scripts/planning-001-check-git-empty-status`;
       const stat = await Deno.stat(script);
       assertEquals(stat.isFile, true);
     } finally {

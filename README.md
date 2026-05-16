@@ -53,11 +53,10 @@ Add to `.gitignore` (also ensured automatically on `board init`):
 Commands use **object-first** form. Each command has a **verb-command** synonym
 (`board init` → `init-board`).
 
-### Implemented (M0–M4)
-
 | Command                                             | Notes                                                             |
 | --------------------------------------------------- | ----------------------------------------------------------------- |
 | `devflow`                                           | Prints usage                                                      |
+| `devflow validate`                                  | Repository, all boards, all cards (§17)                           |
 | `devflow board init` / `init-board`                 | Creates board layout; `--template`, `--sequence-width`; repo lock |
 | `devflow board list` / `list-boards`                | Board names, one per line (plain stdout)                          |
 | `devflow board show` / `show-board`                 | Board metadata on stdout                                          |
@@ -69,6 +68,7 @@ Commands use **object-first** form. Each command has a **verb-command** synonym
 | `devflow card rename` / `rename-card`               | Updates title in `state.json` and `card.md`                       |
 | `devflow card add-file` / `add-card-file`           | Attachment under `files/`                                         |
 | `devflow card validate` / `validate-card`           | §17.2 checks; exit 0 when valid                                   |
+| `devflow card advance` / `advance-card`             | Exit scripts, commit per hop; `--force` skips scripts/git         |
 | `devflow card block` / `block-card`                 | Move card to blocked phase with reason                            |
 | `devflow card unblock` / `unblock-card`             | Restore card to `previousPhase`                                   |
 | `devflow variable get` / `get-variable`             | Variable value on stdout                                          |
@@ -77,40 +77,35 @@ Commands use **object-first** form. Each command has a **verb-command** synonym
 | `devflow lock release-board` / `release-board-lock` | Release stale board lock (`--force`)                              |
 | `devflow lock release-repo` / `release-repo-lock`   | Release stale repository lock (`--force`)                         |
 
-Global flags: `--verbose`, `--summary` (parsed; full console behaviour in M7).
+Global flags: `--verbose` (extra diagnostics), `--summary` (phase lines and
+errors only). Machine-parseable stdout never includes ANSI codes.
+
 `--ignore-lock` on `variable set` and `card add-file` only (skip card lock when
 the parent advance already holds it).
 
 ```bash
 devflow board init stories unplanned planning planned --template stories
+devflow validate
 devflow card create stories "My card"
+devflow card advance stories-000001 planned
 devflow card block stories-000001 "Waiting for API contract"
-devflow card list stories --phase blocked
 devflow card unblock stories-000001
 ```
 
-### Planned (not yet implemented)
-
-`devflow validate` (repo-wide) and full console polish — see
-[`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md) (M7).
-
-`card advance` runs exit scripts, optional `<phase>.commit-message`, updates
-card phase, then creates **one Git commit per successful hop**. Use
-`card advance --force` to jump phase without scripts or commits. Other commands
-do not commit.
-
 See [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) for the
-full specification.
+full specification and
+[`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md) for build
+status.
 
 ## Typical flow
 
 1. Initialize a board (optionally from the `stories` template).
 2. Create a card; it starts in the first phase.
-3. Run `devflow card advance <card-id> <target-phase>` to move forward.
-4. For each phase hop, Devflow runs exit scripts, optional
+3. Commit setup work (new boards, cards) before advancing.
+4. Run `devflow card advance <card-id> <target-phase>` to move forward.
+5. For each phase hop, Devflow runs exit scripts, optional
    `<phase>.commit-message`, updates `state.json`, then `git add -A` and
    `git commit`.
-5. Commit setup work (new boards, cards, variables) manually before advancing.
 6. On failure, the card stays in place; fix the issue and advance again, or use
    `--force` where allowed.
 
@@ -128,6 +123,18 @@ Advance one card at a time per repository.
 ## Requirements
 
 - [Deno](https://docs.deno.com/runtime/) (see [`deno.json`](./deno.json))
+
+### Deno permissions
+
+The CLI and tests use these flags (see [`devflow`](./devflow) and
+[`deno.json`](./deno.json)):
+
+| Flag            | Purpose                                               |
+| --------------- | ----------------------------------------------------- |
+| `--allow-read`  | Read boards, cards, templates, git metadata           |
+| `--allow-write` | Write state, logs, locks, atomic JSON updates         |
+| `--allow-run`   | Execute board scripts and `git` subprocesses          |
+| `--allow-env`   | Set `DEVFLOW_*` for scripts; read `DEVFLOW_LOG_LEVEL` |
 
 ## Development
 
@@ -161,6 +168,3 @@ Install the pre-commit hook (runs `deno lint` and `deno fmt --check`):
 GitHub Actions runs the same checks on push and pull requests: `deno lint`,
 `deno fmt --check`, and `deno task test` (see
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
-
-The CLI is being built to match the requirements specification. M3 blocking is
-complete; see the roadmap for what ships next.

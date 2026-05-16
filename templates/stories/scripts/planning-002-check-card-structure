@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Verify card.md exists and has a title heading.
+board="$1"
+card_id="$2"
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+card_md="${card_dir}/card.md"
+if [ ! -f "$card_md" ]; then
+  echo "missing card.md" >&2
+  exit 1
+fi
+if ! head -1 "$card_md" | grep -q '^# '; then
+  echo "card.md must start with a # title line" >&2
+  exit 1
+fi
+exit 0

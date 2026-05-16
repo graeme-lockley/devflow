@@ -1,4 +1,4 @@
-const LOCK_PATTERNS = [
+export const DEVFLOW_GITIGNORE_PATTERNS = [
   ".devflow/.lock/",
   ".devflow/**/.lock/",
 ] as const;
@@ -19,7 +19,7 @@ export async function ensureDevflowGitignoreEntries(
   const existing = new Set(lines.map((l) => l.trim()));
 
   const toAppend: string[] = [];
-  for (const pattern of LOCK_PATTERNS) {
+  for (const pattern of DEVFLOW_GITIGNORE_PATTERNS) {
     if (!existing.has(pattern)) {
       toAppend.push(pattern);
     }

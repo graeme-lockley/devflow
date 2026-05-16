@@ -15,24 +15,26 @@ on it.
 
 ## Current state (baseline)
 
-**M6 complete.** Per-hop git commits, commit-message scripts, `--force`, and git
-preconditions on advance.
+**M7 complete.** Console levels, `devflow validate`, full `stories` template,
+end-to-end workflow test.
 
-| Area                                   | Status | Gap                             |
-| -------------------------------------- | ------ | ------------------------------- |
-| Layout                                 | `[x]`  | `.devflow/boards/<board>/`      |
-| Board file                             | `[x]`  | load/save/validate `board.json` |
-| CLI                                    | `[x]`  | incl. `card advance --force`    |
-| Identifiers                            | `[x]`  | `^[a-z][a-z0-9_]*$`             |
-| Git root                               | `[x]`  | Resolved via `git rev-parse`    |
-| Templates                              | `[x]`  | built-in `stories` stub         |
-| Repo lock on init                      | `[x]`  | `.devflow/.lock/`               |
-| Cards, board/card locks                | `[x]`  | …                               |
-| Blocking                               | `[x]`  | block / unblock                 |
-| `--ignore-lock`, lock release, signals | `[x]`  | —                               |
-| Transitions (`card advance`)           | `[x]`  | git commit per hop, `--force`   |
+| Area                                   | Status | Gap                              |
+| -------------------------------------- | ------ | -------------------------------- |
+| Layout                                 | `[x]`  | `.devflow/boards/<board>/`       |
+| Board file                             | `[x]`  | load/save/validate `board.json`  |
+| CLI                                    | `[x]`  | incl. `validate`, console levels |
+| Identifiers                            | `[x]`  | `^[a-z][a-z0-9_]*$`              |
+| Git root                               | `[x]`  | Resolved via `git rev-parse`     |
+| Templates                              | `[x]`  | built-in `stories` workflow      |
+| Repo lock on init                      | `[x]`  | `.devflow/.lock/`                |
+| Cards, board/card locks                | `[x]`  | …                                |
+| Blocking                               | `[x]`  | block / unblock                  |
+| `--ignore-lock`, lock release, signals | `[x]`  | —                                |
+| Transitions (`card advance`)           | `[x]`  | git commit per hop, `--force`    |
+| Console output                         | `[x]`  | info / verbose / summary         |
+| Repository validation                  | `[x]`  | `devflow validate`               |
 
-Next milestone: **M7** (polish and dogfood).
+All roadmap milestones are implemented.
 
 ---
 
@@ -341,22 +343,22 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 
 ### Deliverables
 
-- [ ] TTY colour rules; machine stdout without codes
+- [x] TTY colour rules; machine stdout without codes
       ([§16.2](./devflow-requirements.md#162-console-output))
-- [ ] `devflow validate` (repo + all boards + all cards)
+- [x] `devflow validate` (repo + all boards + all cards)
       ([§17](./devflow-requirements.md#17-validation-requirements))
-- [ ] Complete built-in **stories** template (scripts + skills)
+- [x] Complete built-in **stories** template (scripts + skills)
       ([§5.6](./devflow-requirements.md#56-board-templates))
-- [ ] End-to-end example workflow documented in tests or `docs/`
+- [x] End-to-end example workflow documented in tests or `docs/`
       ([§19](./devflow-requirements.md#19-example-workflow))
-- [ ] Deno permissions documented in README / `deno.json` tasks
+- [x] Deno permissions documented in README / `deno.json` tasks
 
 ### Commands (M7)
 
 | Command                         | Spec  | Status |
 | ------------------------------- | ----- | ------ |
-| `devflow validate` / `validate` | §17   | `[ ]`  |
-| All commands — output levels    | §16.2 | `[ ]`  |
+| `devflow validate` / `validate` | §17   | `[x]`  |
+| All commands — output levels    | §16.2 | `[x]`  |
 
 ### Done when
 
@@ -374,7 +376,7 @@ Cross-reference:
 | Command                      | Milestone | Status |
 | ---------------------------- | --------- | ------ |
 | `devflow`                    | M0        | `[x]`  |
-| `devflow validate`           | M7        | `[ ]`  |
+| `devflow validate`           | M7        | `[x]`  |
 | `devflow board init`         | M0/M1     | `[x]`  |
 | `devflow board list`         | M1        | `[x]`  |
 | `devflow board show`         | M1        | `[x]`  |

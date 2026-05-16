@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Run plan-story skill via pi-mono when available; skip in CI with DEVFLOW_SKIP_PI=1.
+board="$1"
+card_id="$2"
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  echo "DEVFLOW_SKIP_PI=1: skipping pi-mono planning" >&2
+  exit 0
+fi
+if ! command -v pi-mono >/dev/null 2>&1; then
+  echo "pi-mono not on PATH: skipping planning invocation" >&2
+  exit 0
+fi
+skill_dir="${DEVFLOW_BOARD_DIR}/skills/plan-story"
+exec pi-mono run --skill "$skill_dir" --board "$board" --card "$card_id"

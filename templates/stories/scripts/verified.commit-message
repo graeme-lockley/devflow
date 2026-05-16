@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+card_id="$2"
+printf 'Advance %s: leave verified\n' "$card_id"

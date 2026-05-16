@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+card_id="$2"
+printf 'Start planning %s\n' "$card_id"

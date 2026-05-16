@@ -8,6 +8,7 @@ import {
   transitionFailedEvent,
   utcNow,
 } from "../domain/history.ts";
+import { logInfo, logSuccess, logSummaryTransition } from "./console.ts";
 import {
   appendGitError,
   appendScriptOutput,
@@ -226,6 +227,9 @@ async function runSingleHopNormal(
   targetPhase: string,
 ): Promise<SingleHopResult> {
   const startedAt = utcNow();
+  logSummaryTransition(hop.from, hop.to);
+  logInfo(`advance ${state.id}: ${hop.from} → ${hop.to}`);
+
   const run = await createTransitionRun(
     repoRoot,
     board.name,
@@ -364,6 +368,7 @@ async function runSingleHopNormal(
   }
 
   await writeRunJson(run, "succeeded", records);
+  logSuccess(`advanced ${state.id} to ${hop.to}`);
   return { ok: true, state: nextState };
 }
 
