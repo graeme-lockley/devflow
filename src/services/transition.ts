@@ -3,7 +3,12 @@ import type { CardState } from "../domain/card.ts";
 import { saveCardState } from "../domain/card.ts";
 import { enumerateHops, isAtTarget } from "../domain/phases.ts";
 import { appendHistory, phaseChangedEvent, utcNow } from "../domain/history.ts";
-import { logInfo, logSuccess, logSummaryTransition } from "./console.ts";
+import {
+  getLogLevel,
+  logInfo,
+  logSuccess,
+  logSummaryTransition,
+} from "./console.ts";
 import {
   appendGitError,
   appendScriptOutput,
@@ -148,18 +153,27 @@ export async function runHopExitScripts(
   };
 
   try {
+    const level = getLogLevel();
+    const streamScriptOutput = level === "info" || level === "verbose";
+
     for (const name of scriptNames) {
       inFlightHop.script = name;
       const scriptPath = `${scriptsDir}/${name}`;
+      if (streamScriptOutput) {
+        logInfo(`running ${name}`);
+      }
       const result = await invokeScript(
         scriptPath,
         board.name,
         state.id,
         env,
         repoRoot,
+        { streamOutput: streamScriptOutput },
       );
       records.push({ name, exitCode: result.exitCode });
-      await appendScriptOutput(run, name, result.stdout, result.stderr);
+      await appendScriptOutput(run, name, result.stdout, result.stderr, {
+        alreadyStreamed: streamScriptOutput,
+      });
 
       if (result.exitCode !== 0) {
         await writeRunJson(run, "failed", records);

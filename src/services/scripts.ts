@@ -28,6 +28,11 @@ export interface ScriptInvokeResult {
   stderr: string;
 }
 
+export interface InvokeScriptOptions {
+  /** Stream stdout/stderr to the console as data arrives (req §16.2). */
+  streamOutput?: boolean;
+}
+
 export function buildScriptEnv(ctx: ScriptHopContext): Record<string, string> {
   const repoRoot = ctx.repoRoot;
   const devflowAbs = `${repoRoot}/${devflowRoot()}`;
@@ -153,6 +158,7 @@ export async function resolveCommitMessage(
     cardId,
     env,
     repoRoot,
+    { streamOutput: false },
   );
 
   if (result.exitCode !== 0) {
@@ -170,16 +176,58 @@ export async function resolveCommitMessage(
 /**
  * Invokes a script directly (shebang honoured). req §9.9, ADR-0007.
  */
+function shouldStreamScriptOutput(
+  options?: InvokeScriptOptions,
+): boolean {
+  if (options?.streamOutput === false) return false;
+  if (options?.streamOutput === true) return true;
+  const level = getLogLevel();
+  return level === "info" || level === "verbose";
+}
+
+function writeStreamChunkToConsole(chunk: Uint8Array): void {
+  if (chunk.length === 0) return;
+  Deno.stderr.writeSync(chunk);
+}
+
+async function readStream(
+  stream: ReadableStream<Uint8Array>,
+  streamToConsole: boolean,
+): Promise<string> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    chunks.push(value);
+    if (streamToConsole) {
+      writeStreamChunkToConsole(value);
+    }
+  }
+  const len = chunks.reduce((n, c) => n + c.length, 0);
+  const buf = new Uint8Array(len);
+  let off = 0;
+  for (const c of chunks) {
+    buf.set(c, off);
+    off += c.length;
+  }
+  return new TextDecoder().decode(buf);
+}
+
 export async function invokeScript(
   scriptPath: string,
   boardName: string,
   cardId: string,
   env: Record<string, string>,
   repoRoot: string,
+  options?: InvokeScriptOptions,
 ): Promise<ScriptInvokeResult> {
   if (!(await isExecutable(scriptPath))) {
     throw new Error(`script is not executable: ${scriptPath}`);
   }
+
+  const streamToConsole = shouldStreamScriptOutput(options);
 
   const cmd = new Deno.Command(scriptPath, {
     args: [boardName, cardId],
@@ -194,8 +242,8 @@ export async function invokeScript(
   try {
     const [status, stdout, stderr] = await Promise.all([
       child.status,
-      readStream(child.stdout),
-      readStream(child.stderr),
+      readStream(child.stdout, streamToConsole),
+      readStream(child.stderr, streamToConsole),
     ]);
 
     const exitCode = status.code ?? (status.success ? 0 : 1);
@@ -203,24 +251,4 @@ export async function invokeScript(
   } finally {
     setActiveChild(null);
   }
-}
-
-async function readStream(
-  stream: ReadableStream<Uint8Array>,
-): Promise<string> {
-  const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (value) chunks.push(value);
-  }
-  const len = chunks.reduce((n, c) => n + c.length, 0);
-  const buf = new Uint8Array(len);
-  let off = 0;
-  for (const c of chunks) {
-    buf.set(c, off);
-    off += c.length;
-  }
-  return new TextDecoder().decode(buf);
 }

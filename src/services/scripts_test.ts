@@ -81,6 +81,61 @@ Deno.test("invokeScript honours env and cwd (req §9.9, §18)", async () => {
   assertEquals(result.stdout, "stories-000001:planning");
 });
 
+Deno.test("invokeScript streams output before exit when streamOutput is true", async () => {
+  const dir = await Deno.makeTempDir();
+  const scriptsDir = `${dir}/${boardScriptsDir("stories")}`;
+  await Deno.mkdir(scriptsDir, { recursive: true });
+  await writeScript(
+    scriptsDir,
+    "slow-echo",
+    "#!/usr/bin/env bash\nset -euo pipefail\npython3 -c \"import sys,time; sys.stderr.write('EARLY_MARKER'); sys.stderr.flush(); time.sleep(0.2); sys.stderr.write('LATE_MARKER\\n'); sys.stderr.flush()\"\n",
+  );
+
+  const { buildScriptEnv, invokeScript } = await import("./scripts.ts");
+  const runDir = `${dir}/run`;
+  await Deno.mkdir(runDir, { recursive: true });
+  const env = buildScriptEnv({
+    repoRoot: dir,
+    boardName: "stories",
+    cardId: "stories-000001",
+    fromPhase: "planning",
+    toPhase: "planned",
+    runDirAbs: runDir,
+  });
+
+  const writes: string[] = [];
+  const origWrite = Deno.stderr.writeSync.bind(Deno.stderr);
+  Deno.stderr.writeSync = (buf: Uint8Array) => {
+    writes.push(new TextDecoder().decode(buf));
+    return origWrite(buf);
+  };
+
+  const invokePromise = invokeScript(
+    `${scriptsDir}/slow-echo`,
+    "stories",
+    "stories-000001",
+    env,
+    dir,
+    { streamOutput: true },
+  );
+
+  let sawEarly = false;
+  const deadline = Date.now() + 500;
+  while (Date.now() < deadline) {
+    if (writes.join("").includes("EARLY_MARKER")) {
+      sawEarly = true;
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  assertEquals(sawEarly, true);
+
+  const result = await invokePromise;
+  Deno.stderr.writeSync = origWrite;
+  assertEquals(result.exitCode, 0);
+  assertEquals(result.stderr.includes("LATE_MARKER"), true);
+});
+
 Deno.test("isExecutable", async () => {
   const dir = await Deno.makeTempDir();
   const path = `${dir}/script`;

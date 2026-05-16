@@ -1,5 +1,5 @@
 import { advanceRunDir } from "../infra/paths.ts";
-import { getLogLevel, logInfo } from "./console.ts";
+import { getLogLevel } from "./console.ts";
 
 export interface RunScriptRecord {
   name: string;
@@ -68,10 +68,11 @@ export async function appendScriptOutput(
   scriptName: string,
   stdout: string,
   stderr: string,
+  options?: { alreadyStreamed?: boolean },
 ): Promise<void> {
   const level = getLogLevel();
-  if (level === "info" || level === "verbose") {
-    logInfo(`running ${scriptName}`);
+  const alreadyStreamed = options?.alreadyStreamed === true;
+  if ((level === "info" || level === "verbose") && !alreadyStreamed) {
     streamScriptToConsole(stdout, stderr);
   }
 
