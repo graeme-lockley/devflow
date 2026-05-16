@@ -25,3 +25,22 @@ phase’s pi skill edits the card (new edits since the last commit).
 
 Helper files (`building-lib.sh`, `*.commit-message`) are not run by Devflow as
 exit scripts.
+
+## Template sections vs exit scripts
+
+Canonical layout:
+[../assets/story.template.md](../assets/story.template.md).
+
+| `##` section | Exit script(s) that gate it |
+| ------------ | --------------------------- |
+| Current State, Objectives | `planning-002` (preparing complete) |
+| Spec References, Acceptance Criteria (draft) | `planning-002`, `planning-004` |
+| Impact Analysis, Test Scenarios, Build Tasks, Spec Updates (planned) | `planning-004` |
+| Build Tasks `[x]`, Build Notes (substance), AC still `[ ]` | `building-003` |
+| `### Verification summary` under **Notes** | `verifying-003` |
+| Acceptance Criteria `[x]` | `verifying-003` |
+| Spec Updates closed; `### Finished` under **Notes** | `finishing-003`, `finishing-004` |
+
+Subsections **`### Verification summary`** and **`### Finished`** must live under
+**`## Notes`**, not **`## Build Notes`**. `finishing-003` fails with a targeted
+message if `### Finished` appears only under Build Notes.

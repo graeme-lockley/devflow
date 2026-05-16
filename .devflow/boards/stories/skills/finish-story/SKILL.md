@@ -1,6 +1,6 @@
 ---
 name: finish-story
-version: 1.0.0
+version: 1.1.0
 description: >-
   Completes the finishing phase of a Devflow story card by finalizing Spec Updates,
   README changes, Build Notes, and release readiness. Use when advancing out of
@@ -38,6 +38,25 @@ unless a doc edit could affect behaviour or a Spec Update row requires it.
 **[`.devflow/boards/stories/assets/story.template.md`](../../assets/story.template.md)**
 
 Satisfy gates marked **finishing** or **exit finishing**.
+
+## `card.md` section map (do not mix)
+
+The [story template](../../assets/story.template.md) fixes **top-level `##`
+headings and order**. Subsections belong only under the parent shown:
+
+| `##` section      | Phase gates (template)              | What belongs here |
+| ----------------- | ----------------------------------- | ----------------- |
+| **Notes**         | optional; verify + finish subsections | Planning decisions, blockers, **`### Verification summary`** (from validate-story), **`### Finished`** (this skill) |
+| **Build Notes**   | started building; complete finishing | As-built implementation log, file lists, deviations—**not** `### Finished` |
+| **Spec Updates**  | planned planning; completed finishing | Table only; close statuses here |
+
+**Critical:** `### Finished (YYYY-MM-DD)` must be added under **`## Notes`**, as a
+sibling of `### Verification summary`—typically immediately after the
+verification summary bullets and **before** any older planning-decision
+subsections, or at the end of **`## Notes`** but still **above** `## Build Notes`.
+
+Never place `### Finished` under **`## Build Notes`**. The exit script
+`finishing-003-check-finishing-quality` reads only the **Notes** section body.
 
 ## Environment
 
@@ -117,16 +136,25 @@ only when the implementation truly matches the milestone description.
 
 ### 6. Card hygiene
 
-- Remove stale `_placeholder_` or `_TBD_` text from any section.
+- Remove stale `_placeholder_` or `_TBD_` text from any section (including
+  `_To be completed in building._` under **Build Notes**).
 - **Attachments**: list evidence files under `files/` with one-line
   descriptions.
-- Add **Notes** entry:
+- Add **`### Finished`** only under **`## Notes`** (not Build Notes):
 
 ```markdown
+## Notes
+
+### Verification summary (YYYY-MM-DD)
+…existing verification content from validate-story…
+
 ### Finished (YYYY-MM-DD)
 
 Story complete. Spec updates: <summary>. Ready for done.
 ```
+
+Do **not** append `### Finished` after `### As-built summary` or
+`### Spec Updates status` in **Build Notes**—those are the wrong section.
 
 ### 7. Final checks
 

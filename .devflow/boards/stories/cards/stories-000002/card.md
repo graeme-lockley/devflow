@@ -193,11 +193,11 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 | Document                       | Planned change                                                   | Status  |
 | ------------------------------ | ---------------------------------------------------------------- | ------- |
-| `docs/devflow-requirements.md` | Extend §6.2 to describe optional `--description` / `--description-file` inputs and their validation rules. **Requires user approval** (AGENTS.md immutable doc rule). | pending (blocked on user approval) |
+| `docs/devflow-requirements.md` | Extend §6.2 to describe optional `--description` / `--description-file` inputs and their validation rules. **Requires user approval** (AGENTS.md immutable doc rule). | deferred (no user approval; follow-up — see Notes) |
 | `docs/architecture.md`         | None. CLI surface only; no module boundary or dependency direction changes.                                                                                          | n/a                                |
 | `docs/adr/`                    | None. Additive CLI flag; no new architectural decision.                                                                                                              | n/a                                |
-| `README.md`                    | Document `--description` and `--description-file` under the `card create` usage section; include one inline and one file example.                                    | pending                            |
-| `docs/implementation-roadmap.md` | Note completion of this enhancement under the existing card-create milestone if/when the roadmap is updated as part of this story.                                  | pending                            |
+| `README.md`                    | Document `--description` and `--description-file` under the `card create` usage section; include one inline and one file example.                                    | done (README.md lines 90–91)       |
+| `docs/implementation-roadmap.md` | Note completion of this enhancement under the existing card-create milestone if/when the roadmap is updated as part of this story.                                  | n/a (existing `card create` milestone already `[x]`; this story is an additive enhancement, no new milestone row) |
 
 ## Notes
 
@@ -223,6 +223,13 @@ _Specification and architecture pointers. Use paths and section anchors._
 - Spec Updates: §6.2 spec extension remains pending user approval (per
   AGENTS.md immutable-doc rule); roadmap update remains pending and is owned
   by the finishing phase. No false closures.
+
+### Finished (2026-05-16)
+
+Story complete. Spec updates: README done; requirements §6.2 deferred (no user
+approval, tracked as follow-up); architecture/ADR/roadmap n/a. No code or doc
+changes in this finishing hop beyond Spec Updates table reconciliation and
+Notes; verification summary from 2026-05-16 stands. Ready for done.
 
 Planning decisions:
 
@@ -264,8 +271,6 @@ Open questions for the user (do not block planning, but flagged):
 ## Build Notes
 
 <!-- phase-gate: started by exit building | complete by exit finishing -->
-
-_To be completed in building._
 
 ### As-built summary
 
@@ -319,8 +324,9 @@ _To be completed in building._
   user approval per AGENTS.md immutable-doc rule). Implementation ships
   independently per the Notes plan.
 - `README.md` — **done**.
-- `docs/implementation-roadmap.md` — left as **pending**; the roadmap is
-  updated as part of finishing, not building.
+- `docs/implementation-roadmap.md` — **n/a**. The existing `card create`
+  milestone row is already `[x]`; this story is an additive enhancement with
+  no new milestone to track.
 
 ## Related Cards
 

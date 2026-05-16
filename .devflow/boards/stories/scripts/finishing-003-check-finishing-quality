@@ -35,9 +35,14 @@ if grep -qE '_To be completed in (planning|building)\.|_TBD_' "$card_md"; then
   fail "card.md still contains planning or building placeholders"
 fi
 
+build_notes=$(section_body "Build Notes")
+if printf '%s\n' "$build_notes" | grep -qE '^###[[:space:]]+Finished'; then
+  fail "### Finished is under ## Build Notes; move it to ## Notes (sibling of ### Verification summary)"
+fi
+
 all_notes=$(section_body "Notes")
 if ! printf '%s\n' "$all_notes" | grep -qE '^###[[:space:]]+Finished'; then
-  fail "Notes must include a ### Finished subsection"
+  fail "Notes must include a ### Finished subsection (under ## Notes, not ## Build Notes)"
 fi
 
 updates=$(section_body "Spec Updates")

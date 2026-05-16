@@ -72,12 +72,15 @@ _Breaking changes, TTY vs machine output, locks, performance, dependencies._
 ## Notes
 
 <!-- phase-gate: optional; ongoing across phases -->
+<!-- verifying: add ### Verification summary (YYYY-MM-DD) here — not under Build Notes -->
+<!-- finishing: add ### Finished (YYYY-MM-DD) here — sibling of Verification summary, not under Build Notes -->
 
 _Decisions, questions, blockers, and planning-time design notes._
 
 ## Build Notes
 
 <!-- phase-gate: started by exit building | complete by exit finishing -->
+<!-- as-built implementation only; do not put ### Finished or ### Verification summary here -->
 
 _As-built log: what was implemented, deviations from plan, follow-ups._
 

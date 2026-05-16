@@ -31,9 +31,14 @@ if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$card_md"; then
   fail "card.md contains merge conflict markers"
 fi
 
+build_notes=$(section_body "Build Notes")
+if printf '%s\n' "$build_notes" | grep -qE '^###[[:space:]]+Verification summary'; then
+  fail "### Verification summary is under ## Build Notes; move it to ## Notes"
+fi
+
 all_notes=$(section_body "Notes")
 if ! printf '%s\n' "$all_notes" | grep -qE '^###[[:space:]]+Verification summary'; then
-  fail "Notes must include a ### Verification summary subsection"
+  fail "Notes must include a ### Verification summary subsection (under ## Notes, not ## Build Notes)"
 fi
 
 ac=$(section_body "Acceptance Criteria")

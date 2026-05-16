@@ -39,8 +39,12 @@ for heading in \
   "Impact Analysis" \
   "Test Scenarios" \
   "Build Tasks" \
-  "Spec Updates"; do
-  grep -q "^## ${heading}$" "$card_md" || fail "missing ## ${heading} section"
+  "Spec Updates" \
+  "Notes" \
+  "Build Notes" \
+  "Related Cards" \
+  "Attachments"; do
+  grep -q "^## ${heading}$" "$card_md" || fail "missing ## ${heading} section (story.template.md)"
 done
 
 impact=$(section_body "Impact Analysis")

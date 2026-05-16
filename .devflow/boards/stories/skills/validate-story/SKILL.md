@@ -1,6 +1,6 @@
 ---
 name: validate-story
-version: 1.0.0
+version: 1.1.0
 description: >-
   Verifies a Devflow story card during the verifying phase by running Test Scenarios,
   checking Acceptance Criteria, and recording evidence. Use when advancing out of
@@ -143,15 +143,21 @@ during build and they were already updated.
 
 ### 9. Validation summary
 
-Add a short **Notes** subsection:
+Add a short subsection under **`## Notes`** only (not under **Build Notes**):
 
 ```markdown
+## Notes
+
 ### Verification summary (YYYY-MM-DD)
 
 - Test scenarios: N/M pass
 - Acceptance criteria: N/M checked
 - Commands: deno test (pass/fail), devflow validate (pass/fail)
 ```
+
+The exit script `verifying-003-check-verifying-quality` searches the **Notes**
+section body for `^### Verification summary`. Do not place this heading under
+**Build Notes**.
 
 Exit 0 only when all ACs are `[x]` (or waived) and all scenarios pass.
 
