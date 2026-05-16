@@ -148,7 +148,7 @@ Exit 0 only when implementation is ready for verification.
 
 ## pi invocation
 
-Invoked by `building-002-do-build` (with CI retry loop) when leaving **building**:
+Invoked by `building-002-do-build` (with CI + Test Scenarios retry loop) when leaving **building**:
 
 ```bash
 pi --skill .devflow/boards/stories/skills/build-story \
@@ -156,6 +156,7 @@ pi --skill .devflow/boards/stories/skills/build-story \
   "Using the skill build-story, implement <card-id>."
 ```
 
-Set `DEVFLOW_SKIP_PI=1` to skip pi in CI (runs `deno task ci` only). Set
-`DEVFLOW_BUILD_MAX_ROUNDS` to cap retry rounds (default 5). Non-zero exit fails
-the transition.
+Set `DEVFLOW_SKIP_PI=1` to skip pi (runs quality gates only). Each round runs
+`deno task ci` then automated **Test Scenarios** from the card (with the same
+`deno test` permissions as `deno.json`). Set `DEVFLOW_BUILD_MAX_ROUNDS` to cap
+retries (default 5). Non-zero exit fails the transition.

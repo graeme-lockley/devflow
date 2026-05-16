@@ -89,8 +89,16 @@ while IFS= read -r line; do
   fi
 
   if ! path_allowed "$path"; then
-    echo "building-007: change outside allowed scope: ${path}" >&2
-    echo "building-007: allowed: ${card_rel}/, src/, README.md, Spec Updates rows marked done/pending" >&2
+    case "$path" in
+      .devflow/boards/*/scripts/*|.devflow/boards/*/skills/*)
+        echo "building-007: board script/skill changes are not part of this story: ${path}" >&2
+        echo "building-007: commit or stash infrastructure changes, then re-run advance" >&2
+        ;;
+      *)
+        echo "building-007: change outside allowed scope: ${path}" >&2
+        echo "building-007: allowed: ${card_rel}/, src/, README.md, Spec Updates rows marked done/pending" >&2
+        ;;
+    esac
     exit 1
   fi
 done <<< "$porcelain"
