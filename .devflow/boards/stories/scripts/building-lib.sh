@@ -1,6 +1,57 @@
 # Shared helpers for building exit scripts (not invoked by Devflow).
 # shellcheck shell=bash
 
+# Populates BUILDING_ALLOWED_DOC_PATHS from Spec Updates (done|pending rows).
+building_collect_allowed_doc_paths() {
+  local card_md="$1"
+  BUILDING_ALLOWED_DOC_PATHS=()
+  [ -f "$card_md" ] || return 0
+  local line doc status
+  while IFS= read -r line; do
+    [[ "$line" =~ ^\|[[:space:]]*\`([^\`]+)\`[[:space:]]*\| ]] || continue
+    doc="${BASH_REMATCH[1]}"
+    status=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | tr -d ' ')
+    case "$status" in
+      done|pending) BUILDING_ALLOWED_DOC_PATHS+=("$doc") ;;
+    esac
+  done < <(building_section_body "$card_md" "Spec Updates")
+}
+
+# True when path is allowed for story implementation (card, src, docs, README).
+building_path_allowed_for_story() {
+  local path="$1"
+  local card_rel="$2"
+  case "$path" in
+    "${card_rel}"/*|"$card_rel") return 0 ;;
+    src/*) return 0 ;;
+    README.md) return 0 ;;
+    deno.json|deno.lock) return 0 ;;
+  esac
+  local doc
+  for doc in "${BUILDING_ALLOWED_DOC_PATHS[@]}"; do
+    [ "$path" = "$doc" ] && return 0
+  done
+  return 1
+}
+
+# Invokes a function for each path in git status --porcelain: fn <path> [extra-args…]
+building_foreach_porcelain_path() {
+  local repo_root="$1"
+  local fn="$2"
+  shift 2
+  local line path
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    path="${line:3}"
+    if [[ "$path" == *" -> "* ]]; then
+      path="${path##* -> }"
+    fi
+    path="${path#\"}"
+    path="${path%\"}"
+    "$fn" "$path" "$@"
+  done < <(git -C "$repo_root" status --porcelain)
+}
+
 # Match deno.json "test" / "ci" task permissions.
 BUILDING_DENO_TEST_FLAGS=(
   --allow-read

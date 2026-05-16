@@ -13,6 +13,11 @@ repo_root="${repo_root%/}"
 card_dir="${card_dir%/}"
 card_rel="${card_dir#"$repo_root"/}"
 board_cards_rel="${board_dir#"$repo_root"/}/cards"
+card_md="${card_dir}/card.md"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=building-lib.sh
+source "${script_dir}/building-lib.sh"
 
 if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
   echo "building-007: skipping git scope check (DEVFLOW_SKIP_PI=1)" >&2
@@ -24,52 +29,35 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 1
 fi
 
-porcelain=$(git status --porcelain)
+porcelain=$(git -C "$repo_root" status --porcelain)
 if [ -z "$porcelain" ]; then
   echo "building-007: expected repository changes after build-story" >&2
   exit 1
 fi
 
-allowed_doc_paths=()
-card_md="${card_dir}/card.md"
-if [ -f "$card_md" ]; then
-  while IFS= read -r line; do
-    [[ "$line" =~ ^\|[[:space:]]*\`([^\`]+)\`[[:space:]]*\| ]] || continue
-    doc="${BASH_REMATCH[1]}"
-    status=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | tr -d ' ')
-    case "$status" in
-      done|pending) allowed_doc_paths+=("$doc") ;;
-    esac
-  done < <(awk '/^## Spec Updates$/{f=1;next} f && /^## /{exit} f' "$card_md")
-fi
-
-path_allowed() {
-  local path="$1"
-  case "$path" in
-    "${card_rel}"/*|"$card_rel") return 0 ;;
-    src/*) return 0 ;;
-    README.md) return 0 ;;
-    deno.json|deno.lock) return 0 ;;
-  esac
-  local doc
-  for doc in "${allowed_doc_paths[@]}"; do
-    [ "$path" = "$doc" ] && return 0
-  done
-  return 1
-}
+building_collect_allowed_doc_paths "$card_md"
 
 card_md_seen=0
 src_seen=0
+failed=0
 
-while IFS= read -r line; do
-  [ -z "$line" ] && continue
+_reject_path() {
+  local path="$1"
+  case "$path" in
+    .devflow/boards/*/scripts/*|.devflow/boards/*/skills/*)
+      echo "building-007: board script/skill changes are not part of this story: ${path}" >&2
+      echo "building-007: commit or stash infrastructure changes, then re-run advance" >&2
+      ;;
+    *)
+      echo "building-007: change outside allowed scope: ${path}" >&2
+      echo "building-007: allowed: ${card_rel}/, src/, README.md, Spec Updates rows marked done/pending" >&2
+      ;;
+  esac
+  failed=1
+}
 
-  path="${line:3}"
-  if [[ "$path" == *" -> "* ]]; then
-    path="${path##* -> }"
-  fi
-  path="${path#\"}"
-  path="${path%\"}"
+_check_path() {
+  local path="$1"
 
   if [ "$path" = "${card_rel}/card.md" ]; then
     card_md_seen=1
@@ -78,30 +66,27 @@ while IFS= read -r line; do
     src_seen=1
   fi
 
-  # Other cards on this or any board
   if [[ "$path" == "${board_cards_rel}"/* ]] && [[ "$path" != "${card_rel}"/* ]]; then
     echo "building-007: change to another card: ${path}" >&2
-    exit 1
+    failed=1
+    return 0
   fi
   if [[ "$path" == .devflow/boards/*/cards/* ]] && [[ "$path" != "${card_rel}"/* ]]; then
     echo "building-007: change outside this card directory: ${path}" >&2
-    exit 1
+    failed=1
+    return 0
   fi
 
-  if ! path_allowed "$path"; then
-    case "$path" in
-      .devflow/boards/*/scripts/*|.devflow/boards/*/skills/*)
-        echo "building-007: board script/skill changes are not part of this story: ${path}" >&2
-        echo "building-007: commit or stash infrastructure changes, then re-run advance" >&2
-        ;;
-      *)
-        echo "building-007: change outside allowed scope: ${path}" >&2
-        echo "building-007: allowed: ${card_rel}/, src/, README.md, Spec Updates rows marked done/pending" >&2
-        ;;
-    esac
-    exit 1
+  if ! building_path_allowed_for_story "$path" "$card_rel"; then
+    _reject_path "$path"
   fi
-done <<< "$porcelain"
+}
+
+building_foreach_porcelain_path "$repo_root" _check_path
+
+if [ "$failed" -ne 0 ]; then
+  exit 1
+fi
 
 if [ "$card_md_seen" -ne 1 ]; then
   echo "building-007: expected ${card_rel}/card.md to be modified" >&2
