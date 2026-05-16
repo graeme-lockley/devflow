@@ -6,6 +6,7 @@ const ESC = "\x1b[";
 const GREY = `${ESC}90m`;
 const GREEN = `${ESC}32m`;
 const RED = `${ESC}31m`;
+const BOLD = `${ESC}1m`;
 const RESET = `${ESC}0m`;
 
 let activeLevel: LogLevel = "info";
@@ -36,9 +37,47 @@ function isStderrTTY(): boolean {
   }
 }
 
+function isStdoutTTY(): boolean {
+  try {
+    return Deno.stdout.isTerminal();
+  } catch {
+    return false;
+  }
+}
+
 /** True when stderr may use ANSI colour (req §16.2). */
 export function colorsEnabled(): boolean {
   return isStderrTTY();
+}
+
+/**
+ * True when stdout may use ANSI colour for formatted human output
+ * (req §16.2, §16.4). Only commands not listed as machine-parseable
+ * should consult this.
+ */
+export function colorsEnabledForStdout(): boolean {
+  return isStdoutTTY();
+}
+
+/**
+ * Wraps text in a bold ANSI sequence when colour is enabled, otherwise
+ * returns text unchanged. Used to emphasise key tokens (req §16.2,
+ * ADR-0011). `colour` defaults to the stderr TTY state because most
+ * emphasis is used inside stderr diagnostics; pass an explicit value
+ * for stdout formatters.
+ */
+export function emphasise(
+  text: string,
+  colour: boolean = colorsEnabled(),
+): string {
+  if (!colour) return text;
+  return `${BOLD}${text}${RESET}`;
+}
+
+/** Wrap text in the grey ANSI sequence when colour is enabled. */
+export function grey(text: string, colour: boolean = colorsEnabled()): string {
+  if (!colour) return text;
+  return `${GREY}${text}${RESET}`;
 }
 
 function colorize(text: string, code: string): string {

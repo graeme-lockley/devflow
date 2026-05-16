@@ -1,7 +1,9 @@
 import { assertEquals } from "@std/assert";
 import {
   colorsEnabled,
+  emphasise,
   formatTransitionFailurePlain,
+  grey,
   logCliMessage,
   logError,
   logInfo,
@@ -130,6 +132,16 @@ Deno.test("formatTransitionFailurePlain uses Error headline (req §11.5)", () =>
   assertEquals(out.startsWith("Error: transition failed"), true);
   assertEquals(out.includes("card: stories-000001"), true);
   assertEquals(out.includes("ERROR:"), false);
+});
+
+Deno.test("emphasise returns plain text when colour disabled", () => {
+  assertEquals(emphasise("hello", false), "hello");
+  assertEquals(grey("k:", false), "k:");
+});
+
+Deno.test("emphasise wraps text in bold ANSI when colour enabled", () => {
+  assertEquals(emphasise("hello", true), "\x1b[1mhello\x1b[0m");
+  assertEquals(grey("k:", true), "\x1b[90mk:\x1b[0m");
 });
 
 Deno.test("logCliMessage plain when stderr is not a TTY", () => {

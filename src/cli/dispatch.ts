@@ -19,8 +19,10 @@ import { releaseBoardLockCommand } from "../commands/release-board-lock.ts";
 import { releaseCardLockCommand } from "../commands/release-card-lock.ts";
 import { releaseRepoLockCommand } from "../commands/release-repo-lock.ts";
 import { resolveGitRoot } from "../infra/git-root.ts";
-import { boardRoot } from "../infra/paths.ts";
+import { boardConfigFile, boardRoot } from "../infra/paths.ts";
 import {
+  colorsEnabled,
+  emphasise,
   logCliMessage,
   logError,
   logTransitionFailure,
@@ -155,7 +157,12 @@ const handlers = new Map<string, CommandHandler>([
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow board init ${boardName}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "board init",
+          subject: boardName,
+          detail: message,
+        });
         return 1;
       }
     },
@@ -184,7 +191,19 @@ const handlers = new Map<string, CommandHandler>([
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow board show ${boardName}: ${message}`);
+        const colour = colorsEnabled();
+        const path = boardConfigFile(boardName);
+        // Emphasise the mistyped board name (in quotes) and the resolved
+        // board.json path when the message follows the standard shape.
+        const detail = message
+          .replace(`"${boardName}"`, `"${emphasise(boardName, colour)}"`)
+          .replace(path, emphasise(path, colour));
+        logCliMessage({
+          kind: "error",
+          command: "board show",
+          subject: boardName,
+          detail,
+        });
         return 1;
       }
     },
@@ -204,7 +223,12 @@ const handlers = new Map<string, CommandHandler>([
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow card create ${boardName}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "card create",
+          subject: boardName,
+          detail: message,
+        });
         return 1;
       }
     },
@@ -240,7 +264,12 @@ const handlers = new Map<string, CommandHandler>([
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow card show ${cardId}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "card show",
+          subject: cardId,
+          detail: message,
+        });
         return 1;
       }
     },
@@ -260,7 +289,12 @@ const handlers = new Map<string, CommandHandler>([
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow card dir ${cardId}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "card dir",
+          subject: cardId,
+          detail: message,
+        });
         return 1;
       }
     },
@@ -279,7 +313,12 @@ const handlers = new Map<string, CommandHandler>([
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow card rename ${cardId}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "card rename",
+          subject: cardId,
+          detail: message,
+        });
         return 1;
       }
     },
@@ -317,7 +356,12 @@ const handlers = new Map<string, CommandHandler>([
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow card block ${cardId}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "card block",
+          subject: cardId,
+          detail: message,
+        });
         return 1;
       }
     },
@@ -375,7 +419,12 @@ const handlers = new Map<string, CommandHandler>([
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow card unblock ${cardId}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "card unblock",
+          subject: cardId,
+          detail: message,
+        });
         return 1;
       }
     },
@@ -393,7 +442,12 @@ const handlers = new Map<string, CommandHandler>([
         return await validateCardCommand(cardId, repoRoot);
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow card validate ${cardId}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "card validate",
+          subject: cardId,
+          detail: message,
+        });
         return 1;
       }
     },
