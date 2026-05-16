@@ -53,6 +53,32 @@ export function cardLogsDir(boardName: string, cardId: string): string {
   return `${cardDir(boardName, cardId)}/logs`;
 }
 
+/** UTC timestamp for advance run dir name (req §15.2). */
+export function formatAdvanceTimestamp(date: Date): string {
+  return date.toISOString().replace(/:/g, "-").replace(/\.\d{3}/, "");
+}
+
+export function advanceRunDirName(
+  fromPhase: string,
+  toPhase: string,
+  date: Date = new Date(),
+): string {
+  const ts = formatAdvanceTimestamp(date);
+  return `${ts}-advance-${fromPhase}-${toPhase}`;
+}
+
+export function advanceRunDir(
+  boardName: string,
+  cardId: string,
+  fromPhase: string,
+  toPhase: string,
+  date: Date = new Date(),
+): string {
+  return `${cardLogsDir(boardName, cardId)}/${
+    advanceRunDirName(fromPhase, toPhase, date)
+  }`;
+}
+
 export function cardLockDir(boardName: string, cardId: string): string {
   return `${cardDir(boardName, cardId)}/.lock`;
 }

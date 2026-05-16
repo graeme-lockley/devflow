@@ -27,7 +27,26 @@ export type HistoryEvent =
   | FileAttachedEvent
   | BlockedEvent
   | UnblockedEvent
+  | PhaseChangedEvent
+  | TransitionFailedEvent
   | Record<string, unknown>;
+
+export interface PhaseChangedEvent {
+  type: "phaseChanged";
+  at: string;
+  from: string;
+  to: string;
+  mode: "normal" | "force";
+}
+
+export interface TransitionFailedEvent {
+  type: "transitionFailed";
+  at: string;
+  from: string;
+  to: string;
+  script: string;
+  exitCode: number;
+}
 
 export interface CreatedEvent {
   type: "created";

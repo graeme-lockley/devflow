@@ -91,11 +91,15 @@ devflow card unblock stories-000001
 
 ### Planned (not yet implemented)
 
-`card advance` and `devflow validate` — see
+`devflow validate` and full git integration on `card advance` (per-hop commits,
+commit-message scripts, `--force`) — see
 [`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md).
 
-Git commits are created only by `card advance` (one per successful phase hop).
-Other commands do not commit.
+`card advance` runs exit scripts and updates card phase; **git commits per hop
+are not yet implemented** (M6).
+
+Git commits will be created only by `card advance` (one per successful phase
+hop). Other commands do not commit.
 
 See [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) for the
 full specification.

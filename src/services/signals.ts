@@ -1,4 +1,4 @@
-/** Signal handling per req §14.5 and ADR-0010. History on interrupt deferred to M5 advance. */
+/** Signal handling per req §14.5 and ADR-0010. Interrupt history via transition.ts. */
 
 const CHILD_WAIT_MS = 5000;
 

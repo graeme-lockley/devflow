@@ -66,6 +66,22 @@ Deno.test("parseCommand card block and unblock synonyms", () => {
   });
 });
 
+Deno.test("parseCommand card advance synonym (req §11)", () => {
+  assertEquals(
+    parseCommand(["card", "advance", "stories-000001", "building"]),
+    {
+      object: "card",
+      verb: "advance",
+      positional: ["stories-000001", "building"],
+    },
+  );
+  assertEquals(parseCommand(["advance-card", "stories-000001", "building"]), {
+    object: "card",
+    verb: "advance",
+    positional: ["stories-000001", "building"],
+  });
+});
+
 Deno.test("parseCommand lock release synonyms (req §14.6)", () => {
   assertEquals(parseCommand(["lock", "release", "stories-000001"]), {
     object: "lock",

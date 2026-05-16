@@ -4,7 +4,9 @@ import type {
   CreatedEvent,
   FileAttachedEvent,
   HistoryEvent,
+  PhaseChangedEvent,
   TitleChangedEvent,
+  TransitionFailedEvent,
   UnblockedEvent,
 } from "./card.ts";
 
@@ -42,6 +44,25 @@ export function blockedEvent(
 
 export function unblockedEvent(to: string, at: string): UnblockedEvent {
   return { type: "unblocked", at, to };
+}
+
+export function phaseChangedEvent(
+  from: string,
+  to: string,
+  at: string,
+  mode: PhaseChangedEvent["mode"] = "normal",
+): PhaseChangedEvent {
+  return { type: "phaseChanged", at, from, to, mode };
+}
+
+export function transitionFailedEvent(
+  from: string,
+  to: string,
+  script: string,
+  exitCode: number,
+  at: string,
+): TransitionFailedEvent {
+  return { type: "transitionFailed", at, from, to, script, exitCode };
 }
 
 export function appendHistory(

@@ -15,24 +15,25 @@ on it.
 
 ## Current state (baseline)
 
-**M4 complete.** Lock registry, manual `lock release*`, `--ignore-lock` on
-`variable set` / `card add-file`, signal cleanup (§14.5) via `signals.ts`.
+**M5 complete.** Transition runner and `card advance` without git commits;
+per-hop logs; git precondition stub (§13.8). Git commits and `--force` remain
+**M6**.
 
-| Area                                   | Status | Gap                                                    |
-| -------------------------------------- | ------ | ------------------------------------------------------ |
-| Layout                                 | `[x]`  | `.devflow/boards/<board>/`                             |
-| Board file                             | `[x]`  | load/save/validate `board.json`                        |
-| CLI                                    | `[x]`  | board + card + variable + block/unblock + lock release |
-| Identifiers                            | `[x]`  | `^[a-z][a-z0-9_]*$`                                    |
-| Git root                               | `[x]`  | Resolved via `git rev-parse`                           |
-| Templates                              | `[x]`  | built-in `stories` stub; local override                |
-| Repo lock on init                      | `[x]`  | `.devflow/.lock/`                                      |
-| Cards, board/card locks                | `[x]`  | create/list/show/dir/rename/add-file/…                 |
-| Blocking                               | `[x]`  | block / unblock; advance preconditions                 |
-| `--ignore-lock`, lock release, signals | `[x]`  | —                                                      |
-| Transitions (`card advance`)           | `[ ]`  | M5–M6                                                  |
+| Area                                   | Status | Gap                             |
+| -------------------------------------- | ------ | ------------------------------- |
+| Layout                                 | `[x]`  | `.devflow/boards/<board>/`      |
+| Board file                             | `[x]`  | load/save/validate `board.json` |
+| CLI                                    | `[x]`  | incl. `card advance`            |
+| Identifiers                            | `[x]`  | `^[a-z][a-z0-9_]*$`             |
+| Git root                               | `[x]`  | Resolved via `git rev-parse`    |
+| Templates                              | `[x]`  | built-in `stories` stub         |
+| Repo lock on init                      | `[x]`  | `.devflow/.lock/`               |
+| Cards, board/card locks                | `[x]`  | …                               |
+| Blocking                               | `[x]`  | block / unblock                 |
+| `--ignore-lock`, lock release, signals | `[x]`  | —                               |
+| Transitions (`card advance`)           | `[x]`  | M6: git commit per hop          |
 
-Next milestone: **M5** (transition runner without git).
+Next milestone: **M6** (git integration on advance).
 
 ---
 
@@ -262,34 +263,34 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 
 ### Deliverables
 
-- [ ] Script discovery and lexical ordering
+- [x] Script discovery and lexical ordering
       ([§9.3](./devflow-requirements.md#93-script-execution-order))
-- [ ] Script invocation: repo root cwd, args, `DEVFLOW_*` env
+- [x] Script invocation: repo root cwd, args, `DEVFLOW_*` env
       ([§9.4](./devflow-requirements.md#94-script-arguments),
       [§18](./devflow-requirements.md#18-environment-variables-for-scripts))
-- [ ] Direct executable invocation (shebang)
+- [x] Direct executable invocation (shebang)
       ([§9.9](./devflow-requirements.md#99-script-execution-environment))
-- [ ] Log capture under `logs/<timestamp>-advance-…/`
+- [x] Log capture under `logs/<timestamp>-advance-…/`
       ([§15](./devflow-requirements.md#15-logs))
-- [ ] `card advance`: single-hop and multi-hop
+- [x] `card advance`: single-hop and multi-hop
       ([§11.3](./devflow-requirements.md#113-multi-phase-advance),
       [§11.4](./devflow-requirements.md#114-transition-algorithm))
-- [ ] Failure behaviour, `transitionFailed` history
+- [x] Failure behaviour, `transitionFailed` history
       ([§11.5](./devflow-requirements.md#115-failure-behaviour))
-- [ ] Already-at-target no-op
+- [x] Already-at-target no-op
       ([§11.6](./devflow-requirements.md#116-already-at-target-behaviour))
-- [ ] Reject backward target
+- [x] Reject backward target
       ([§11.7](./devflow-requirements.md#117-backward-movement))
-- [ ] Git precondition check stub (merge/rebase detection) — full behaviour in
+- [x] Git precondition check stub (merge/rebase detection) — full behaviour in
       M6 ([§13.8](./devflow-requirements.md#138-git-preconditions))
-- [ ] **Defer git commit** to M6; advance updates phase and logs only in M5
+- [x] **Defer git commit** to M6; advance updates phase and logs only in M5
       integration tests
 
 ### Commands (M5)
 
 | Command                                 | Spec | Status |
 | --------------------------------------- | ---- | ------ |
-| `devflow card advance` / `advance-card` | §11  | `[ ]`  |
+| `devflow card advance` / `advance-card` | §11  | `[x]`  |
 
 ### Done when
 
@@ -384,7 +385,7 @@ Cross-reference:
 | `devflow card show`          | M2        | `[x]`  |
 | `devflow card dir`           | M2        | `[x]`  |
 | `devflow card add-file`      | M2        | `[x]`  |
-| `devflow card advance`       | M5/M6     | `[ ]`  |
+| `devflow card advance`       | M5/M6     | `[~]`  |
 | `devflow card block`         | M3        | `[x]`  |
 | `devflow card unblock`       | M3        | `[x]`  |
 | `devflow card rename`        | M2        | `[x]`  |

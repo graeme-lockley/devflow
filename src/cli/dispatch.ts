@@ -8,6 +8,7 @@ import { formatBoardList, listBoards } from "../commands/list-boards.ts";
 import { formatCardList, listCards } from "../commands/list-cards.ts";
 import { renameCard } from "../commands/rename-card.ts";
 import { unblockCard } from "../commands/unblock-card.ts";
+import { advanceCard } from "../commands/card-advance.ts";
 import { setVariable } from "../commands/set-variable.ts";
 import { showBoard } from "../commands/show-board.ts";
 import { showCard } from "../commands/show-card.ts";
@@ -71,6 +72,9 @@ Usage:
 
   devflow card unblock <card-id>
   devflow unblock-card <card-id>
+
+  devflow card advance <card-id> <phase>
+  devflow advance-card <card-id> <phase>
 
   devflow variable get <card-id> <NAME>
   devflow get-variable <card-id> <NAME>
@@ -292,6 +296,33 @@ const handlers = new Map<string, CommandHandler>([
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         console.error(`devflow card block ${cardId}: ${message}`);
+        return 1;
+      }
+    },
+  ],
+  [
+    "card:advance",
+    async (positional, repoRoot, _ctx) => {
+      const [cardId, targetPhase] = positional;
+      if (!cardId || !targetPhase) {
+        console.error(
+          "devflow card advance: card id and target phase required\n",
+        );
+        console.log(USAGE.trimEnd());
+        return 1;
+      }
+      try {
+        const result = await advanceCard(cardId, targetPhase, repoRoot);
+        if (result.message) {
+          console.error(result.message);
+        }
+        if (result.failureOutput) {
+          console.error(result.failureOutput);
+        }
+        return result.exitCode;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error(`devflow card advance ${cardId}: ${message}`);
         return 1;
       }
     },
