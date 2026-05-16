@@ -1,7 +1,9 @@
 import {
+  isCommitMessageScript,
   matchesExitScript,
   sortExitScriptNames,
 } from "../domain/script-names.ts";
+import { defaultCommitMessage } from "./git.ts";
 import {
   boardRoot,
   boardScriptsDir,
@@ -85,6 +87,84 @@ export async function listExitScripts(
   }
 
   return sortExitScriptNames(names);
+}
+
+export function commitMessageScriptName(phase: string): string {
+  return `${phase}.commit-message`;
+}
+
+/**
+ * Resolves executable <phase>.commit-message script path, or null (req §13.4).
+ */
+export async function resolveCommitMessageScript(
+  repoRoot: string,
+  boardName: string,
+  phase: string,
+): Promise<string | null> {
+  const name = commitMessageScriptName(phase);
+  if (!isCommitMessageScript(name, phase)) return null;
+
+  const path = `${repoRoot}/${boardScriptsDir(boardName)}/${name}`;
+  if (await isExecutable(path)) return path;
+  return null;
+}
+
+export function fallbackCommitMessage(
+  cardId: string,
+  fromPhase: string,
+  toPhase: string,
+): string {
+  return defaultCommitMessage(cardId, fromPhase, toPhase);
+}
+
+export type CommitMessageResult =
+  | { ok: true; message: string; scriptName: string | null }
+  | { ok: false; scriptName: string; exitCode: number };
+
+/**
+ * Runs commit-message script or fallback (req §13.4). Stdout is not streamed.
+ */
+export async function resolveCommitMessage(
+  repoRoot: string,
+  boardName: string,
+  cardId: string,
+  hop: { from: string; to: string },
+  hopCtx: ScriptHopContext,
+): Promise<CommitMessageResult> {
+  const scriptPath = await resolveCommitMessageScript(
+    repoRoot,
+    boardName,
+    hop.from,
+  );
+
+  if (!scriptPath) {
+    return {
+      ok: true,
+      message: fallbackCommitMessage(cardId, hop.from, hop.to),
+      scriptName: null,
+    };
+  }
+
+  const name = commitMessageScriptName(hop.from);
+  const env = buildScriptEnv(hopCtx);
+  const result = await invokeScript(
+    scriptPath,
+    boardName,
+    cardId,
+    env,
+    repoRoot,
+  );
+
+  if (result.exitCode !== 0) {
+    return { ok: false, scriptName: name, exitCode: result.exitCode };
+  }
+
+  const message = result.stdout.trim();
+  if (!message) {
+    return { ok: false, scriptName: name, exitCode: 0 };
+  }
+
+  return { ok: true, message, scriptName: name };
 }
 
 /**

@@ -9,18 +9,23 @@ import {
   utcNow,
 } from "../domain/history.ts";
 import {
+  appendGitError,
   appendScriptOutput,
   createTransitionRun,
   type RunScriptRecord,
   type TransitionRunContext,
+  writeCommitMessageTxt,
   writeRunJson,
 } from "./transition-logs.ts";
 import {
   buildScriptEnv,
+  commitMessageScriptName,
   invokeScript,
   listExitScripts,
+  resolveCommitMessage,
   type ScriptHopContext,
 } from "./scripts.ts";
+import { commit, stageAll } from "./git.ts";
 import { boardScriptsDir } from "../infra/paths.ts";
 
 export interface RunAdvanceOptions {
@@ -30,19 +35,31 @@ export interface RunAdvanceOptions {
   targetPhase: string;
 }
 
+export type AdvanceFailure =
+  | {
+    kind: "script";
+    script: string;
+    exitCode: number;
+    logPath: string;
+    from: string;
+    to: string;
+    targetPhase: string;
+  }
+  | {
+    kind: "git";
+    gitError: string;
+    logPath: string;
+    from: string;
+    to: string;
+    targetPhase: string;
+  };
+
 export type AdvanceResult =
   | { ok: true; state: CardState; hops: number; alreadyAtTarget?: boolean }
   | {
     ok: false;
     state: CardState;
-    failure: {
-      script: string;
-      exitCode: number;
-      logPath: string;
-      from: string;
-      to: string;
-      targetPhase: string;
-    };
+    failure: AdvanceFailure;
   };
 
 export interface HopFailure {
@@ -117,22 +134,13 @@ export interface RunHopScriptsFailure {
   state: CardState;
 }
 
-export async function runHopScripts(
+export async function runHopExitScripts(
   repoRoot: string,
   board: BoardConfig,
   state: CardState,
   hop: { from: string; to: string },
+  run: TransitionRunContext,
 ): Promise<RunHopScriptsResult | RunHopScriptsFailure> {
-  const startedAt = utcNow();
-  const run = await createTransitionRun(
-    repoRoot,
-    board.name,
-    state.id,
-    hop.from,
-    hop.to,
-    startedAt,
-  );
-
   const scriptNames = await listExitScripts(repoRoot, board.name, hop.from);
   const records: RunScriptRecord[] = [];
   const scriptsDir = `${repoRoot}/${boardScriptsDir(board.name)}`;
@@ -197,11 +205,166 @@ export async function runHopScripts(
       }
     }
 
-    await writeRunJson(run, "succeeded", records);
     return { ok: true, run, records };
   } finally {
     clearInFlightHop();
   }
+}
+
+type SingleHopResult =
+  | { ok: true; state: CardState }
+  | { ok: false; state: CardState; failure: AdvanceFailure };
+
+/**
+ * One normal advance hop: exit scripts → commit-message → state → git (req §13.5).
+ */
+async function runSingleHopNormal(
+  repoRoot: string,
+  board: BoardConfig,
+  state: CardState,
+  hop: { from: string; to: string },
+  targetPhase: string,
+): Promise<SingleHopResult> {
+  const startedAt = utcNow();
+  const run = await createTransitionRun(
+    repoRoot,
+    board.name,
+    state.id,
+    hop.from,
+    hop.to,
+    startedAt,
+  );
+
+  const exitResult = await runHopExitScripts(
+    repoRoot,
+    board,
+    state,
+    hop,
+    run,
+  );
+  if (!exitResult.ok) {
+    return {
+      ok: false,
+      state: exitResult.state,
+      failure: {
+        kind: "script",
+        script: exitResult.failure.script,
+        exitCode: exitResult.failure.exitCode,
+        logPath: exitResult.failure.logPath,
+        from: hop.from,
+        to: hop.to,
+        targetPhase,
+      },
+    };
+  }
+
+  let records = [...exitResult.records];
+  const hopCtx: ScriptHopContext = {
+    repoRoot,
+    boardName: board.name,
+    cardId: state.id,
+    fromPhase: hop.from,
+    toPhase: hop.to,
+    runDirAbs: run.runDirAbs,
+  };
+
+  const msgScriptName = commitMessageScriptName(hop.from);
+  inFlightHop = {
+    repoRoot,
+    board,
+    state,
+    hop,
+    run,
+    script: msgScriptName,
+  };
+
+  let commitMessage: string;
+  try {
+    const msgResult = await resolveCommitMessage(
+      repoRoot,
+      board.name,
+      state.id,
+      hop,
+      hopCtx,
+    );
+
+    if (!msgResult.ok) {
+      records = [...records, {
+        name: msgResult.scriptName,
+        exitCode: msgResult.exitCode,
+      }];
+      await writeRunJson(run, "failed", records);
+      const at = utcNow();
+      const failedState = appendHistory(
+        state,
+        transitionFailedEvent(
+          hop.from,
+          hop.to,
+          msgResult.scriptName,
+          msgResult.exitCode,
+          at,
+        ),
+      );
+      await saveCardState(repoRoot, board.name, failedState);
+      return {
+        ok: false,
+        state: failedState,
+        failure: {
+          kind: "script",
+          script: msgResult.scriptName,
+          exitCode: msgResult.exitCode,
+          logPath: `${run.runDirRel}/output.log`,
+          from: hop.from,
+          to: hop.to,
+          targetPhase,
+        },
+      };
+    }
+
+    if (msgResult.scriptName) {
+      records = [...records, { name: msgResult.scriptName, exitCode: 0 }];
+    }
+    commitMessage = msgResult.message;
+  } finally {
+    clearInFlightHop();
+  }
+
+  await writeCommitMessageTxt(run, commitMessage);
+
+  const at = utcNow();
+  const nextState = appendHistory(
+    {
+      ...state,
+      phase: hop.to,
+      updatedAt: at,
+    },
+    phaseChangedEvent(hop.from, hop.to, at, "normal"),
+  );
+  await saveCardState(repoRoot, board.name, nextState);
+
+  try {
+    await stageAll(repoRoot);
+    await commit(repoRoot, commitMessage);
+  } catch (e) {
+    const gitError = e instanceof Error ? e.message : String(e);
+    await appendGitError(run, gitError);
+    await writeRunJson(run, "failed", records);
+    return {
+      ok: false,
+      state: nextState,
+      failure: {
+        kind: "git",
+        gitError,
+        logPath: `${run.runDirRel}/output.log`,
+        from: hop.from,
+        to: hop.to,
+        targetPhase,
+      },
+    };
+  }
+
+  await writeRunJson(run, "succeeded", records);
+  return { ok: true, state: nextState };
 }
 
 export async function runAdvance(
@@ -218,34 +381,45 @@ export async function runAdvance(
   let completed = 0;
 
   for (const hop of hops) {
-    const result = await runHopScripts(repoRoot, board, state, hop);
-    if (!result.ok) {
-      return {
-        ok: false,
-        state: result.state,
-        failure: {
-          script: result.failure.script,
-          exitCode: result.failure.exitCode,
-          logPath: result.failure.logPath,
-          from: hop.from,
-          to: hop.to,
-          targetPhase,
-        },
-      };
-    }
-
-    const at = utcNow();
-    state = appendHistory(
-      {
-        ...state,
-        phase: hop.to,
-        updatedAt: at,
-      },
-      phaseChangedEvent(hop.from, hop.to, at, "normal"),
+    const result = await runSingleHopNormal(
+      repoRoot,
+      board,
+      state,
+      hop,
+      targetPhase,
     );
-    await saveCardState(repoRoot, board.name, state);
+    if (!result.ok) {
+      return { ok: false, state: result.state, failure: result.failure };
+    }
+    state = result.state;
     completed++;
   }
 
   return { ok: true, state, hops: completed };
+}
+
+/** Force advance: single jump, no scripts or git (req §11.8). */
+export async function runForceAdvance(
+  options: RunAdvanceOptions,
+): Promise<AdvanceResult> {
+  const { repoRoot, board, targetPhase } = options;
+  let state = options.state;
+
+  if (isAtTarget(state.phase, targetPhase)) {
+    return { ok: true, state, hops: 0, alreadyAtTarget: true };
+  }
+
+  const from = state.phase;
+  const at = utcNow();
+  state = appendHistory(
+    {
+      ...state,
+      phase: targetPhase,
+      updatedAt: at,
+    },
+    phaseChangedEvent(from, targetPhase, at, "force"),
+  );
+  await saveCardState(repoRoot, board.name, state);
+
+  return { ok: true, state, hops: 1 };
 }

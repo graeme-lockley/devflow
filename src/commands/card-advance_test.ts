@@ -1,10 +1,15 @@
 import { assertEquals } from "@std/assert";
-import { withTempGitRepo } from "../../test/helpers/git-repo.ts";
+import {
+  countCommits,
+  latestCommitSubject,
+  withTempGitRepo,
+} from "../../test/helpers/git-repo.ts";
 import { initBoard } from "./init-board.ts";
 import { createCard } from "./create-card.ts";
 import { advanceCard } from "./card-advance.ts";
 import { blockCard } from "./block-card.ts";
 import { loadCardState } from "../domain/card.ts";
+import { fallbackCommitMessage } from "../services/scripts.ts";
 import { boardScriptsDir } from "../infra/paths.ts";
 import { runCli } from "../cli/dispatch.ts";
 
@@ -48,6 +53,27 @@ Deno.test("advanceCard single-hop updates phase (req §11.4)", async () => {
       e.type === "phaseChanged"
     );
     assertEquals(changed.length, 1);
+  });
+});
+
+Deno.test("advanceCard creates one git commit per hop (req §13.5)", async () => {
+  await withTempGitRepo(async (dir) => {
+    const cardId = await setupBoard(dir, ["a", "b"]);
+    await writeScript(
+      dir,
+      "test",
+      "a-001-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+
+    const before = await countCommits(dir);
+    const result = await advanceCard(cardId, "b", dir);
+    assertEquals(result.exitCode, 0);
+    assertEquals(await countCommits(dir), before + 1);
+    assertEquals(
+      await latestCommitSubject(dir),
+      fallbackCommitMessage(cardId, "a", "b"),
+    );
   });
 });
 
@@ -125,6 +151,32 @@ Deno.test("advanceCard rejects backward target (req §11.7)", async () => {
   });
 });
 
+Deno.test("advanceCard force moves backward without commit (req §11.8)", async () => {
+  await withTempGitRepo(async (dir) => {
+    const cardId = await setupBoard(dir, ["a", "b", "c"]);
+    await writeScript(
+      dir,
+      "test",
+      "a-001-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+    await advanceCard(cardId, "b", dir);
+    const before = await countCommits(dir);
+
+    const result = await advanceCard(cardId, "a", dir, { force: true });
+    assertEquals(result.exitCode, 0);
+    assertEquals(await countCommits(dir), before);
+
+    const state = await loadCardState(dir, "test", cardId);
+    assertEquals(state.phase, "a");
+    const forced = state.history.filter((e) =>
+      typeof e === "object" && e !== null && "type" in e &&
+      e.type === "phaseChanged" && "mode" in e && e.mode === "force"
+    );
+    assertEquals(forced.length, 1);
+  });
+});
+
 Deno.test("advanceCard blocked card (req §12.3)", async () => {
   await withTempGitRepo(async (dir) => {
     const cardId = await setupBoard(dir, ["a", "b"]);
@@ -151,39 +203,6 @@ Deno.test("advanceCard already at target (req §11.6)", async () => {
   });
 });
 
-Deno.test("advanceCard does not create git commits (M5)", async () => {
-  await withTempGitRepo(async (dir) => {
-    const cardId = await setupBoard(dir, ["a", "b"]);
-    await writeScript(
-      dir,
-      "test",
-      "a-001-pass",
-      "#!/usr/bin/env bash\nexit 0\n",
-    );
-
-    const before = new Deno.Command("git", {
-      args: ["rev-list", "--count", "HEAD"],
-      cwd: dir,
-      stdout: "piped",
-    }).output();
-    const countBefore = Number(
-      new TextDecoder().decode((await before).stdout).trim(),
-    );
-
-    await advanceCard(cardId, "b", dir);
-
-    const after = new Deno.Command("git", {
-      args: ["rev-list", "--count", "HEAD"],
-      cwd: dir,
-      stdout: "piped",
-    }).output();
-    const countAfter = Number(
-      new TextDecoder().decode((await after).stdout).trim(),
-    );
-    assertEquals(countAfter, countBefore);
-  });
-});
-
 Deno.test("runCli card advance (req §16)", async () => {
   await withTempGitRepo(async (dir) => {
     const original = Deno.cwd();
@@ -204,6 +223,32 @@ Deno.test("runCli card advance (req §16)", async () => {
       );
 
       assertEquals(await runCli(["card", "advance", "test-000001", "b"]), 0);
+    } finally {
+      Deno.chdir(original);
+    }
+  });
+});
+
+Deno.test("runCli card advance --force (req §11.8)", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      await runCli(["board", "init", "test", "a", "b", "c"]);
+      await runCli(["card", "create", "test", "Title"]);
+      await writeScript(
+        dir,
+        "test",
+        "a-001-pass",
+        "#!/usr/bin/env bash\nexit 0\n",
+      );
+      await runCli(["card", "advance", "test-000001", "b"]);
+      assertEquals(
+        await runCli(["card", "advance", "test-000001", "a", "--force"]),
+        0,
+      );
+      const state = await loadCardState(dir, "test", "test-000001");
+      assertEquals(state.phase, "a");
     } finally {
       Deno.chdir(original);
     }

@@ -103,3 +103,21 @@ export async function writeRunJson(
 export function runLogPath(run: TransitionRunContext): string {
   return `${run.runDirRel}/output.log`;
 }
+
+/** Writes captured commit message to run directory (req §15.2). */
+export async function writeCommitMessageTxt(
+  run: TransitionRunContext,
+  message: string,
+): Promise<void> {
+  await Deno.writeTextFile(`${run.runDirAbs}/commit-message.txt`, message);
+}
+
+export async function appendGitError(
+  run: TransitionRunContext,
+  error: string,
+): Promise<void> {
+  const logPath = `${run.runDirAbs}/output.log`;
+  const header = "\n--- git commit ---\n";
+  const existing = await Deno.readTextFile(logPath).catch(() => "");
+  await Deno.writeTextFile(logPath, existing + header + error + "\n");
+}

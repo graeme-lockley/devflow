@@ -1,4 +1,4 @@
-/** Git preconditions for advance (req §13.8). Commits deferred to M6. */
+/** Git preconditions and commits for advance (req §13, ADR-0009). */
 
 const GIT_STATE_MARKERS = [
   "MERGE_HEAD",
@@ -24,5 +24,52 @@ export async function assertGitAdvanceAllowed(repoRoot: string): Promise<void> {
       if (e instanceof Error && e.message.includes("unresolved")) throw e;
       throw e;
     }
+  }
+}
+
+export function defaultCommitMessage(
+  cardId: string,
+  fromPhase: string,
+  toPhase: string,
+): string {
+  return `Advance ${cardId} from ${fromPhase} to ${toPhase}`;
+}
+
+async function runGit(
+  repoRoot: string,
+  args: string[],
+): Promise<{ code: number; stderr: string }> {
+  const result = await new Deno.Command("git", {
+    args,
+    cwd: repoRoot,
+    stdout: "null",
+    stderr: "piped",
+  }).output();
+  return {
+    code: result.code,
+    stderr: new TextDecoder().decode(result.stderr).trim(),
+  };
+}
+
+/** Stages all changes from repository root (req §13.6). */
+export async function stageAll(repoRoot: string): Promise<void> {
+  const { code, stderr } = await runGit(repoRoot, ["add", "-A"]);
+  if (code !== 0) {
+    throw new Error(stderr || "git add -A failed");
+  }
+}
+
+/** Creates a commit with the given message (req §13.5). */
+export async function commit(
+  repoRoot: string,
+  message: string,
+): Promise<void> {
+  const { code, stderr } = await runGit(repoRoot, [
+    "commit",
+    "-m",
+    message,
+  ]);
+  if (code !== 0) {
+    throw new Error(stderr || "git commit failed");
   }
 }

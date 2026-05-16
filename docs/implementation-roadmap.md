@@ -15,15 +15,14 @@ on it.
 
 ## Current state (baseline)
 
-**M5 complete.** Transition runner and `card advance` without git commits;
-per-hop logs; git precondition stub (§13.8). Git commits and `--force` remain
-**M6**.
+**M6 complete.** Per-hop git commits, commit-message scripts, `--force`, and git
+preconditions on advance.
 
 | Area                                   | Status | Gap                             |
 | -------------------------------------- | ------ | ------------------------------- |
 | Layout                                 | `[x]`  | `.devflow/boards/<board>/`      |
 | Board file                             | `[x]`  | load/save/validate `board.json` |
-| CLI                                    | `[x]`  | incl. `card advance`            |
+| CLI                                    | `[x]`  | incl. `card advance --force`    |
 | Identifiers                            | `[x]`  | `^[a-z][a-z0-9_]*$`             |
 | Git root                               | `[x]`  | Resolved via `git rev-parse`    |
 | Templates                              | `[x]`  | built-in `stories` stub         |
@@ -31,9 +30,9 @@ per-hop logs; git precondition stub (§13.8). Git commits and `--force` remain
 | Cards, board/card locks                | `[x]`  | …                               |
 | Blocking                               | `[x]`  | block / unblock                 |
 | `--ignore-lock`, lock release, signals | `[x]`  | —                               |
-| Transitions (`card advance`)           | `[x]`  | M6: git commit per hop          |
+| Transitions (`card advance`)           | `[x]`  | git commit per hop, `--force`   |
 
-Next milestone: **M6** (git integration on advance).
+Next milestone: **M7** (polish and dogfood).
 
 ---
 
@@ -307,24 +306,24 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 
 ### Deliverables
 
-- [ ] Per-hop: exit scripts → commit-message → state update → `git add -A` →
+- [x] Per-hop: exit scripts → commit-message → state update → `git add -A` →
       `git commit` ([§13.5](./devflow-requirements.md#135-per-hop-lifecycle))
-- [ ] Commit-message script handling and fallback
+- [x] Commit-message script handling and fallback
       ([§13.4](./devflow-requirements.md#134-commit-message-scripts))
-- [ ] Git failure after state update: no history append, manual recovery message
+- [x] Git failure after state update: no history append, manual recovery message
       ([§13.7](./devflow-requirements.md#137-git-commit-failure))
-- [ ] Unresolved merge/rebase guard before scripts
+- [x] Unresolved merge/rebase guard before scripts
       ([§13.8](./devflow-requirements.md#138-git-preconditions))
-- [ ] `card advance --force`: no scripts, no commit
+- [x] `card advance --force`: no scripts, no commit
       ([§11.8](./devflow-requirements.md#118-force-movement))
-- [ ] Repo + card locks for full advance
+- [x] Repo + card locks for full advance
       ([§14.1](./devflow-requirements.md#141-locking-model))
 
 ### Commands (M6)
 
 | Command                                        | Spec     | Status |
 | ---------------------------------------------- | -------- | ------ |
-| `devflow card advance` / `advance-card` (full) | §11, §13 | `[ ]`  |
+| `devflow card advance` / `advance-card` (full) | §11, §13 | `[x]`  |
 
 ### Done when
 
@@ -385,7 +384,7 @@ Cross-reference:
 | `devflow card show`          | M2        | `[x]`  |
 | `devflow card dir`           | M2        | `[x]`  |
 | `devflow card add-file`      | M2        | `[x]`  |
-| `devflow card advance`       | M5/M6     | `[~]`  |
+| `devflow card advance`       | M5/M6     | `[x]`  |
 | `devflow card block`         | M3        | `[x]`  |
 | `devflow card unblock`       | M3        | `[x]`  |
 | `devflow card rename`        | M2        | `[x]`  |

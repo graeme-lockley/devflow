@@ -22,6 +22,7 @@ import { boardRoot } from "../infra/paths.ts";
 import { resetLogLevel, setLogLevel } from "../services/console.ts";
 import { parseAddCardFileArgs } from "./add-file-flags.ts";
 import { parseCardListArgs } from "./card-list-flags.ts";
+import { parseAdvanceArgs } from "./advance-flags.ts";
 import { parseLockForceArgs } from "./lock-force-flags.ts";
 import {
   parseGlobalFlags,
@@ -73,8 +74,8 @@ Usage:
   devflow card unblock <card-id>
   devflow unblock-card <card-id>
 
-  devflow card advance <card-id> <phase>
-  devflow advance-card <card-id> <phase>
+  devflow card advance <card-id> <phase> [--force]
+  devflow advance-card <card-id> <phase> [--force]
 
   devflow variable get <card-id> <NAME>
   devflow get-variable <card-id> <NAME>
@@ -303,7 +304,7 @@ const handlers = new Map<string, CommandHandler>([
   [
     "card:advance",
     async (positional, repoRoot, _ctx) => {
-      const [cardId, targetPhase] = positional;
+      const { cardId, targetPhase, force } = parseAdvanceArgs(positional);
       if (!cardId || !targetPhase) {
         console.error(
           "devflow card advance: card id and target phase required\n",
@@ -312,7 +313,9 @@ const handlers = new Map<string, CommandHandler>([
         return 1;
       }
       try {
-        const result = await advanceCard(cardId, targetPhase, repoRoot);
+        const result = await advanceCard(cardId, targetPhase, repoRoot, {
+          force,
+        });
         if (result.message) {
           console.error(result.message);
         }

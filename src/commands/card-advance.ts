@@ -15,7 +15,16 @@ import {
   releaseAllHeldLocks,
 } from "../services/locks.ts";
 import { setInterruptHandler } from "../services/signals.ts";
-import { recordInterruptFailure, runAdvance } from "../services/transition.ts";
+import {
+  recordInterruptFailure,
+  runAdvance,
+  runForceAdvance,
+} from "../services/transition.ts";
+import type { AdvanceFailure } from "../services/transition.ts";
+
+export interface AdvanceCardOptions {
+  force?: boolean;
+}
 
 export interface AdvanceCardResult {
   exitCode: number;
@@ -23,7 +32,7 @@ export interface AdvanceCardResult {
   failureOutput?: string;
 }
 
-function formatFailureOutput(
+function formatScriptFailureOutput(
   cardId: string,
   phase: string,
   targetPhase: string,
@@ -43,6 +52,49 @@ function formatFailureOutput(
   ].join("\n");
 }
 
+function formatGitFailureOutput(
+  cardId: string,
+  phase: string,
+  targetPhase: string,
+  gitError: string,
+  logPath: string,
+): string {
+  return [
+    "ERROR: git commit failed",
+    "",
+    `card: ${cardId}`,
+    `phase: ${phase}`,
+    `target: ${targetPhase}`,
+    `git: ${gitError}`,
+    `log: ${logPath}`,
+  ].join("\n");
+}
+
+function formatFailureOutput(
+  cardId: string,
+  phase: string,
+  targetPhase: string,
+  failure: AdvanceFailure,
+): string {
+  if (failure.kind === "git") {
+    return formatGitFailureOutput(
+      cardId,
+      phase,
+      targetPhase,
+      failure.gitError,
+      failure.logPath,
+    );
+  }
+  return formatScriptFailureOutput(
+    cardId,
+    phase,
+    targetPhase,
+    failure.script,
+    failure.exitCode,
+    failure.logPath,
+  );
+}
+
 const defaultInterruptHandler = async (_signal: Deno.Signal) => {
   const root = getLastRepoRoot();
   if (root) await releaseAllHeldLocks(root);
@@ -52,12 +104,14 @@ export async function advanceCard(
   cardId: string,
   targetPhase: string,
   repoRoot: string,
+  options: AdvanceCardOptions = {},
 ): Promise<AdvanceCardResult> {
+  const { force = false } = options;
   const boardName = await resolveBoardForCard(repoRoot, cardId);
   const board = await loadBoardConfig(repoRoot, boardName);
   const state = await loadCardState(repoRoot, boardName, cardId);
 
-  assertAdvanceAllowed(state, board, targetPhase);
+  assertAdvanceAllowed(state, board, targetPhase, { force });
   assertNormalPhase(board, targetPhase);
 
   if (isAtTarget(state.phase, targetPhase)) {
@@ -67,7 +121,9 @@ export async function advanceCard(
     };
   }
 
-  assertForwardTarget(board, state.phase, targetPhase);
+  if (!force) {
+    assertForwardTarget(board, state.phase, targetPhase);
+  }
   await assertGitAdvanceAllowed(repoRoot);
 
   setInterruptHandler(async (signal) => {
@@ -79,12 +135,19 @@ export async function advanceCard(
   await acquireCardLock(repoRoot, boardName, cardId);
 
   try {
-    const result = await runAdvance({
-      repoRoot,
-      board,
-      state,
-      targetPhase,
-    });
+    const result = force
+      ? await runForceAdvance({
+        repoRoot,
+        board,
+        state,
+        targetPhase,
+      })
+      : await runAdvance({
+        repoRoot,
+        board,
+        state,
+        targetPhase,
+      });
 
     if (result.ok) {
       return { exitCode: 0 };
@@ -96,9 +159,7 @@ export async function advanceCard(
         cardId,
         result.state.phase,
         targetPhase,
-        result.failure.script,
-        result.failure.exitCode,
-        result.failure.logPath,
+        result.failure,
       ),
     };
   } finally {
