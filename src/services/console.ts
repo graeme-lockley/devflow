@@ -55,6 +55,12 @@ export function logInfo(message: string): void {
   writeStderr(colorize(message, GREY));
 }
 
+/** Default terminal colour (no ANSI styling); suppressed in summary mode. */
+export function logPlain(message: string): void {
+  if (activeLevel === "summary") return;
+  writeStderr(message);
+}
+
 export function logSuccess(message: string): void {
   if (activeLevel === "summary") return;
   writeStderr(colorize(message, GREEN));

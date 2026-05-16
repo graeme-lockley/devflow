@@ -5,6 +5,7 @@ import {
   logCliMessage,
   logError,
   logInfo,
+  logPlain,
   logSuccess,
   logSummaryTransition,
   logVerbose,
@@ -104,6 +105,17 @@ Deno.test("logInfo suppressed in summary mode", () => {
   resetLogLevel();
   setLogLevel("summary");
   assertEquals(captureStderr(() => logInfo("grey")), "");
+});
+
+Deno.test("logPlain has no ANSI and is suppressed in summary mode", () => {
+  resetLogLevel();
+  setLogLevel("info");
+  const out = captureStderr(() => logPlain("committed"));
+  assertEquals(ANSI_RE.test(out), false);
+  assertEquals(out, "committed");
+
+  setLogLevel("summary");
+  assertEquals(captureStderr(() => logPlain("committed")), "");
 });
 
 Deno.test("formatTransitionFailurePlain uses Error headline (req §11.5)", () => {

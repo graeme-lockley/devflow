@@ -1,6 +1,6 @@
 /** Git preconditions and commits for advance (req §13, ADR-0009). */
 
-import { logInfo, logVerbose } from "./console.ts";
+import { logPlain, logVerbose } from "./console.ts";
 
 const GIT_STATE_MARKERS = [
   "MERGE_HEAD",
@@ -83,16 +83,16 @@ function logCommittedFiles(message: string, files: string[]): void {
   const subject = message.split("\n")[0]?.trim() ?? message;
   const preview = subject.length > 72 ? `${subject.slice(0, 69)}...` : subject;
   if (files.length === 0) {
-    logInfo(`git commit: ${preview}`);
+    logPlain(`git commit: ${preview}`);
     return;
   }
-  logInfo(
+  logPlain(
     `git commit (${files.length} file${
       files.length === 1 ? "" : "s"
     }): ${preview}`,
   );
   for (const file of files) {
-    logInfo(`  ${file}`);
+    logPlain(`  ${file}`);
   }
 }
 
