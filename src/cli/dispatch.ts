@@ -13,11 +13,15 @@ import { showBoard } from "../commands/show-board.ts";
 import { showCard } from "../commands/show-card.ts";
 import { validateBoardCommand } from "../commands/validate-board-cmd.ts";
 import { validateCardCommand } from "../commands/validate-card-cmd.ts";
+import { releaseBoardLockCommand } from "../commands/release-board-lock.ts";
+import { releaseCardLockCommand } from "../commands/release-card-lock.ts";
+import { releaseRepoLockCommand } from "../commands/release-repo-lock.ts";
 import { resolveGitRoot } from "../infra/git-root.ts";
 import { boardRoot } from "../infra/paths.ts";
 import { resetLogLevel, setLogLevel } from "../services/console.ts";
 import { parseAddCardFileArgs } from "./add-file-flags.ts";
 import { parseCardListArgs } from "./card-list-flags.ts";
+import { parseLockForceArgs } from "./lock-force-flags.ts";
 import {
   parseGlobalFlags,
   resolveLogLevel,
@@ -56,8 +60,8 @@ Usage:
   devflow card rename <card-id> "<title>"
   devflow rename-card <card-id> "<title>"
 
-  devflow card add-file <card-id> <source> [--overwrite]
-  devflow add-card-file <card-id> <source> [--overwrite]
+  devflow card add-file <card-id> <source> [--overwrite] [--ignore-lock]
+  devflow add-card-file <card-id> <source> [--overwrite] [--ignore-lock]
 
   devflow card validate <card-id>
   devflow validate-card <card-id>
@@ -71,29 +75,46 @@ Usage:
   devflow variable get <card-id> <NAME>
   devflow get-variable <card-id> <NAME>
 
-  devflow variable set <card-id> <NAME> <value>
-  devflow set-variable <card-id> <NAME> <value>
+  devflow variable set <card-id> <NAME> <value> [--ignore-lock]
+  devflow set-variable <card-id> <NAME> <value> [--ignore-lock]
+
+  devflow lock release <card-id> [--force]
+  devflow release-lock <card-id> [--force]
+
+  devflow lock release-board <board> [--force]
+  devflow release-board-lock <board> [--force]
+
+  devflow lock release-repo [--force]
+  devflow release-repo-lock [--force]
 
   <board>   Board name (^[a-z][a-z0-9_]*$)
   <card-id> Card ID (e.g. stories-000001)
   <phase>   Phase names in forward order (blocked is added automatically)
 
 Global flags:
-  --verbose   Verbose console output
-  --summary   Summary-only console output
+  --verbose       Verbose console output
+  --summary       Summary-only console output
+  --ignore-lock   Skip card lock (variable set and card add-file only)
 
 Run \`devflow\` with no arguments to print this help.
 `;
 
+export interface CommandContext {
+  ignoreLock: boolean;
+}
+
 type CommandHandler = (
   positional: string[],
   repoRoot: string,
+  ctx: CommandContext,
 ) => Promise<number>;
+
+const IGNORE_LOCK_COMMANDS = new Set(["variable:set", "card:add-file"]);
 
 const handlers = new Map<string, CommandHandler>([
   [
     "board:init",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [boardName, ...rest] = positional;
       if (!boardName) {
         console.error("devflow board init: board name required\n");
@@ -115,7 +136,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "board:list",
-    async (_positional, repoRoot) => {
+    async (_positional, repoRoot, _ctx) => {
       const names = await listBoards(repoRoot);
       const out = formatBoardList(names);
       if (out) Deno.stdout.writeSync(new TextEncoder().encode(out));
@@ -124,7 +145,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "board:show",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [boardName] = positional;
       if (!boardName) {
         console.error("devflow board show: board name required\n");
@@ -144,7 +165,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:create",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [boardName, title] = positional;
       if (!boardName || title === undefined) {
         console.error("devflow card create: board name and title required\n");
@@ -164,7 +185,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:list",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       try {
         const { boardName, phase } = parseCardListArgs(positional);
         const ids = await listCards(boardName, repoRoot, phase);
@@ -180,7 +201,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:show",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [cardId] = positional;
       if (!cardId) {
         console.error("devflow card show: card id required\n");
@@ -200,7 +221,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:dir",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [cardId] = positional;
       if (!cardId) {
         console.error("devflow card dir: card id required\n");
@@ -220,7 +241,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:rename",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [cardId, title] = positional;
       if (!cardId || title === undefined) {
         console.error("devflow card rename: card id and title required\n");
@@ -239,12 +260,15 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:add-file",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       try {
         const { cardId, sourcePath, overwrite } = parseAddCardFileArgs(
           positional,
         );
-        await addCardFile(cardId, sourcePath, repoRoot, { overwrite });
+        await addCardFile(cardId, sourcePath, repoRoot, {
+          overwrite,
+          ignoreLock: _ctx.ignoreLock,
+        });
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
@@ -255,7 +279,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:block",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [cardId, reason] = positional;
       if (!cardId || reason === undefined) {
         console.error("devflow card block: card id and reason required\n");
@@ -274,7 +298,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:unblock",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [cardId] = positional;
       if (!cardId) {
         console.error("devflow card unblock: card id required\n");
@@ -293,7 +317,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "card:validate",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [cardId] = positional;
       if (!cardId) {
         console.error("devflow card validate: card id required\n");
@@ -311,7 +335,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "variable:get",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [cardId, name] = positional;
       if (!cardId || !name) {
         console.error(
@@ -333,7 +357,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "variable:set",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [cardId, name, ...rest] = positional;
       if (!cardId || !name || rest.length === 0) {
         console.error(
@@ -344,7 +368,9 @@ const handlers = new Map<string, CommandHandler>([
       }
       const value = rest.join(" ");
       try {
-        await setVariable(cardId, name, value, repoRoot);
+        await setVariable(cardId, name, value, repoRoot, {
+          ignoreLock: _ctx.ignoreLock,
+        });
         return 0;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
@@ -355,7 +381,7 @@ const handlers = new Map<string, CommandHandler>([
   ],
   [
     "board:validate",
-    async (positional, repoRoot) => {
+    async (positional, repoRoot, _ctx) => {
       const [boardName] = positional;
       if (!boardName) {
         console.error("devflow board validate: board name required\n");
@@ -363,6 +389,71 @@ const handlers = new Map<string, CommandHandler>([
         return 1;
       }
       return await validateBoardCommand(boardName, repoRoot);
+    },
+  ],
+  [
+    "lock:release",
+    async (positional, repoRoot, _ctx) => {
+      try {
+        const { target: cardId, force } = parseLockForceArgs(positional);
+        if (!cardId) {
+          console.error("devflow lock release: card id required\n");
+          console.log(USAGE.trimEnd());
+          return 1;
+        }
+        const message = await releaseCardLockCommand(cardId, repoRoot, force);
+        console.error(message);
+        return 0;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error(`devflow lock release: ${message}`);
+        return 1;
+      }
+    },
+  ],
+  [
+    "lock:release-board",
+    async (positional, repoRoot, _ctx) => {
+      try {
+        const { target: boardName, force } = parseLockForceArgs(positional);
+        if (!boardName) {
+          console.error("devflow lock release-board: board name required\n");
+          console.log(USAGE.trimEnd());
+          return 1;
+        }
+        const message = await releaseBoardLockCommand(
+          boardName,
+          repoRoot,
+          force,
+        );
+        console.error(message);
+        return 0;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error(`devflow lock release-board: ${message}`);
+        return 1;
+      }
+    },
+  ],
+  [
+    "lock:release-repo",
+    async (positional, repoRoot, _ctx) => {
+      try {
+        let force = false;
+        for (const arg of positional) {
+          if (arg === "--force") force = true;
+          else {
+            throw new Error(`unexpected argument "${arg}"`);
+          }
+        }
+        const message = await releaseRepoLockCommand(repoRoot, force);
+        console.error(message);
+        return 0;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error(`devflow lock release-repo: ${message}`);
+        return 1;
+      }
     },
   ],
 ]);
@@ -374,11 +465,6 @@ export async function runCli(args: string[]): Promise<number> {
   const flagError = validateGlobalFlags(flags);
   if (flagError) {
     console.error(flagError);
-    return 1;
-  }
-
-  if (flags.ignoreLock) {
-    console.error("devflow: --ignore-lock is not supported for this command");
     return 1;
   }
 
@@ -415,8 +501,15 @@ export async function runCli(args: string[]): Promise<number> {
     return 1;
   }
 
+  if (flags.ignoreLock && !IGNORE_LOCK_COMMANDS.has(key)) {
+    console.error("devflow: --ignore-lock is not supported for this command");
+    return 1;
+  }
+
   try {
-    return await handler(parsed.positional, repoRoot);
+    return await handler(parsed.positional, repoRoot, {
+      ignoreLock: flags.ignoreLock,
+    });
   } finally {
     Deno.chdir(originalCwd);
   }

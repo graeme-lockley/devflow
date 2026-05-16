@@ -65,3 +65,26 @@ Deno.test("parseCommand card block and unblock synonyms", () => {
     positional: ["stories-000001"],
   });
 });
+
+Deno.test("parseCommand lock release synonyms (req §14.6)", () => {
+  assertEquals(parseCommand(["lock", "release", "stories-000001"]), {
+    object: "lock",
+    verb: "release",
+    positional: ["stories-000001"],
+  });
+  assertEquals(parseCommand(["release-lock", "stories-000001"]), {
+    object: "lock",
+    verb: "release",
+    positional: ["stories-000001"],
+  });
+  assertEquals(parseCommand(["lock", "release-board", "stories"]), {
+    object: "lock",
+    verb: "release-board",
+    positional: ["stories"],
+  });
+  assertEquals(parseCommand(["release-repo-lock"]), {
+    object: "lock",
+    verb: "release-repo",
+    positional: [],
+  });
+});

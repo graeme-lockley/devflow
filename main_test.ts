@@ -247,3 +247,58 @@ Deno.test("runCli M1 e2e: init template, validate, list, show", async () => {
     }
   });
 });
+
+Deno.test("runCli --ignore-lock on variable set with held lock (req §16.1)", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      assertEquals(
+        await runCli(["board", "init", "stories", "todo", "done"]),
+        0,
+      );
+      assertEquals(
+        await runCli(["card", "create", "stories", "Lock test"]),
+        0,
+      );
+      const { acquireCardLock } = await import("./src/services/locks.ts");
+      await acquireCardLock(dir, "stories", "stories-000001");
+      assertEquals(
+        await runCli([
+          "variable",
+          "set",
+          "stories-000001",
+          "K",
+          "v",
+          "--ignore-lock",
+        ]),
+        0,
+      );
+      const { releaseCardLock } = await import("./src/services/locks.ts");
+      await releaseCardLock(dir, "stories", "stories-000001");
+    } finally {
+      Deno.chdir(original);
+    }
+  });
+});
+
+Deno.test("runCli rejects --ignore-lock on unsupported commands", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      assertEquals(
+        await runCli([
+          "board",
+          "init",
+          "stories",
+          "todo",
+          "--ignore-lock",
+        ]),
+        1,
+      );
+    } finally {
+      Deno.chdir(original);
+    }
+  });
+});

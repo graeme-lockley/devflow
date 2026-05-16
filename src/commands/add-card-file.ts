@@ -14,7 +14,7 @@ export async function addCardFile(
   cardId: string,
   sourcePath: string,
   repoRoot: string,
-  options: { overwrite?: boolean } = {},
+  options: { overwrite?: boolean; ignoreLock?: boolean } = {},
 ): Promise<void> {
   const boardName = await resolveBoardForCard(repoRoot, cardId);
   const filename = basename(sourcePath);
@@ -48,7 +48,9 @@ export async function addCardFile(
   const destDir = `${repoRoot}/${cardFilesDir(boardName, cardId)}`;
   const destPath = `${destDir}/${filename}`;
 
-  await acquireCardLock(repoRoot, boardName, cardId);
+  const acquired = await acquireCardLock(repoRoot, boardName, cardId, {
+    ignoreLock: options.ignoreLock,
+  });
   try {
     try {
       const destStat = await Deno.stat(destPath);
@@ -72,6 +74,8 @@ export async function addCardFile(
     );
     await saveCardState(repoRoot, boardName, state);
   } finally {
-    await releaseCardLock(repoRoot, boardName, cardId);
+    if (acquired) {
+      await releaseCardLock(repoRoot, boardName, cardId);
+    }
   }
 }

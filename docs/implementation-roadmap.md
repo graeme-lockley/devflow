@@ -15,24 +15,24 @@ on it.
 
 ## Current state (baseline)
 
-**M3 complete.** Block / unblock with history; advance blocking preconditions
-(§12.3) in `advance-preconditions.ts` for M5; tightened blocked metadata
-validation per §17.2.
+**M4 complete.** Lock registry, manual `lock release*`, `--ignore-lock` on
+`variable set` / `card add-file`, signal cleanup (§14.5) via `signals.ts`.
 
-| Area                                  | Status | Gap                                     |
-| ------------------------------------- | ------ | --------------------------------------- |
-| Layout                                | `[x]`  | `.devflow/boards/<board>/`              |
-| Board file                            | `[x]`  | load/save/validate `board.json`         |
-| CLI                                   | `[x]`  | board + card + variable + block/unblock |
-| Identifiers                           | `[x]`  | `^[a-z][a-z0-9_]*$`                     |
-| Git root                              | `[x]`  | Resolved via `git rev-parse`            |
-| Templates                             | `[x]`  | built-in `stories` stub; local override |
-| Repo lock on init                     | `[x]`  | `.devflow/.lock/`                       |
-| Cards, board/card locks               | `[x]`  | create/list/show/dir/rename/add-file/…  |
-| Blocking                              | `[x]`  | block / unblock; advance preconditions  |
-| Transitions, `--ignore-lock`, signals | `[ ]`  | M4–M5                                   |
+| Area                                   | Status | Gap                                                    |
+| -------------------------------------- | ------ | ------------------------------------------------------ |
+| Layout                                 | `[x]`  | `.devflow/boards/<board>/`                             |
+| Board file                             | `[x]`  | load/save/validate `board.json`                        |
+| CLI                                    | `[x]`  | board + card + variable + block/unblock + lock release |
+| Identifiers                            | `[x]`  | `^[a-z][a-z0-9_]*$`                                    |
+| Git root                               | `[x]`  | Resolved via `git rev-parse`                           |
+| Templates                              | `[x]`  | built-in `stories` stub; local override                |
+| Repo lock on init                      | `[x]`  | `.devflow/.lock/`                                      |
+| Cards, board/card locks                | `[x]`  | create/list/show/dir/rename/add-file/…                 |
+| Blocking                               | `[x]`  | block / unblock; advance preconditions                 |
+| `--ignore-lock`, lock release, signals | `[x]`  | —                                                      |
+| Transitions (`card advance`)           | `[ ]`  | M5–M6                                                  |
 
-Next milestone: **M4** (lock release, `--ignore-lock`, signals).
+Next milestone: **M5** (transition runner without git).
 
 ---
 
@@ -224,24 +224,24 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 
 ### Deliverables
 
-- [ ] `mkdir`-based lock acquire/release
+- [x] `mkdir`-based lock acquire/release
       ([§14.4](./devflow-requirements.md#144-lock-implementation))
-- [ ] Wire locks per command table
+- [x] Wire locks per command table
       ([§14.3](./devflow-requirements.md#143-commands-and-locks))
-- [ ] `--ignore-lock` only on `variable set`, `card add-file`
+- [x] `--ignore-lock` only on `variable set`, `card add-file`
       ([§16.1](./devflow-requirements.md#161-global-flags))
-- [ ] `lock release`, `lock release-board`, `lock release-repo` with `--force`
+- [x] `lock release`, `lock release-board`, `lock release-repo` with `--force`
       ([§14.6](./devflow-requirements.md#146-manual-lock-release))
-- [ ] Signal handlers: forward to child, release locks, exit non-zero
+- [x] Signal handlers: forward to child, release locks, exit non-zero
       ([§14.5](./devflow-requirements.md#145-lock-cleanup-and-signals))
 
 ### Commands (M4)
 
 | Command                                             | Spec  | Status |
 | --------------------------------------------------- | ----- | ------ |
-| `devflow lock release` / `release-lock`             | §14.6 | `[ ]`  |
-| `devflow lock release-board` / `release-board-lock` | §14.6 | `[ ]`  |
-| `devflow lock release-repo` / `release-repo-lock`   | §14.6 | `[ ]`  |
+| `devflow lock release` / `release-lock`             | §14.6 | `[x]`  |
+| `devflow lock release-board` / `release-board-lock` | §14.6 | `[x]`  |
+| `devflow lock release-repo` / `release-repo-lock`   | §14.6 | `[x]`  |
 
 ### Done when
 
@@ -391,9 +391,9 @@ Cross-reference:
 | `devflow card validate`      | M2        | `[x]`  |
 | `devflow variable get`       | M2        | `[x]`  |
 | `devflow variable set`       | M2        | `[x]`  |
-| `devflow lock release`       | M4        | `[ ]`  |
-| `devflow lock release-board` | M4        | `[ ]`  |
-| `devflow lock release-repo`  | M4        | `[ ]`  |
+| `devflow lock release`       | M4        | `[x]`  |
+| `devflow lock release-board` | M4        | `[x]`  |
+| `devflow lock release-repo`  | M4        | `[x]`  |
 
 Verb-command synonyms (`init-board`, `create-card`, …) ship with each milestone
 alongside object-first forms.

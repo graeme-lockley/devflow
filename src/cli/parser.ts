@@ -20,6 +20,9 @@ const SYNONYMS: Record<string, { object: string; verb: string }> = {
   "unblock-card": { object: "card", verb: "unblock" },
   "get-variable": { object: "variable", verb: "get" },
   "set-variable": { object: "variable", verb: "set" },
+  "release-lock": { object: "lock", verb: "release" },
+  "release-board-lock": { object: "lock", verb: "release-board" },
+  "release-repo-lock": { object: "lock", verb: "release-repo" },
 };
 
 /**

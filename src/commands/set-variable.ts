@@ -8,16 +8,21 @@ export async function setVariable(
   name: string,
   value: string,
   repoRoot: string,
+  options: { ignoreLock?: boolean } = {},
 ): Promise<void> {
   const boardName = await resolveBoardForCard(repoRoot, cardId);
 
-  await acquireCardLock(repoRoot, boardName, cardId);
+  const acquired = await acquireCardLock(repoRoot, boardName, cardId, {
+    ignoreLock: options.ignoreLock,
+  });
   try {
     const state = await loadCardState(repoRoot, boardName, cardId);
     state.variables[name] = value;
     state.updatedAt = utcNow();
     await saveCardState(repoRoot, boardName, state);
   } finally {
-    await releaseCardLock(repoRoot, boardName, cardId);
+    if (acquired) {
+      await releaseCardLock(repoRoot, boardName, cardId);
+    }
   }
 }

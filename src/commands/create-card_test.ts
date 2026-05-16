@@ -1,6 +1,7 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { initBoard } from "./init-board.ts";
 import { createCard } from "./create-card.ts";
+import { acquireBoardLock, releaseBoardLock } from "../services/locks.ts";
 import { loadBoardConfig } from "../domain/board.ts";
 import { loadCardState } from "../domain/card.ts";
 import { cardFilesDir, cardLogsDir, cardMdFile } from "../infra/paths.ts";
@@ -47,6 +48,21 @@ Deno.test("createCard fails when sequence exhausted (req §5.7)", async () => {
     assertEquals(msg.includes("sequence exhausted"), true);
   }
   assertEquals(threw, true);
+});
+
+Deno.test("createCard fails when board lock held (req §14.4)", async () => {
+  const dir = await Deno.makeTempDir();
+  await initBoard("stories", ["todo"], dir);
+  await acquireBoardLock(dir, "stories");
+  try {
+    await assertRejects(
+      () => createCard("stories", "Second card", dir),
+      Error,
+      "board lock held",
+    );
+  } finally {
+    await releaseBoardLock(dir, "stories");
+  }
 });
 
 Deno.test("runCli card create outputs ID without ANSI (req §16.4)", async () => {
