@@ -2,12 +2,7 @@ import type { BoardConfig } from "../domain/board.ts";
 import type { CardState } from "../domain/card.ts";
 import { saveCardState } from "../domain/card.ts";
 import { enumerateHops, isAtTarget } from "../domain/phases.ts";
-import {
-  appendHistory,
-  phaseChangedEvent,
-  transitionFailedEvent,
-  utcNow,
-} from "../domain/history.ts";
+import { appendHistory, phaseChangedEvent, utcNow } from "../domain/history.ts";
 import { logInfo, logSuccess, logSummaryTransition } from "./console.ts";
 import {
   appendGitError,
@@ -92,7 +87,8 @@ export function setInFlightHopForTest(
 }
 
 /**
- * Records transitionFailed when interrupted during a hop (req §14.5).
+ * Finalises the in-flight run log when interrupted during a hop (req §14.5).
+ * Does not modify state.json — failure detail lives under logs/ only.
  */
 export async function recordInterruptFailure(
   signal: Deno.Signal,
@@ -104,23 +100,9 @@ export async function recordInterruptFailure(
   const script = ctx.script ?? "<interrupted>";
   const exitCode = signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : 1;
 
-  const records: RunScriptRecord[] = ctx.script
-    ? [{ name: ctx.script, exitCode }]
-    : [];
+  const records: RunScriptRecord[] = [{ name: script, exitCode }];
 
   await writeRunJson(ctx.run, "failed", records, at).catch(() => {});
-
-  const next = appendHistory(
-    ctx.state,
-    transitionFailedEvent(
-      ctx.hop.from,
-      ctx.hop.to,
-      script,
-      exitCode,
-      at,
-    ),
-  );
-  await saveCardState(ctx.repoRoot, ctx.board.name, next).catch(() => {});
   clearInFlightHop();
 }
 
@@ -181,18 +163,6 @@ export async function runHopExitScripts(
 
       if (result.exitCode !== 0) {
         await writeRunJson(run, "failed", records);
-        const at = utcNow();
-        const failedState = appendHistory(
-          state,
-          transitionFailedEvent(
-            hop.from,
-            hop.to,
-            name,
-            result.exitCode,
-            at,
-          ),
-        );
-        await saveCardState(repoRoot, board.name, failedState);
         return {
           ok: false,
           failure: {
@@ -201,7 +171,7 @@ export async function runHopExitScripts(
             logPath: `${run.runDirRel}/output.log`,
             run,
           },
-          state: failedState,
+          state,
         };
       }
     }
@@ -298,21 +268,9 @@ async function runSingleHopNormal(
         exitCode: msgResult.exitCode,
       }];
       await writeRunJson(run, "failed", records);
-      const at = utcNow();
-      const failedState = appendHistory(
-        state,
-        transitionFailedEvent(
-          hop.from,
-          hop.to,
-          msgResult.scriptName,
-          msgResult.exitCode,
-          at,
-        ),
-      );
-      await saveCardState(repoRoot, board.name, failedState);
       return {
         ok: false,
-        state: failedState,
+        state,
         failure: {
           kind: "script",
           script: msgResult.scriptName,

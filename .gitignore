@@ -1,4 +1,4 @@
 .devflow/.lock/
 .devflow/**/.lock/
 
-.devflow/**/.logs/*
+.devflow/**/logs/

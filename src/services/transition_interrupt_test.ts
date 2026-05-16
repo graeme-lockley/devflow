@@ -11,7 +11,7 @@ import {
   setInFlightHopForTest,
 } from "./transition.ts";
 
-Deno.test("recordInterruptFailure appends history (req §14.5)", async () => {
+Deno.test("recordInterruptFailure does not modify state.json (req §14.5)", async () => {
   const dir = await Deno.makeTempDir();
   await initBoard("test", ["a", "b"], dir);
   const cardId = await createCard("test", "Card", dir);
@@ -33,11 +33,7 @@ Deno.test("recordInterruptFailure appends history (req §14.5)", async () => {
   clearInFlightHop();
 
   const updated = await loadCardState(dir, "test", cardId);
-  const failed = updated.history.filter((e) =>
-    typeof e === "object" && e !== null && "type" in e &&
-    e.type === "transitionFailed"
-  );
-  assertEquals(failed.length, 1);
+  assertEquals(updated.history.length, state.history.length);
   assertEquals(updated.phase, "a");
 });
 

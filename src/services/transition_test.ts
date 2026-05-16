@@ -90,7 +90,7 @@ Deno.test("runAdvance stops on script failure (req §11.5)", async () => {
         typeof e === "object" && e !== null && "type" in e &&
         e.type === "transitionFailed"
       );
-      assertEquals(failed.length, 1);
+      assertEquals(failed.length, 0);
     }
   });
 });
