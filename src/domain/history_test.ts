@@ -2,9 +2,11 @@ import { assertEquals } from "@std/assert";
 import type { CardState } from "./card.ts";
 import {
   appendHistory,
+  blockedEvent,
   createdEvent,
   fileAttachedEvent,
   titleChangedEvent,
+  unblockedEvent,
   utcNow,
 } from "./history.ts";
 
@@ -57,4 +59,38 @@ Deno.test("fileAttachedEvent shape", () => {
       filename: "doc.pdf",
     },
   );
+});
+
+Deno.test("blockedEvent shape (req §12.1)", () => {
+  assertEquals(
+    blockedEvent(
+      "building",
+      "Waiting for API contract",
+      "2026-05-16T07:25:00Z",
+    ),
+    {
+      type: "blocked",
+      at: "2026-05-16T07:25:00Z",
+      from: "building",
+      reason: "Waiting for API contract",
+    },
+  );
+});
+
+Deno.test("unblockedEvent shape (req §12.2)", () => {
+  assertEquals(unblockedEvent("building", "2026-05-16T08:00:00.000Z"), {
+    type: "unblocked",
+    at: "2026-05-16T08:00:00.000Z",
+    to: "building",
+  });
+});
+
+Deno.test("appendHistory with blocked event updates updatedAt", () => {
+  const at = "2026-05-16T07:25:00.000Z";
+  const next = appendHistory(
+    baseState,
+    blockedEvent("todo", "Waiting", at),
+  );
+  assertEquals(next.history.length, 1);
+  assertEquals(next.updatedAt, at);
 });

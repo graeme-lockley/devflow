@@ -16,6 +16,8 @@ const SYNONYMS: Record<string, { object: string; verb: string }> = {
   "rename-card": { object: "card", verb: "rename" },
   "add-card-file": { object: "card", verb: "add-file" },
   "validate-card": { object: "card", verb: "validate" },
+  "block-card": { object: "card", verb: "block" },
+  "unblock-card": { object: "card", verb: "unblock" },
   "get-variable": { object: "variable", verb: "get" },
   "set-variable": { object: "variable", verb: "set" },
 };

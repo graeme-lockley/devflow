@@ -66,8 +66,22 @@ export function validateCardState(
   if (isBlocked && state.previousPhase === null) {
     problems.push("previousPhase must be set when card is blocked");
   }
+  if (isBlocked && state.previousPhase !== null) {
+    if (!board.phases.includes(state.previousPhase)) {
+      problems.push(
+        `previousPhase "${state.previousPhase}" is not a valid normal phase`,
+      );
+    }
+  }
   if (!isBlocked && state.previousPhase !== null) {
     problems.push("previousPhase must be null unless card is blocked");
+  }
+  if (isBlocked && state.blocked !== null) {
+    if (!isValidUtcTimestamp(state.blocked.blockedAt)) {
+      problems.push(
+        "blocked.blockedAt must be valid UTC ISO 8601 with Z suffix",
+      );
+    }
   }
 
   if (!isValidUtcTimestamp(state.createdAt)) {

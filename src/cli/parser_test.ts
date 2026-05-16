@@ -39,3 +39,29 @@ Deno.test("parseCommand board list and synonyms", () => {
     positional: ["stories"],
   });
 });
+
+Deno.test("parseCommand card block and unblock synonyms", () => {
+  assertEquals(parseCommand(["card", "block", "stories-000001", "Waiting"]), {
+    object: "card",
+    verb: "block",
+    positional: ["stories-000001", "Waiting"],
+  });
+  assertEquals(
+    parseCommand(["block-card", "stories-000001", "Waiting for API"]),
+    {
+      object: "card",
+      verb: "block",
+      positional: ["stories-000001", "Waiting for API"],
+    },
+  );
+  assertEquals(parseCommand(["card", "unblock", "stories-000001"]), {
+    object: "card",
+    verb: "unblock",
+    positional: ["stories-000001"],
+  });
+  assertEquals(parseCommand(["unblock-card", "stories-000001"]), {
+    object: "card",
+    verb: "unblock",
+    positional: ["stories-000001"],
+  });
+});

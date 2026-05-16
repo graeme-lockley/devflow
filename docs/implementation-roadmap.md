@@ -15,22 +15,24 @@ on it.
 
 ## Current state (baseline)
 
-**M2 complete.** Card CRUD, variables, attachments; board and card locks on
-mutating commands; `card validate` per §17.2.
+**M3 complete.** Block / unblock with history; advance blocking preconditions
+(§12.3) in `advance-preconditions.ts` for M5; tightened blocked metadata
+validation per §17.2.
 
 | Area                                  | Status | Gap                                     |
 | ------------------------------------- | ------ | --------------------------------------- |
 | Layout                                | `[x]`  | `.devflow/boards/<board>/`              |
 | Board file                            | `[x]`  | load/save/validate `board.json`         |
-| CLI                                   | `[x]`  | board + card + variable commands        |
+| CLI                                   | `[x]`  | board + card + variable + block/unblock |
 | Identifiers                           | `[x]`  | `^[a-z][a-z0-9_]*$`                     |
 | Git root                              | `[x]`  | Resolved via `git rev-parse`            |
 | Templates                             | `[x]`  | built-in `stories` stub; local override |
 | Repo lock on init                     | `[x]`  | `.devflow/.lock/`                       |
 | Cards, board/card locks               | `[x]`  | create/list/show/dir/rename/add-file/…  |
-| Transitions, `--ignore-lock`, signals | `[ ]`  | M3–M4                                   |
+| Blocking                              | `[x]`  | block / unblock; advance preconditions  |
+| Transitions, `--ignore-lock`, signals | `[ ]`  | M4–M5                                   |
 
-Next milestone: **M3** (block / unblock).
+Next milestone: **M4** (lock release, `--ignore-lock`, signals).
 
 ---
 
@@ -190,21 +192,21 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 
 ### Deliverables
 
-- [ ] `card block` with reason and history
+- [x] `card block` with reason and history
       ([§12.1](./devflow-requirements.md#121-block-card))
-- [ ] `card unblock` restoring `previousPhase`
+- [x] `card unblock` restoring `previousPhase`
       ([§12.2](./devflow-requirements.md#122-unblock-card))
-- [ ] Reject `card advance` when card is blocked
+- [x] Reject `card advance` when card is blocked
       ([§12.3](./devflow-requirements.md#123-blocked-cards-and-advance))
-- [ ] Validation: blocked metadata consistency
+- [x] Validation: blocked metadata consistency
       ([§17.2](./devflow-requirements.md#172-card-validation))
 
 ### Commands (M3)
 
 | Command                                 | Spec  | Status |
 | --------------------------------------- | ----- | ------ |
-| `devflow card block` / `block-card`     | §12.1 | `[ ]`  |
-| `devflow card unblock` / `unblock-card` | §12.2 | `[ ]`  |
+| `devflow card block` / `block-card`     | §12.1 | `[x]`  |
+| `devflow card unblock` / `unblock-card` | §12.2 | `[x]`  |
 
 ### Done when
 
@@ -383,8 +385,8 @@ Cross-reference:
 | `devflow card dir`           | M2        | `[x]`  |
 | `devflow card add-file`      | M2        | `[x]`  |
 | `devflow card advance`       | M5/M6     | `[ ]`  |
-| `devflow card block`         | M3        | `[ ]`  |
-| `devflow card unblock`       | M3        | `[ ]`  |
+| `devflow card block`         | M3        | `[x]`  |
+| `devflow card unblock`       | M3        | `[x]`  |
 | `devflow card rename`        | M2        | `[x]`  |
 | `devflow card validate`      | M2        | `[x]`  |
 | `devflow variable get`       | M2        | `[x]`  |

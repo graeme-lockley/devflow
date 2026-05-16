@@ -1,4 +1,5 @@
 import { addCardFile } from "../commands/add-card-file.ts";
+import { blockCard } from "../commands/block-card.ts";
 import { cardDirPath } from "../commands/card-dir.ts";
 import { createCard } from "../commands/create-card.ts";
 import { getVariable } from "../commands/get-variable.ts";
@@ -6,6 +7,7 @@ import { initBoardFromArgs } from "../commands/init-board.ts";
 import { formatBoardList, listBoards } from "../commands/list-boards.ts";
 import { formatCardList, listCards } from "../commands/list-cards.ts";
 import { renameCard } from "../commands/rename-card.ts";
+import { unblockCard } from "../commands/unblock-card.ts";
 import { setVariable } from "../commands/set-variable.ts";
 import { showBoard } from "../commands/show-board.ts";
 import { showCard } from "../commands/show-card.ts";
@@ -59,6 +61,12 @@ Usage:
 
   devflow card validate <card-id>
   devflow validate-card <card-id>
+
+  devflow card block <card-id> "<reason>"
+  devflow block-card <card-id> "<reason>"
+
+  devflow card unblock <card-id>
+  devflow unblock-card <card-id>
 
   devflow variable get <card-id> <NAME>
   devflow get-variable <card-id> <NAME>
@@ -241,6 +249,44 @@ const handlers = new Map<string, CommandHandler>([
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         console.error(message);
+        return 1;
+      }
+    },
+  ],
+  [
+    "card:block",
+    async (positional, repoRoot) => {
+      const [cardId, reason] = positional;
+      if (!cardId || reason === undefined) {
+        console.error("devflow card block: card id and reason required\n");
+        console.log(USAGE.trimEnd());
+        return 1;
+      }
+      try {
+        await blockCard(cardId, reason, repoRoot);
+        return 0;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error(`devflow card block ${cardId}: ${message}`);
+        return 1;
+      }
+    },
+  ],
+  [
+    "card:unblock",
+    async (positional, repoRoot) => {
+      const [cardId] = positional;
+      if (!cardId) {
+        console.error("devflow card unblock: card id required\n");
+        console.log(USAGE.trimEnd());
+        return 1;
+      }
+      try {
+        await unblockCard(cardId, repoRoot);
+        return 0;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error(`devflow card unblock ${cardId}: ${message}`);
         return 1;
       }
     },

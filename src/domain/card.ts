@@ -25,6 +25,8 @@ export type HistoryEvent =
   | CreatedEvent
   | TitleChangedEvent
   | FileAttachedEvent
+  | BlockedEvent
+  | UnblockedEvent
   | Record<string, unknown>;
 
 export interface CreatedEvent {
@@ -44,6 +46,19 @@ export interface FileAttachedEvent {
   type: "fileAttached";
   at: string;
   filename: string;
+}
+
+export interface BlockedEvent {
+  type: "blocked";
+  at: string;
+  from: string;
+  reason: string;
+}
+
+export interface UnblockedEvent {
+  type: "unblocked";
+  at: string;
+  to: string;
 }
 
 export function formatCardId(

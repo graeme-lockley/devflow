@@ -166,6 +166,58 @@ Deno.test("initBoard respects --sequence-width via initBoardFromArgs", async () 
   assertEquals(JSON.parse(raw).sequenceWidth, 4);
 });
 
+Deno.test("runCli block and unblock card (req §12.1, §12.2)", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      assertEquals(
+        await runCli(["board", "init", "stories", "todo", "done"]),
+        0,
+      );
+      assertEquals(
+        await runCli(["card", "create", "stories", "Blocked workflow test"]),
+        0,
+      );
+
+      const { loadCardState } = await import("./src/domain/card.ts");
+      const state = await loadCardState(dir, "stories", "stories-000001");
+      assertEquals(state.phase, "todo");
+
+      assertEquals(
+        await runCli([
+          "card",
+          "block",
+          "stories-000001",
+          "Waiting for API contract",
+        ]),
+        0,
+      );
+      const blocked = await loadCardState(dir, "stories", "stories-000001");
+      assertEquals(blocked.phase, "blocked");
+      assertEquals(blocked.previousPhase, "todo");
+
+      assertEquals(
+        await runCli(["card", "list", "stories", "--phase", "blocked"]),
+        0,
+      );
+
+      assertEquals(await runCli(["card", "unblock", "stories-000001"]), 0);
+      const restored = await loadCardState(dir, "stories", "stories-000001");
+      assertEquals(restored.phase, "todo");
+      assertEquals(await runCli(["card", "validate", "stories-000001"]), 0);
+
+      assertEquals(
+        await runCli(["block-card", "stories-000001", "Again"]),
+        0,
+      );
+      assertEquals(await runCli(["unblock-card", "stories-000001"]), 0);
+    } finally {
+      Deno.chdir(original);
+    }
+  });
+});
+
 Deno.test("runCli M1 e2e: init template, validate, list, show", async () => {
   await withTempGitRepo(async (dir) => {
     const original = Deno.cwd();

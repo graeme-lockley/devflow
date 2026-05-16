@@ -53,7 +53,7 @@ Add to `.gitignore` (also ensured automatically on `board init`):
 Commands use **object-first** form. Each command has a **verb-command** synonym
 (`board init` → `init-board`).
 
-### Implemented (M0 + M1)
+### Implemented (M0–M3)
 
 | Command                                     | Notes                                                             |
 | ------------------------------------------- | ----------------------------------------------------------------- |
@@ -62,21 +62,32 @@ Commands use **object-first** form. Each command has a **verb-command** synonym
 | `devflow board list` / `list-boards`        | Board names, one per line (plain stdout)                          |
 | `devflow board show` / `show-board`         | Board metadata on stdout                                          |
 | `devflow board validate` / `validate-board` | §17.1 checks; exit 0 when valid                                   |
+| `devflow card create` / `create-card`       | New card ID on stdout                                             |
+| `devflow card list` / `list-cards`          | Card IDs; `--phase` filter                                        |
+| `devflow card show` / `show-card`           | YAML frontmatter + `card.md`                                      |
+| `devflow card dir` / `card-dir`             | Absolute card path on stdout                                      |
+| `devflow card rename` / `rename-card`       | Updates title in `state.json` and `card.md`                       |
+| `devflow card add-file` / `add-card-file`   | Attachment under `files/`                                         |
+| `devflow card validate` / `validate-card`   | §17.2 checks; exit 0 when valid                                   |
+| `devflow card block` / `block-card`         | Move card to blocked phase with reason                            |
+| `devflow card unblock` / `unblock-card`     | Restore card to `previousPhase`                                   |
+| `devflow variable get` / `get-variable`     | Variable value on stdout                                          |
+| `devflow variable set` / `set-variable`     | Set card variable                                                 |
 
 Global flags: `--verbose`, `--summary` (parsed; full console behaviour in M7).
-`--ignore-lock` is rejected until card commands exist.
+`--ignore-lock` is rejected until M4.
 
 ```bash
 devflow board init stories unplanned planning planned --template stories
-devflow board list
-devflow board show stories
-devflow board validate stories
+devflow card create stories "My card"
+devflow card block stories-000001 "Waiting for API contract"
+devflow card list stories --phase blocked
+devflow card unblock stories-000001
 ```
 
 ### Planned (not yet implemented)
 
-Card commands, `card advance`, variables, lock release commands, and
-`devflow validate` — see
+`card advance`, lock release commands, and `devflow validate` — see
 [`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md).
 
 Git commits are created only by `card advance` (one per successful phase hop).
@@ -145,5 +156,5 @@ GitHub Actions runs the same checks on push and pull requests: `deno lint`,
 `deno fmt --check`, and `deno task test` (see
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
 
-The CLI is being built to match the requirements specification. M1 board
-lifecycle is complete; see the roadmap for what ships next.
+The CLI is being built to match the requirements specification. M3 blocking is
+complete; see the roadmap for what ships next.

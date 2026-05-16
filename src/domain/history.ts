@@ -1,9 +1,11 @@
 import type {
+  BlockedEvent,
   CardState,
   CreatedEvent,
   FileAttachedEvent,
   HistoryEvent,
   TitleChangedEvent,
+  UnblockedEvent,
 } from "./card.ts";
 
 /** UTC ISO 8601 with Z suffix (req §6.8). */
@@ -28,6 +30,18 @@ export function fileAttachedEvent(
   at: string,
 ): FileAttachedEvent {
   return { type: "fileAttached", at, filename };
+}
+
+export function blockedEvent(
+  from: string,
+  reason: string,
+  at: string,
+): BlockedEvent {
+  return { type: "blocked", at, from, reason };
+}
+
+export function unblockedEvent(to: string, at: string): UnblockedEvent {
+  return { type: "unblocked", at, to };
 }
 
 export function appendHistory(
