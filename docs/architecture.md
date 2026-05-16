@@ -86,6 +86,7 @@ src/
   cli/
     parser.ts           # object-first + synonym routing
     flags.ts            # --verbose, --summary, --ignore-lock
+    advance-flags.ts    # card advance: --force, --skip
     dispatch.ts         # command → handler
   commands/
     board-init.ts
@@ -163,9 +164,14 @@ card-advance.ts
   → resolve card + board
   → reject if blocked
   → locks.acquireRepo() + locks.acquireCard()
-  → transition.runAdvance(card, targetPhase, { force })
+  → transition.runAdvance(card, targetPhase, { force, skip })
   → locks.releaseAll()
 ```
+
+`advance-flags.ts` parses `--force` and `--skip` into `ParsedAdvanceArgs`
+(`skip: string[]` of normalized `<phase>-<sequence>` tokens). `dispatch.ts`
+rejects `--skip` combined with `--force` before calling `advanceCard`.
+`AdvanceCardOptions` threads `skip` into `runAdvance`.
 
 ### 5.3 Transition runner (`src/services/transition.ts`)
 
@@ -173,11 +179,19 @@ Implements [§11.4](./devflow-requirements.md#114-transition-algorithm):
 
 ```text
 for each single-phase hop:
+  pre-validate --skip tokens against scripts on all hops (when skip non-empty)
   run exit scripts (scripts service) including loop orchestration if configured
+    — omit scripts whose <phase>-<sequence> prefix is in skip for this hop
+    — record { skipped: true } in run.json; logSkipped at info/verbose
   run commit-message script (scripts service) — M6
-  update card phase + history (domain)
+  append actionSkipped events, then phaseChanged (domain)
   git commit hop (git service) — M6
 ```
+
+`RunAdvanceOptions.skip` is passed to `runHopExitScripts`, which computes the
+set of script names to omit for the hop's `from` phase, rejects loop-step and
+commit-message targets, and substitutes a synthetic success record for each
+skipped script without invoking it.
 
 **Loop orchestration**
 ([§9.11](./devflow-requirements.md#911-phase-loop-blocks),
@@ -273,12 +287,13 @@ card create
 ### 6.2 Card advance (normal)
 
 ```text
-card advance
+card advance [--skip <phase>-<seq>[,...]]
   → lock repo + card
+  → validate skip tokens (when present)
   → for hop in phase range:
-       run phase exit scripts → fail? stop, transitionFailed
+       run phase exit scripts (minus skipped) → fail? stop, transitionFailed
        run commit-message script → capture message
-       update state.json (phase, history)
+       update state.json (actionSkipped events, phase, history)
        git add -A && git commit
   → unlock
 ```

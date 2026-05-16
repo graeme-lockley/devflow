@@ -682,6 +682,12 @@ The glob `planning-*` is descriptive only. Implementations must use the pattern
 above so that `planning.commit-message` is never included in the exit-script
 sequence. The commit-message script is invoked separately (section 13).
 
+During `devflow card advance`, the operator may pass `--skip` with one or more
+action identifiers in the form `<phase>-<sequence>` (section 11.9). For each
+hop, any root exit script whose name begins with that prefix is omitted from the
+sequence; all other root exit scripts run in lexical order. Skipped actions are
+recorded in run metadata and card history.
+
 **Child scripts** (invoked by root scripts or loop orchestrator) are not
 automatically discovered. Boards may name them using conventions such as
 `<phase>-<parent-NNN>-<child-NN>-<name>` (e.g., `building-002-01-pi`) or place
@@ -969,17 +975,26 @@ Normal advance behaviour:
 7. If the card is already in the target phase, exit 0 and do nothing.
 8. Verify the repository is not in an unresolved merge, rebase, cherry-pick, or revert state (section 13.7).
 9. Acquire the repository operation lock and the card lock for the entire command.
+9b. If `--skip` was passed, validate every skip token against the union of exit
+    scripts across all hops in this advance (section 11.9). Reject unknown tokens,
+    loop-step targets, and commit-message script names before any hop runs.
 10. For each single-phase hop between current phase and target phase:
    a. Identify the current phase and the next phase.
    b. Run the current phase's exit scripts (section 9.3) in order, with loop
       block execution if configured (section 9.11):
-      - If phase has no loop config, run all root exit scripts in lexical order.
+      - Omit any root exit script whose `<phase>-<sequence>` prefix matches a
+        `--skip` token for this hop's `from` phase (section 11.9).
+      - If phase has no loop config, run all remaining root exit scripts in
+        lexical order.
       - If phase has loop config:
         i.   Run entry scripts (root exit scripts lexically before loop steps).
         ii.  Run loop block (section 9.11.2): iterate steps up to maxRounds,
              restarting from first step on any failure.
         iii. Run exit scripts (root exit scripts lexically after loop steps).
       - If any script (entry, loop, or exit) fails, stop immediately (section 11.5).
+      - For each omitted script, record it in run metadata with `skipped: true`
+        and append an `actionSkipped` history event before the hop's
+        `phaseChanged` event (section 11.9).
    c. Run the current phase's commit-message script if present (section 13).
    d. If all scripts succeed, update card phase to the next phase.
    e. Append a phaseChanged event to history.
@@ -1033,6 +1048,20 @@ exit: 1
 log: .devflow/boards/stories/cards/stories-000042/logs/2026-05-16T07-42-18Z-advance-planning-planned/output.log
 ```
 
+When an exit script is intentionally omitted via `--skip` (section 11.9),
+Devflow appends an `actionSkipped` event to `state.json` for that script before
+the hop's `phaseChanged` event:
+
+```json
+{
+  "type": "actionSkipped",
+  "at": "2026-05-16T08:00:00Z",
+  "from": "planning",
+  "to": "planned",
+  "script": "planning-003-do-planning"
+}
+```
+
 ### 11.6 Already-at-target behaviour
 
 If a card is already in the requested target phase:
@@ -1083,6 +1112,54 @@ History event example:
   "mode": "force"
 }
 ```
+
+### 11.9 Selective skip (`--skip`)
+
+```bash
+devflow card advance stories-000042 planning --skip planning-003
+devflow card advance stories-000042 building --skip planning-003,planning-005
+```
+
+`--skip` omits named **root exit scripts** during a normal advance. It does not
+bypass the commit-message script, loop-step scripts, or the rest of the
+transition algorithm.
+
+**Token form:**
+
+- Each value matches `^[a-z][a-z0-9]*-[0-9]{3}$` (for example `planning-003`).
+- A full action name such as `planning-003-do-planning` is accepted and
+  normalized to its `<phase>-<sequence>` prefix.
+- Values may be comma-separated in one `--skip` argument, or supplied by
+  repeating `--skip`. Duplicate tokens are de-duplicated.
+
+**CLI rules:**
+
+- `--skip` is valid only on `devflow card advance` (and `advance-card`).
+- `--skip` and `--force` must not be combined; Devflow exits non-zero before
+  acquiring locks.
+- Shape validation errors exit non-zero before any script runs.
+
+**Per-hop behaviour:**
+
+- A skip token applies only when its phase prefix equals the hop's `from` phase.
+  Tokens for other phases are ignored on that hop.
+- In a multi-phase advance, every token must match at least one exit script on
+  some hop in the run; otherwise the command fails before any script runs.
+- The commit-message script (`<phase>.commit-message`) cannot be skipped.
+- A skip token that resolves to a script in a phase's loop step band (section
+  9.11) is rejected.
+
+**When a script is skipped:**
+
+```text
+- The script is not executed.
+- run.json records { "name": "<script>", "exitCode": 0, "skipped": true }.
+- Grey boilerplate is printed at info or verbose log level (section 16.2).
+- An actionSkipped event is appended before the hop's phaseChanged event.
+```
+
+Omitting `--skip` must produce the same behaviour as before this option existed
+(no `actionSkipped` events, no `skipped` field in run metadata).
 
 ---
 
@@ -1163,7 +1240,8 @@ board operations.
 
 ```text
 card advance (each successful normal hop)   creates a Git commit
-card advance --force                        no commit
+card advance --skip <tokens>                creates a Git commit; named exit scripts omitted
+card advance --force                        no commit; no scripts; --skip rejected
 card create                                 no commit
 card block / card unblock                   no commit
 card rename                                 no commit
@@ -1424,10 +1502,18 @@ A multi-phase advance creates one run directory per hop (successful or failed).
     {
       "name": "planning-002-check-card-structure",
       "exitCode": 0
+    },
+    {
+      "name": "planning-003-do-planning",
+      "exitCode": 0,
+      "skipped": true
     }
   ]
 }
 ```
+
+When an exit script was omitted via `--skip`, its record includes
+`"skipped": true` and `exitCode` is `0` (section 11.9).
 
 ### 15.4 Script output
 
@@ -1451,30 +1537,30 @@ All commands:
 
 ### 16.0 Command index
 
-| Command                      | Synonym              | Purpose                                    |
-| ---------------------------- | -------------------- | ------------------------------------------ |
-| `devflow`                    | -                    | Print usage; exit `0`                      |
-| `devflow help`               | -                    | Print usage; exit `0`                      |
-| `devflow validate`           | `validate`           | Validate repository, all boards, all cards |
-| `devflow board init`         | `init-board`         | Create a board                             |
-| `devflow board list`         | `list-boards`        | List boards                                |
-| `devflow board show`         | `show-board`         | Show board metadata                        |
-| `devflow board validate`     | `validate-board`     | Validate one board                         |
-| `devflow card create`        | `create-card`        | Create a card                              |
-| `devflow card list`          | `list-cards`         | List cards on a board                      |
-| `devflow card show`          | `show-card`          | Show card metadata and `card.md`           |
-| `devflow card dir`           | `card-dir`           | Print absolute card directory path         |
-| `devflow card add-file`      | `add-card-file`      | Attach a file to a card                    |
-| `devflow card advance`       | `advance-card`       | Advance card phase (transition runner)     |
-| `devflow card block`         | `block-card`         | Block a card                               |
-| `devflow card unblock`       | `unblock-card`       | Unblock a card                             |
-| `devflow card rename`        | `rename-card`        | Rename a card                              |
-| `devflow card validate`      | `validate-card`      | Validate one card                          |
-| `devflow variable get`       | `get-variable`       | Read a card variable                       |
-| `devflow variable set`       | `set-variable`       | Write a card variable                      |
-| `devflow lock release`       | `release-lock`       | Release stale card lock                    |
-| `devflow lock release-board` | `release-board-lock` | Release stale board lock                   |
-| `devflow lock release-repo`  | `release-repo-lock`  | Release stale repository lock              |
+| Command                      | Synonym              | Purpose                                                                   |
+| ---------------------------- | -------------------- | ------------------------------------------------------------------------- |
+| `devflow`                    | -                    | Print usage; exit `0`                                                     |
+| `devflow help`               | -                    | Print usage; exit `0`                                                     |
+| `devflow validate`           | `validate`           | Validate repository, all boards, all cards                                |
+| `devflow board init`         | `init-board`         | Create a board                                                            |
+| `devflow board list`         | `list-boards`        | List boards                                                               |
+| `devflow board show`         | `show-board`         | Show board metadata                                                       |
+| `devflow board validate`     | `validate-board`     | Validate one board                                                        |
+| `devflow card create`        | `create-card`        | Create a card                                                             |
+| `devflow card list`          | `list-cards`         | List cards on a board                                                     |
+| `devflow card show`          | `show-card`          | Show card metadata and `card.md`                                          |
+| `devflow card dir`           | `card-dir`           | Print absolute card directory path                                        |
+| `devflow card add-file`      | `add-card-file`      | Attach a file to a card                                                   |
+| `devflow card advance`       | `advance-card`       | Advance card phase (transition runner); `--skip` omits named exit scripts |
+| `devflow card block`         | `block-card`         | Block a card                                                              |
+| `devflow card unblock`       | `unblock-card`       | Unblock a card                                                            |
+| `devflow card rename`        | `rename-card`        | Rename a card                                                             |
+| `devflow card validate`      | `validate-card`      | Validate one card                                                         |
+| `devflow variable get`       | `get-variable`       | Read a card variable                                                      |
+| `devflow variable set`       | `set-variable`       | Write a card variable                                                     |
+| `devflow lock release`       | `release-lock`       | Release stale card lock                                                   |
+| `devflow lock release-board` | `release-board-lock` | Release stale board lock                                                  |
+| `devflow lock release-repo`  | `release-repo-lock`  | Release stale repository lock                                             |
 
 Synonym forms place arguments in the same order as the object-first command,
 with the verb-command name replacing `devflow <object> <verb>`. Example:
@@ -1490,6 +1576,7 @@ devflow init-board stories unplanned planning planned
 | --------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | `--help`, `-h`  | all                                  | Print usage and exit `0`. Processed before repository detection, works outside a Git repository.                       |
 | `--ignore-lock` | `variable set`, `card add-file` only | Skip lock acquisition. Required when called from a script during `card advance`. Other commands must reject this flag. |
+| `--skip`        | `card advance` only                  | Omit one or more exit actions by `<phase>-<sequence>` prefix (section 11.9). Mutually exclusive with `--force`.        |
 | `--verbose`     | all                                  | Console output level `verbose` (section 16.2).                                                                         |
 | `--summary`     | all                                  | Console output level `summary` (section 16.2).                                                                         |
 

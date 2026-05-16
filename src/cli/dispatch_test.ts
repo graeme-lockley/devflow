@@ -195,3 +195,29 @@ Deno.test("runCli with unknown command shows ANSI when colours enabled", async (
     );
   }
 });
+
+Deno.test("runCli with --skip and --force shows error (NO_COLOR)", async () => {
+  Deno.env.set("NO_COLOR", "1");
+  try {
+    const { stdout, stderr, exitCode } = await captureStdout(() =>
+      runCli([
+        "card",
+        "advance",
+        "test-000001",
+        "building",
+        "--skip",
+        "planning-003",
+        "--force",
+      ])
+    );
+    assertEquals(stdout, "");
+    // Format is "Error: command: subject: detail" (no extra colon)
+    assertEquals(
+      stderr,
+      "Error: card advance: test-000001: --skip and --force cannot be combined",
+    );
+    assertEquals(exitCode, 1);
+  } finally {
+    Deno.env.delete("NO_COLOR");
+  }
+});

@@ -4,6 +4,7 @@ import { getLogLevel } from "./console.ts";
 export interface RunScriptRecord {
   name: string;
   exitCode: number;
+  skipped?: boolean;
 }
 
 export interface RunMetadata {

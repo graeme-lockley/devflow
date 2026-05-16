@@ -2,10 +2,16 @@ import type { BoardConfig } from "../domain/board.ts";
 import type { CardState } from "../domain/card.ts";
 import { saveCardState } from "../domain/card.ts";
 import { enumerateHops, isAtTarget } from "../domain/phases.ts";
-import { appendHistory, phaseChangedEvent, utcNow } from "../domain/history.ts";
+import {
+  actionSkippedEvent,
+  appendHistory,
+  phaseChangedEvent,
+  utcNow,
+} from "../domain/history.ts";
 import {
   getLogLevel,
   logInfo,
+  logSkipped,
   logSuccess,
   logSummaryTransition,
 } from "./console.ts";
@@ -36,6 +42,7 @@ export interface RunAdvanceOptions {
   board: BoardConfig;
   state: CardState;
   targetPhase: string;
+  skip?: string[];
 }
 
 export type AdvanceFailure =
@@ -245,6 +252,7 @@ export async function runHopExitScripts(
   state: CardState,
   hop: { from: string; to: string },
   run: TransitionRunContext,
+  skip: string[] = [],
 ): Promise<RunHopScriptsResult | RunHopScriptsFailure> {
   const scriptNames = await listExitScripts(repoRoot, board.name, hop.from);
   const records: RunScriptRecord[] = [];
@@ -259,6 +267,60 @@ export async function runHopExitScripts(
     runDirAbs: run.runDirAbs,
   };
   const env = buildScriptEnv(hopCtx);
+
+  // Compute which scripts to skip for this hop (req stories-000005)
+  const skipForThisHop = new Set<string>();
+  for (const skipToken of skip) {
+    // Only apply skip tokens that match this hop's phase
+    if (skipToken.startsWith(`${hop.from}-`)) {
+      // Find all script names that start with this prefix
+      for (const scriptName of scriptNames) {
+        if (scriptName.startsWith(skipToken)) {
+          skipForThisHop.add(scriptName);
+        }
+      }
+    }
+  }
+
+  // Validate that skipped scripts are not in loop band or commit-message (req stories-000005)
+  const loopConfig = board.phaseScripts?.[hop.from]?.loop;
+  const commitMsgScript = commitMessageScriptName(hop.from);
+  for (const skippedScript of skipForThisHop) {
+    // Check if it's the commit-message script
+    if (skippedScript === commitMsgScript) {
+      await writeRunJson(run, "failed", records);
+      return {
+        ok: false,
+        failure: {
+          script: `cannot skip commit-message script ${commitMsgScript}`,
+          exitCode: 1,
+          logPath: `${run.runDirRel}/output.log`,
+          run,
+        },
+        state,
+      };
+    }
+
+    // Check if it's in the loop band
+    if (loopConfig) {
+      const { entry, exit } = partitionLoopRootScripts(scriptNames, hop.from);
+      const isLoopStep = !entry.includes(skippedScript) &&
+        !exit.includes(skippedScript);
+      if (isLoopStep) {
+        await writeRunJson(run, "failed", records);
+        return {
+          ok: false,
+          failure: {
+            script: `cannot skip loop step ${skippedScript}`,
+            exitCode: 1,
+            logPath: `${run.runDirRel}/output.log`,
+            run,
+          },
+          state,
+        };
+      }
+    }
+  }
 
   inFlightHop = {
     repoRoot,
@@ -279,6 +341,13 @@ export async function runHopExitScripts(
     if (!loopConfig) {
       // No loop: run all scripts in lexical order (backward compatible)
       for (const name of scriptNames) {
+        // Check if this script should be skipped (req stories-000005)
+        if (skipForThisHop.has(name)) {
+          logSkipped(name, "--skip");
+          records.push({ name, exitCode: 0, skipped: true });
+          continue;
+        }
+
         inFlightHop.script = name;
         const scriptPath = `${scriptsDir}/${name}`;
         if (streamScriptOutput) {
@@ -318,6 +387,13 @@ export async function runHopExitScripts(
 
       // Run entry scripts
       for (const name of entryScripts) {
+        // Check if this script should be skipped (req stories-000005)
+        if (skipForThisHop.has(name)) {
+          logSkipped(name, "--skip");
+          records.push({ name, exitCode: 0, skipped: true });
+          continue;
+        }
+
         inFlightHop.script = name;
         const scriptPath = `${scriptsDir}/${name}`;
         if (streamScriptOutput) {
@@ -375,6 +451,13 @@ export async function runHopExitScripts(
 
       // Run exit scripts
       for (const name of exitScripts) {
+        // Check if this script should be skipped (req stories-000005)
+        if (skipForThisHop.has(name)) {
+          logSkipped(name, "--skip");
+          records.push({ name, exitCode: 0, skipped: true });
+          continue;
+        }
+
         inFlightHop.script = name;
         const scriptPath = `${scriptsDir}/${name}`;
         if (streamScriptOutput) {
@@ -428,6 +511,7 @@ async function runSingleHopNormal(
   state: CardState,
   hop: { from: string; to: string },
   targetPhase: string,
+  skip: string[] = [],
 ): Promise<SingleHopResult> {
   const startedAt = utcNow();
   logSummaryTransition(hop.from, hop.to);
@@ -448,6 +532,7 @@ async function runSingleHopNormal(
     state,
     hop,
     run,
+    skip,
   );
   if (!exitResult.ok) {
     return {
@@ -527,12 +612,25 @@ async function runSingleHopNormal(
   await writeCommitMessageTxt(run, commitMessage);
 
   const at = utcNow();
-  const nextState = appendHistory(
-    {
-      ...state,
-      phase: hop.to,
-      updatedAt: at,
-    },
+  let nextState = {
+    ...state,
+    phase: hop.to,
+    updatedAt: at,
+  };
+
+  // Append actionSkipped events for each skipped script (req stories-000005)
+  for (const record of records) {
+    if (record.skipped) {
+      nextState = appendHistory(
+        nextState,
+        actionSkippedEvent(hop.from, hop.to, record.name, at),
+      );
+    }
+  }
+
+  // Append phaseChanged event
+  nextState = appendHistory(
+    nextState,
     phaseChangedEvent(hop.from, hop.to, at, "normal"),
   );
   await saveCardState(repoRoot, board.name, nextState);
@@ -566,7 +664,7 @@ async function runSingleHopNormal(
 export async function runAdvance(
   options: RunAdvanceOptions,
 ): Promise<AdvanceResult> {
-  const { repoRoot, board, targetPhase } = options;
+  const { repoRoot, board, targetPhase, skip = [] } = options;
   let state = options.state;
 
   if (isAtTarget(state.phase, targetPhase)) {
@@ -574,6 +672,41 @@ export async function runAdvance(
   }
 
   const hops = enumerateHops(board, state.phase, targetPhase);
+
+  // Pre-validate skip tokens: collect all scripts across all hops (req stories-000005)
+  if (skip.length > 0) {
+    const allScriptsByPhase = new Map<string, string[]>();
+    for (const hop of hops) {
+      const scripts = await listExitScripts(repoRoot, board.name, hop.from);
+      allScriptsByPhase.set(hop.from, scripts);
+    }
+
+    // Check each skip token matches at least one script in the relevant hop
+    for (const skipToken of skip) {
+      const phasePrefix = skipToken.split("-")[0];
+      let matched = false;
+
+      // Find the hop(s) where this skip token's phase matches
+      for (const hop of hops) {
+        if (hop.from === phasePrefix) {
+          const scripts = allScriptsByPhase.get(hop.from) || [];
+          for (const script of scripts) {
+            if (script.startsWith(skipToken)) {
+              matched = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!matched) {
+        throw new Error(
+          `--skip token "${skipToken}" does not match any script in this advance`,
+        );
+      }
+    }
+  }
+
   let completed = 0;
 
   for (const hop of hops) {
@@ -583,6 +716,7 @@ export async function runAdvance(
       state,
       hop,
       targetPhase,
+      skip,
     );
     if (!result.ok) {
       return { ok: false, state: result.state, failure: result.failure };

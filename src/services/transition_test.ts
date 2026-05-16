@@ -390,3 +390,305 @@ Deno.test("runAdvance loop block fails after maxRounds exhausted (req §9.11)", 
     }
   });
 });
+
+Deno.test("runAdvance with --skip skips one named root script (req stories-000005)", async () => {
+  await withTempGitRepo(async (dir) => {
+    await initBoard("test", ["a", "b", "c"], dir);
+    const cardId = await createCard("test", "Card", dir);
+    const board = await loadBoardConfig(dir, "test");
+
+    const scriptsDir = `${dir}/${boardScriptsDir("test")}`;
+    await writeScript(
+      scriptsDir,
+      "a-001-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+    await writeScript(
+      scriptsDir,
+      "a-002-skip-me",
+      "#!/usr/bin/env bash\nexit 1\n", // Would fail if run
+    );
+    await writeScript(
+      scriptsDir,
+      "a-003-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+
+    const state = await loadCardState(dir, "test", cardId);
+    const result = await runAdvance({
+      repoRoot: dir,
+      board,
+      state,
+      targetPhase: "b",
+      skip: ["a-002"],
+    });
+
+    assertEquals(result.ok, true);
+    if (result.ok) {
+      assertEquals(result.state.phase, "b");
+      // Check for actionSkipped event
+      const skipped = result.state.history.filter((e) =>
+        typeof e === "object" && e !== null && "type" in e &&
+        e.type === "actionSkipped"
+      );
+      assertEquals(skipped.length, 1);
+      if (
+        skipped[0] && typeof skipped[0] === "object" && "script" in skipped[0]
+      ) {
+        assertEquals(skipped[0].script, "a-002-skip-me");
+      }
+    }
+  });
+});
+
+Deno.test("runAdvance with --skip for multiple scripts (req stories-000005)", async () => {
+  await withTempGitRepo(async (dir) => {
+    await initBoard("test", ["a", "b", "c"], dir);
+    const cardId = await createCard("test", "Card", dir);
+    const board = await loadBoardConfig(dir, "test");
+
+    const scriptsDir = `${dir}/${boardScriptsDir("test")}`;
+    await writeScript(
+      scriptsDir,
+      "a-001-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+    await writeScript(
+      scriptsDir,
+      "a-002-skip-me",
+      "#!/usr/bin/env bash\nexit 1\n",
+    );
+    await writeScript(
+      scriptsDir,
+      "a-003-skip-too",
+      "#!/usr/bin/env bash\nexit 1\n",
+    );
+    await writeScript(
+      scriptsDir,
+      "a-004-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+
+    const state = await loadCardState(dir, "test", cardId);
+    const result = await runAdvance({
+      repoRoot: dir,
+      board,
+      state,
+      targetPhase: "b",
+      skip: ["a-002", "a-003"],
+    });
+
+    assertEquals(result.ok, true);
+    if (result.ok) {
+      assertEquals(result.state.phase, "b");
+      const skipped = result.state.history.filter((e) =>
+        typeof e === "object" && e !== null && "type" in e &&
+        e.type === "actionSkipped"
+      );
+      assertEquals(skipped.length, 2);
+    }
+  });
+});
+
+Deno.test("runAdvance with --skip in multi-phase advance (req stories-000005)", async () => {
+  await withTempGitRepo(async (dir) => {
+    await initBoard("test", ["a", "b", "c"], dir);
+    const cardId = await createCard("test", "Card", dir);
+    const board = await loadBoardConfig(dir, "test");
+
+    const scriptsDir = `${dir}/${boardScriptsDir("test")}`;
+    await writeScript(
+      scriptsDir,
+      "a-001-skip-me",
+      "#!/usr/bin/env bash\nexit 1\n",
+    );
+    await writeScript(
+      scriptsDir,
+      "b-001-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+
+    const state = await loadCardState(dir, "test", cardId);
+    const result = await runAdvance({
+      repoRoot: dir,
+      board,
+      state,
+      targetPhase: "c",
+      skip: ["a-001"], // Only applies to phase a
+    });
+
+    assertEquals(result.ok, true);
+    if (result.ok) {
+      assertEquals(result.state.phase, "c");
+      const skipped = result.state.history.filter((e) =>
+        typeof e === "object" && e !== null && "type" in e &&
+        e.type === "actionSkipped"
+      );
+      assertEquals(skipped.length, 1); // Only a-001 skipped
+    }
+  });
+});
+
+Deno.test("runAdvance with --skip for unknown action fails early (req stories-000005)", async () => {
+  await withTempGitRepo(async (dir) => {
+    await initBoard("test", ["a", "b"], dir);
+    const cardId = await createCard("test", "Card", dir);
+    const board = await loadBoardConfig(dir, "test");
+
+    const scriptsDir = `${dir}/${boardScriptsDir("test")}`;
+    await writeScript(
+      scriptsDir,
+      "a-001-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+
+    const state = await loadCardState(dir, "test", cardId);
+    let threw = false;
+    try {
+      await runAdvance({
+        repoRoot: dir,
+        board,
+        state,
+        targetPhase: "b",
+        skip: ["a-999"], // No such script
+      });
+    } catch (e) {
+      threw = true;
+      assertEquals(
+        e instanceof Error && e.message.includes("does not match any script"),
+        true,
+      );
+    }
+    assertEquals(threw, true);
+  });
+});
+
+Deno.test("runAdvance with --skip for unmatched phase token fails (req stories-000005)", async () => {
+  await withTempGitRepo(async (dir) => {
+    await initBoard("test", ["a", "b"], dir);
+    const cardId = await createCard("test", "Card", dir);
+    const board = await loadBoardConfig(dir, "test");
+
+    const scriptsDir = `${dir}/${boardScriptsDir("test")}`;
+    await writeScript(
+      scriptsDir,
+      "a-001-pass",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+
+    const state = await loadCardState(dir, "test", cardId);
+    let threw = false;
+    try {
+      await runAdvance({
+        repoRoot: dir,
+        board,
+        state,
+        targetPhase: "b",
+        skip: ["c-001"], // Phase c not in this advance
+      });
+    } catch (e) {
+      threw = true;
+      assertEquals(
+        e instanceof Error && e.message.includes("does not match any script"),
+        true,
+      );
+    }
+    assertEquals(threw, true);
+  });
+});
+
+Deno.test("runAdvance with --skip for entry script in loop phase (req stories-000005)", async () => {
+  await withTempGitRepo(async (dir) => {
+    await initBoard("test", ["a", "b"], dir);
+    const cardId = await createCard("test", "Card", dir);
+    let board = await loadBoardConfig(dir, "test");
+
+    // Configure loop for phase a
+    board = {
+      ...board,
+      phaseScripts: {
+        a: {
+          loop: {
+            steps: ["a/steps/01-step.sh"],
+            maxRounds: 3,
+          },
+        },
+      },
+    };
+    await saveBoardConfig(dir, board);
+
+    const scriptsDir = `${dir}/${boardScriptsDir("test")}`;
+    // Add an entry script (before loop band)
+    await writeScript(
+      scriptsDir,
+      "a-001-entry",
+      "#!/usr/bin/env bash\nexit 1\n", // Would fail if run
+    );
+
+    const stepsDir = `${scriptsDir}/a/steps`;
+    await Deno.mkdir(stepsDir, { recursive: true });
+    await writeScript(
+      stepsDir,
+      "01-step.sh",
+      "#!/usr/bin/env bash\nexit 0\n",
+    );
+
+    const state = await loadCardState(dir, "test", cardId);
+    const result = await runAdvance({
+      repoRoot: dir,
+      board,
+      state,
+      targetPhase: "b",
+      skip: ["a-001"], // Skip entry script (should work)
+    });
+
+    // Entry scripts can be skipped
+    assertEquals(result.ok, true);
+    if (result.ok) {
+      const skipped = result.state.history.filter((e) =>
+        typeof e === "object" && e !== null && "type" in e &&
+        e.type === "actionSkipped"
+      );
+      assertEquals(skipped.length, 1);
+    }
+  });
+});
+
+Deno.test("runAdvance actionSkipped events appear before phaseChanged (req stories-000005)", async () => {
+  await withTempGitRepo(async (dir) => {
+    await initBoard("test", ["a", "b"], dir);
+    const cardId = await createCard("test", "Card", dir);
+    const board = await loadBoardConfig(dir, "test");
+
+    const scriptsDir = `${dir}/${boardScriptsDir("test")}`;
+    await writeScript(
+      scriptsDir,
+      "a-001-skip",
+      "#!/usr/bin/env bash\nexit 1\n",
+    );
+
+    const state = await loadCardState(dir, "test", cardId);
+    const result = await runAdvance({
+      repoRoot: dir,
+      board,
+      state,
+      targetPhase: "b",
+      skip: ["a-001"],
+    });
+
+    assertEquals(result.ok, true);
+    if (result.ok) {
+      const history = result.state.history;
+      const lastSkippedIdx = history.findLastIndex((e) =>
+        typeof e === "object" && e !== null && "type" in e &&
+        e.type === "actionSkipped"
+      );
+      const firstPhaseChangedIdx = history.findIndex((e) =>
+        typeof e === "object" && e !== null && "type" in e &&
+        e.type === "phaseChanged" && e.from === "a"
+      );
+      // actionSkipped should come before phaseChanged
+      assertEquals(lastSkippedIdx < firstPhaseChangedIdx, true);
+    }
+  });
+});

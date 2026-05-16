@@ -53,30 +53,30 @@ Add to `.gitignore` (also ensured automatically on `board init`):
 Commands use **object-first** form. Each command has a **verb-command** synonym
 (`board init` → `init-board`).
 
-| Command                                             | Notes                                                             |
-| --------------------------------------------------- | ----------------------------------------------------------------- |
-| `devflow`                                           | Prints usage                                                      |
-| `devflow help`                                      | Prints usage (same as `devflow` with no args or `--help`/`-h`)    |
-| `devflow validate`                                  | Repository, all boards, all cards (§17)                           |
-| `devflow board init` / `init-board`                 | Creates board layout; `--template`, `--sequence-width`; repo lock |
-| `devflow board list` / `list-boards`                | Board names, one per line (plain stdout)                          |
-| `devflow board show` / `show-board`                 | Board metadata on stdout                                          |
-| `devflow board validate` / `validate-board`         | §17.1 checks; exit 0 when valid                                   |
-| `devflow card create` / `create-card`               | New card ID on stdout                                             |
-| `devflow card list` / `list-cards`                  | Card IDs; `--phase` filter                                        |
-| `devflow card show` / `show-card`                   | YAML frontmatter + `card.md`                                      |
-| `devflow card dir` / `card-dir`                     | Absolute card path on stdout                                      |
-| `devflow card rename` / `rename-card`               | Updates title in `state.json` and `card.md`                       |
-| `devflow card add-file` / `add-card-file`           | Attachment under `files/`                                         |
-| `devflow card validate` / `validate-card`           | §17.2 checks; exit 0 when valid                                   |
-| `devflow card advance` / `advance-card`             | Exit scripts, commit per hop; `--force` skips scripts/git         |
-| `devflow card block` / `block-card`                 | Move card to blocked phase with reason                            |
-| `devflow card unblock` / `unblock-card`             | Restore card to `previousPhase`                                   |
-| `devflow variable get` / `get-variable`             | Variable value on stdout                                          |
-| `devflow variable set` / `set-variable`             | Set card variable; `--ignore-lock` for nested CLI during advance  |
-| `devflow lock release` / `release-lock`             | Release stale card lock (`--force`)                               |
-| `devflow lock release-board` / `release-board-lock` | Release stale board lock (`--force`)                              |
-| `devflow lock release-repo` / `release-repo-lock`   | Release stale repository lock (`--force`)                         |
+| Command                                             | Notes                                                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `devflow`                                           | Prints usage                                                                                |
+| `devflow help`                                      | Prints usage (same as `devflow` with no args or `--help`/`-h`)                              |
+| `devflow validate`                                  | Repository, all boards, all cards (§17)                                                     |
+| `devflow board init` / `init-board`                 | Creates board layout; `--template`, `--sequence-width`; repo lock                           |
+| `devflow board list` / `list-boards`                | Board names, one per line (plain stdout)                                                    |
+| `devflow board show` / `show-board`                 | Board metadata on stdout                                                                    |
+| `devflow board validate` / `validate-board`         | §17.1 checks; exit 0 when valid                                                             |
+| `devflow card create` / `create-card`               | New card ID on stdout                                                                       |
+| `devflow card list` / `list-cards`                  | Card IDs; `--phase` filter                                                                  |
+| `devflow card show` / `show-card`                   | YAML frontmatter + `card.md`                                                                |
+| `devflow card dir` / `card-dir`                     | Absolute card path on stdout                                                                |
+| `devflow card rename` / `rename-card`               | Updates title in `state.json` and `card.md`                                                 |
+| `devflow card add-file` / `add-card-file`           | Attachment under `files/`                                                                   |
+| `devflow card validate` / `validate-card`           | §17.2 checks; exit 0 when valid                                                             |
+| `devflow card advance` / `advance-card`             | Exit scripts, commit per hop; `--skip` omits named actions; `--force` skips all scripts/git |
+| `devflow card block` / `block-card`                 | Move card to blocked phase with reason                                                      |
+| `devflow card unblock` / `unblock-card`             | Restore card to `previousPhase`                                                             |
+| `devflow variable get` / `get-variable`             | Variable value on stdout                                                                    |
+| `devflow variable set` / `set-variable`             | Set card variable; `--ignore-lock` for nested CLI during advance                            |
+| `devflow lock release` / `release-lock`             | Release stale card lock (`--force`)                                                         |
+| `devflow lock release-board` / `release-board-lock` | Release stale board lock (`--force`)                                                        |
+| `devflow lock release-repo` / `release-repo-lock`   | Release stale repository lock (`--force`)                                                   |
 
 Global flags: `--help` / `-h` (print usage and exit 0), `--verbose` (extra
 diagnostics), `--summary` (phase lines and errors only). Machine-parseable
@@ -96,6 +96,7 @@ devflow card create stories "My card"
 devflow card create stories "My card" --description "One-line context for the card body."
 devflow card create stories "My card" --description-file ./body.md
 devflow card advance stories-000001 planned
+devflow card advance stories-000001 planned --skip planning-003
 devflow card block stories-000001 "Waiting for API contract"
 devflow card unblock stories-000001
 ```
@@ -113,8 +114,9 @@ implementation structure.
 5. For each phase hop, Devflow runs exit scripts, optional
    `<phase>.commit-message`, updates `state.json`, then `git add -A` and
    `git commit`.
-6. On failure, the card stays in place; fix the issue and advance again, or use
-   `--force` where allowed.
+6. On failure, the card stays in place; fix the issue and advance again, use
+   `--skip` to bypass a known-broken exit action, or use `--force` where allowed
+   (`--skip` and `--force` cannot be combined).
 
 Advance one card at a time per repository.
 

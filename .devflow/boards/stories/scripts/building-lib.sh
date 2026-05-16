@@ -258,7 +258,8 @@ building_collect_scenario_commands() {
 
   _scenario_cmds_add() {
     local candidate="$1"
-    for existing in "${BUILDING_SCENARIO_COMMANDS[@]}"; do
+    local existing
+    for existing in ${BUILDING_SCENARIO_COMMANDS[@]+"${BUILDING_SCENARIO_COMMANDS[@]}"}; do
       [ "$existing" = "$candidate" ] && return 0
     done
     BUILDING_SCENARIO_COMMANDS+=("$candidate")

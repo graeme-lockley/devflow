@@ -24,6 +24,7 @@ import type { AdvanceFailure } from "../services/transition.ts";
 
 export interface AdvanceCardOptions {
   force?: boolean;
+  skip?: string[];
 }
 
 export interface AdvanceCardNotice {
@@ -51,7 +52,7 @@ export async function advanceCard(
   repoRoot: string,
   options: AdvanceCardOptions = {},
 ): Promise<AdvanceCardResult> {
-  const { force = false } = options;
+  const { force = false, skip = [] } = options;
   const boardName = await resolveBoardForCard(repoRoot, cardId);
   const board = await loadBoardConfig(repoRoot, boardName);
   const state = await loadCardState(repoRoot, boardName, cardId);
@@ -96,6 +97,7 @@ export async function advanceCard(
         board,
         state,
         targetPhase,
+        skip,
       });
 
     if (result.ok) {

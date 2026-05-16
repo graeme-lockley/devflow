@@ -94,6 +94,13 @@ export function logInfo(message: string): void {
   writeStderr(colorize(message, GREY));
 }
 
+/** Logs a skipped action in grey/dim text (req stories-000005). */
+export function logSkipped(name: string, reason: string): void {
+  if (activeLevel === "summary") return;
+  const message = `skipped ${name}: ${reason}`;
+  writeStderr(colorize(message, GREY));
+}
+
 /** Default terminal colour (no ANSI styling); suppressed in summary mode. */
 export function logPlain(message: string): void {
   if (activeLevel === "summary") return;

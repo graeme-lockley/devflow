@@ -1,4 +1,5 @@
 import type {
+  ActionSkippedEvent,
   BlockedEvent,
   CardState,
   CreatedEvent,
@@ -63,6 +64,15 @@ export function transitionFailedEvent(
   at: string,
 ): TransitionFailedEvent {
   return { type: "transitionFailed", at, from, to, script, exitCode };
+}
+
+export function actionSkippedEvent(
+  from: string,
+  to: string,
+  script: string,
+  at: string,
+): ActionSkippedEvent {
+  return { type: "actionSkipped", at, from, to, script };
 }
 
 export function appendHistory(

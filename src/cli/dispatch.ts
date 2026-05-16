@@ -400,7 +400,7 @@ const handlers = new Map<string, CommandHandler>([
   [
     "card:advance",
     async (positional, repoRoot, _ctx) => {
-      const { cardId, targetPhase, force } = parseAdvanceArgs(positional);
+      const { cardId, targetPhase, force, skip } = parseAdvanceArgs(positional);
       if (!cardId || !targetPhase) {
         logCliMessage({
           kind: "error",
@@ -409,9 +409,20 @@ const handlers = new Map<string, CommandHandler>([
         });
         return 1;
       }
+      // Reject --skip combined with --force (req: stories-000005)
+      if (skip.length > 0 && force) {
+        logCliMessage({
+          kind: "error",
+          command: "card advance",
+          subject: cardId,
+          detail: "--skip and --force cannot be combined",
+        });
+        return 1;
+      }
       try {
         const result = await advanceCard(cardId, targetPhase, repoRoot, {
           force,
+          skip,
         });
         if (result.notice?.kind === "already-in-phase") {
           logCliMessage({

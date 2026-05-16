@@ -29,6 +29,7 @@ export type HistoryEvent =
   | UnblockedEvent
   | PhaseChangedEvent
   | TransitionFailedEvent
+  | ActionSkippedEvent
   | Record<string, unknown>;
 
 export interface PhaseChangedEvent {
@@ -46,6 +47,14 @@ export interface TransitionFailedEvent {
   to: string;
   script: string;
   exitCode: number;
+}
+
+export interface ActionSkippedEvent {
+  type: "actionSkipped";
+  at: string;
+  from: string;
+  to: string;
+  script: string;
 }
 
 export interface CreatedEvent {
