@@ -60,11 +60,15 @@ if [ "${risks_chars:-0}" -lt 20 ]; then
 fi
 
 scenarios=$(section_body "Test Scenarios")
-scenario_rows=$(printf '%s\n' "$scenarios" | grep -cE '^\| [0-9]+ \|' || true)
+# Match numbered data rows. Allow padded cells (e.g. "| 1  |") — plan-story and
+# formatters often align columns; the story template uses a single space ("| 1 |").
+scenario_row_re='^\|[[:space:]]*[0-9]+[[:space:]]*\|'
+scenario_rows=$(printf '%s\n' "$scenarios" | grep -cE "$scenario_row_re" || true)
 if [ "${scenario_rows:-0}" -lt 1 ]; then
-  fail "Test Scenarios must include at least one table row"
+  fail "Test Scenarios must include at least one numbered table row"
 fi
-if ! printf '%s\n' "$scenarios" | grep -qE '\| automated \|'; then
+scenario_type_re='\|[[:space:]]*automated[[:space:]]*\|'
+if ! printf '%s\n' "$scenarios" | grep -qE "$scenario_type_re"; then
   fail "Test Scenarios must include at least one automated scenario"
 fi
 
@@ -78,7 +82,9 @@ if printf '%s\n' "$tasks" | grep -qE '^[0-9]+\. \[ \] _To be completed'; then
 fi
 
 updates=$(section_body "Spec Updates")
-update_rows=$(printf '%s\n' "$updates" | grep -cE '^\| `[^`]+` \|' || true)
+# Document rows: first column is a backtick path; allow padded pipes like Test Scenarios.
+spec_update_row_re='^\|[[:space:]]*`[^`]+`[[:space:]]*\|'
+update_rows=$(printf '%s\n' "$updates" | grep -cE "$spec_update_row_re" || true)
 if [ "${update_rows:-0}" -lt 1 ]; then
   fail "Spec Updates must include at least one document row"
 fi
