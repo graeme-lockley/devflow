@@ -52,7 +52,7 @@ immutable_doc_changed_without_approval() {
     *) return 1 ;;
   esac
   path_in_diff "$path" || return 1
-  if grep -qiE 'user approval|explicitly approved|approved spec' "$card_md"; then
+  if stories_immutable_doc_edit_allowed "$card_md"; then
     return 1
   fi
   return 0

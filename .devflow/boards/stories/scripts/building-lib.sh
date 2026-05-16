@@ -40,6 +40,14 @@ stories_spec_done_without_worktree_diff() {
   return 1
 }
 
+# True when card.md records permission to edit immutable docs (requirements, architecture, ADRs).
+stories_immutable_doc_edit_allowed() {
+  local card_md="$1"
+  grep -qiE \
+    'user[[:space:]]*'\''?s?[[:space:]]*(prior[[:space:]]+)?approval|explicitly[[:space:]]+approv|approved[[:space:]]+spec|authoris(e[ds]?|ing|ation)?|authorised[[:space:]]+to[[:space:]]+edit|immutable[- ][Dd]oc' \
+    "$card_md"
+}
+
 # True when ## Notes documents a deferred Spec Updates row for doc_path.
 stories_notes_deferred_justified() {
   local doc_path="$1"
