@@ -2,16 +2,23 @@
   "id": "stories-000001",
   "board": "stories",
   "title": "Beautify show-board",
-  "phase": "preparing",
+  "phase": "planning",
   "previousPhase": null,
   "createdAt": "2026-05-16T11:29:51.395Z",
-  "updatedAt": "2026-05-16T13:26:21.727Z",
+  "updatedAt": "2026-05-16T14:17:37.653Z",
   "variables": {},
   "history": [
     {
       "type": "created",
       "at": "2026-05-16T11:29:51.395Z",
       "phase": "preparing"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-16T14:17:37.653Z",
+      "from": "preparing",
+      "to": "planning",
+      "mode": "normal"
     }
   ],
   "blocked": null
