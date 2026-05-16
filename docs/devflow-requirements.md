@@ -290,6 +290,36 @@ Example:
 }
 ```
 
+**Optional `phaseScripts` configuration** (section 9.11):
+
+Boards may configure loop blocks for phases that require retry workflows:
+
+```json
+{
+  "name": "stories",
+  "phases": [...],
+  "phaseScripts": {
+    "building": {
+      "loop": {
+        "steps": [
+          "building/steps/01-pi.sh",
+          "building/steps/02-gate-ci.sh",
+          "building/steps/03-gate-scenarios.sh"
+        ],
+        "maxRounds": 5
+      }
+    }
+  }
+}
+```
+
+- **`phaseScripts.<phase>.loop.steps`**: array of script paths relative to
+  `scripts/` directory.
+- **`phaseScripts.<phase>.loop.maxRounds`**: integer ≥ 1; maximum retry rounds.
+
+Phases without `phaseScripts` config use flat lexical script discovery (section
+9.3). Loop configuration is validated on `devflow validate-board`.
+
 ### 5.5 Board rules
 
 ```text
@@ -587,6 +617,18 @@ Scripts live in the board's `scripts/` directory:
 .devflow/boards/stories/scripts/
 ```
 
+Boards may organize scripts using:
+
+1. **Flat layout** (default): all exit scripts directly in `scripts/`.
+2. **Hierarchical layout**: exit scripts in `scripts/` plus helper libraries or
+   child scripts in subdirectories (e.g., `scripts/building/steps/`,
+   `scripts/building/lib/`).
+
+Only **root exit scripts** matching the pattern in §9.3 and marked executable
+are automatically discovered and run by Devflow. Subdirectories, non-executable
+files, and child scripts (invoked by root scripts or loop orchestrator) are
+**not** auto-run.
+
 ### 9.2 Script naming
 
 Scripts are named using:
@@ -607,10 +649,10 @@ planning-005-check-git-status
 
 ### 9.3 Script execution order
 
-Exit scripts are executed in lexical order.
+**Root exit scripts** are executed in lexical order.
 
 For a card leaving `planning`, Devflow runs all **executable** files in the
-board `scripts/` directory whose names match:
+board `scripts/` directory (not subdirectories) whose names match:
 
 ```text
 ^<phase>-[0-9]{3}-[a-z0-9][a-z0-9-]*$
@@ -632,11 +674,19 @@ Example non-matches (not run as exit scripts):
 planning.commit-message          # dot after phase name, not hyphen
 planning-backup-001-foo          # wrong shape
 README                           # not a phase script
+planning/steps/01-foo.sh         # in subdirectory; not auto-discovered
+planning-002-01-child            # child script naming; invoked by parent only
 ```
 
 The glob `planning-*` is descriptive only. Implementations must use the pattern
 above so that `planning.commit-message` is never included in the exit-script
 sequence. The commit-message script is invoked separately (section 13).
+
+**Child scripts** (invoked by root scripts or loop orchestrator) are not
+automatically discovered. Boards may name them using conventions such as
+`<phase>-<parent-NNN>-<child-NN>-<name>` (e.g., `building-002-01-pi`) or place
+them in subdirectories (e.g., `building/steps/01-pi.sh`). Devflow does not
+enforce child naming; parent scripts or loop config specify child paths.
 
 ### 9.4 Script arguments
 
@@ -702,9 +752,14 @@ If any script fails, Devflow must stop the transition immediately.
 Scripts run only as part of phase transitions. Devflow does not provide a
 command to run scripts in isolation.
 
-Scripts are not idempotent. Devflow does not retry failed scripts. The card
-remains in its current phase until an operator runs `devflow card advance` again
-or uses another allowed recovery command.
+Scripts are not idempotent. Devflow does not retry failed **root exit scripts**.
+The card remains in its current phase until an operator runs
+`devflow card advance` again or uses another allowed recovery command.
+
+**Exception: loop blocks** (see §9.11). When a phase configures a loop block,
+Devflow retries the loop steps (not individual scripts) up to `maxRounds`. Loop
+steps that fail cause the loop to restart from the first step until all steps
+succeed or the round limit is reached.
 
 ### 9.9 Script execution environment
 
@@ -725,6 +780,78 @@ Devflow is idle.
 Editing card or repository files **during** an active transition for that card
 is unsupported. Devflow assumes this does not happen. Behaviour if files change
 mid-run is undefined.
+
+### 9.11 Phase loop blocks
+
+Boards may configure a **loop block** for a phase to support retry workflows
+(e.g., implementation → CI → tests with automatic retry on failure).
+
+#### 9.11.1 Loop configuration
+
+Loop configuration is stored in `board.json` under `phaseScripts.<phase>.loop`:
+
+```json
+{
+  "phaseScripts": {
+    "building": {
+      "loop": {
+        "steps": [
+          "building/steps/01-pi.sh",
+          "building/steps/02-gate-ci.sh",
+          "building/steps/03-gate-scenarios.sh"
+        ],
+        "maxRounds": 5
+      }
+    }
+  }
+}
+```
+
+- **`steps`**: array of script paths relative to `scripts/` directory; executed
+  in order.
+- **`maxRounds`**: integer ≥ 1; maximum number of times to run the loop.
+
+#### 9.11.2 Loop execution semantics
+
+When a phase transition includes a loop block:
+
+1. Devflow runs root exit scripts **not** in the loop config first (entry
+   scripts).
+2. Devflow enters the loop with round counter initialized to 1.
+3. For each round: a. Run each step in `steps` array sequentially. b. If a step
+   exits non-zero, increment round counter and restart from step 1 (unless
+   `maxRounds` reached). c. If all steps exit 0, exit the loop and proceed to
+   remaining exit scripts.
+4. If round counter exceeds `maxRounds` with a failure, the transition fails.
+5. After loop completes successfully, Devflow runs remaining root exit scripts
+   **not** in the loop config (exit scripts).
+
+Loop steps are invoked the same way as root scripts (§9.9) with additional
+environment variables (§18).
+
+#### 9.11.3 Loop ordering and root scripts
+
+Root exit scripts discovered by §9.3 that are **not** listed in `loop.steps` run
+in lexical order relative to the loop block:
+
+- Scripts lexically before the loop's first step name run before the loop
+  (entry).
+- Scripts lexically after the loop's last step name run after the loop (exit).
+- **Implementation note**: Boards typically name the loop orchestrator (e.g.,
+  `building-002-build-loop`) to control ordering; the loop replaces that script
+  in execution.
+
+Phases without loop configuration use flat lexical discovery (§9.3) unchanged
+(backward compatible).
+
+#### 9.11.4 Loop idempotency requirements
+
+Loop steps that modify card state (e.g., updating `card.md`) **must** be
+idempotent or tolerant of partial completion. Devflow does not roll back changes
+from earlier steps when a later step fails and the loop restarts.
+
+Board authors are responsible for ensuring loop steps can safely re-run multiple
+times on the same card.
 
 ---
 
@@ -844,7 +971,15 @@ Normal advance behaviour:
 9. Acquire the repository operation lock and the card lock for the entire command.
 10. For each single-phase hop between current phase and target phase:
    a. Identify the current phase and the next phase.
-   b. Run the current phase's exit scripts (section 9.3) in order.
+   b. Run the current phase's exit scripts (section 9.3) in order, with loop
+      block execution if configured (section 9.11):
+      - If phase has no loop config, run all root exit scripts in lexical order.
+      - If phase has loop config:
+        i.   Run entry scripts (root exit scripts lexically before loop steps).
+        ii.  Run loop block (section 9.11.2): iterate steps up to maxRounds,
+             restarting from first step on any failure.
+        iii. Run exit scripts (root exit scripts lexically after loop steps).
+      - If any script (entry, loop, or exit) fails, stop immediately (section 11.5).
    c. Run the current phase's commit-message script if present (section 13).
    d. If all scripts succeed, update card phase to the next phase.
    e. Append a phaseChanged event to history.
@@ -870,6 +1005,12 @@ If a script fails, Devflow must:
 - Return non-zero.
 - Print the failing script name and log path.
 ```
+
+For **loop block failures** (section 9.11), the error message must include:
+
+- The failing step script name
+- The round number when failure occurred (or "exhausted" if maxRounds reached)
+- The loop configuration (step list, maxRounds)
 
 A failed transition may leave the repository work tree dirty (script
 modifications, logs, and a `transitionFailed` entry in `state.json`). Devflow
@@ -1553,6 +1694,14 @@ DEVFLOW_NEXT_PHASE    # same as TO_PHASE for this hop
 DEVFLOW_RUN_DIR       # absolute path to the current hop's run directory (updated each hop)
 DEVFLOW_LOG_LEVEL     # console output level: info | verbose | summary (section 16.2)
 DEVFLOW_REPO_ROOT     # Git work tree root (same as the script working directory)
+```
+
+**Additional environment variables for loop steps** (section 9.11):
+
+```text
+DEVFLOW_SCRIPT_PARENT # name of the invoking script (set for child scripts invoked by parent or loop orchestrator)
+DEVFLOW_SCRIPT_ROUND  # current loop round (1-indexed); unset if not in a loop block
+DEVFLOW_LOOP_MAX      # maxRounds configured for the loop; unset if not in a loop block
 ```
 
 `DEVFLOW_LOG_LEVEL` reflects the active Devflow console output mode:

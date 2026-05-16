@@ -144,3 +144,67 @@ Deno.test("isExecutable", async () => {
   await Deno.chmod(path, 0o755);
   assertEquals(await isExecutable(path), true);
 });
+
+Deno.test("listExitScripts ignores subdirectories (root scripts only)", async () => {
+  const dir = await Deno.makeTempDir();
+  const scriptsDir = `${dir}/${boardScriptsDir("stories")}`;
+  await Deno.mkdir(scriptsDir, { recursive: true });
+
+  // Root script directly in scripts/
+  await writeScript(
+    scriptsDir,
+    "building-001-root",
+    "#!/usr/bin/env bash\nexit 0\n",
+  );
+
+  // Child script in subdirectory
+  const buildingDir = `${scriptsDir}/building`;
+  await Deno.mkdir(buildingDir, { recursive: true });
+  await writeScript(
+    buildingDir,
+    "01-child.sh",
+    "#!/usr/bin/env bash\nexit 0\n",
+  );
+
+  const listed = await listExitScripts(dir, "stories", "building");
+  // Only root script; subdirectory script not included
+  assertEquals(listed, ["building-001-root"]);
+});
+
+Deno.test("invokeChildScript adds loop env vars (req §9.11, §18)", async () => {
+  const dir = await Deno.makeTempDir();
+  const scriptsDir = `${dir}/${boardScriptsDir("stories")}`;
+  await Deno.mkdir(scriptsDir, { recursive: true });
+  await writeScript(
+    scriptsDir,
+    "echo-loop-vars",
+    '#!/usr/bin/env bash\necho -n "${DEVFLOW_SCRIPT_PARENT}:${DEVFLOW_SCRIPT_ROUND}:${DEVFLOW_LOOP_MAX}"\n',
+  );
+
+  const { buildScriptEnv, invokeChildScript } = await import("./scripts.ts");
+  const runDir = `${dir}/run`;
+  await Deno.mkdir(runDir, { recursive: true });
+  const env = buildScriptEnv({
+    repoRoot: dir,
+    boardName: "stories",
+    cardId: "stories-000001",
+    fromPhase: "building",
+    toPhase: "verifying",
+    runDirAbs: runDir,
+  });
+
+  const result = await invokeChildScript(
+    `${scriptsDir}/echo-loop-vars`,
+    "stories",
+    "stories-000001",
+    env,
+    dir,
+    {
+      parentScript: "building-002-build-loop",
+      round: 3,
+      maxRounds: 5,
+    },
+  );
+  assertEquals(result.exitCode, 0);
+  assertEquals(result.stdout, "building-002-build-loop:3:5");
+});

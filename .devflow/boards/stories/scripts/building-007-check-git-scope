@@ -36,23 +36,38 @@ if [ -z "$porcelain" ]; then
 fi
 
 building_collect_allowed_doc_paths "$card_md"
+board_rel="${board_dir#"$repo_root"/}"
+building_apply_board_infra_scope "$card_md" "$board_rel"
 
 card_md_seen=0
+board_infra_seen=0
 src_seen=0
 failed=0
+
+_allowed_scope_hint() {
+  local hint="${card_rel}/, src/, README.md, Spec Updates rows marked done/pending"
+  if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
+    hint="${board_rel}/board.json, ${board_rel}/scripts/, ${board_rel}/skills/, ${hint}"
+  fi
+  printf '%s' "$hint"
+}
 
 _reject_path() {
   local path="$1"
   case "$path" in
     .devflow/boards/*/scripts/*|.devflow/boards/*/skills/*)
-      echo "building-007: board script/skill changes are not part of this story: ${path}" >&2
-      echo "building-007: commit or stash infrastructure changes, then re-run advance" >&2
+      if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
+        echo "building-007: change outside allowed scope: ${path}" >&2
+      else
+        echo "building-007: board script/skill changes are not part of this story: ${path}" >&2
+        echo "building-007: commit or stash infrastructure changes, then re-run advance" >&2
+      fi
       ;;
     *)
       echo "building-007: change outside allowed scope: ${path}" >&2
-      echo "building-007: allowed: ${card_rel}/, src/, README.md, Spec Updates rows marked done/pending" >&2
       ;;
   esac
+  echo "building-007: allowed: $(_allowed_scope_hint)" >&2
   failed=1
 }
 
@@ -64,6 +79,12 @@ _check_path() {
   fi
   if [[ "$path" == src/* ]]; then
     src_seen=1
+  fi
+  if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
+    case "$path" in
+      "${board_rel}/board.json") board_infra_seen=1 ;;
+      "${board_rel}/scripts/"*) board_infra_seen=1 ;;
+    esac
   fi
 
   if [[ "$path" == "${board_cards_rel}"/* ]] && [[ "$path" != "${card_rel}"/* ]]; then
@@ -95,6 +116,11 @@ fi
 
 if [ "$src_seen" -ne 1 ]; then
   echo "building-007: expected changes under src/ after build-story" >&2
+  exit 1
+fi
+
+if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ] && [ "$board_infra_seen" -ne 1 ]; then
+  echo "building-007: expected ${board_rel}/board.json or scripts/ to be modified (board infra story)" >&2
   exit 1
 fi
 

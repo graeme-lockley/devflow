@@ -18,7 +18,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/building-lib.sh"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "building-001: not inside a git work tree" >&2
+  echo "building-001-check-entry: not inside a git work tree" >&2
   exit 1
 fi
 
@@ -28,6 +28,9 @@ if [ -z "$porcelain" ]; then
 fi
 
 building_collect_allowed_doc_paths "$card_md"
+board_rel="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
+board_rel="${board_rel#"$repo_root"/}"
+building_apply_board_infra_scope "$card_md" "$board_rel"
 
 _check_path() {
   local path="$1"
@@ -36,13 +39,17 @@ _check_path() {
   fi
   case "$path" in
     .devflow/boards/*/scripts/*|.devflow/boards/*/skills/*)
-      echo "building-001: board script/skill changes must be committed before advance: ${path}" >&2
+      if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
+        echo "building-001-check-entry: change outside story scope: ${path}" >&2
+      else
+        echo "building-001-check-entry: board script/skill changes must be committed before advance: ${path}" >&2
+      fi
       ;;
     *)
-      echo "building-001: change outside story scope: ${path}" >&2
+      echo "building-001-check-entry: change outside story scope: ${path}" >&2
       ;;
   esac
-  echo "building-001: commit or stash unrelated files; a clean tree is required at first entry" >&2
+  echo "building-001-check-entry: commit or stash unrelated files; a clean tree is required at first entry" >&2
   failed=1
   return 1
 }
@@ -57,5 +64,5 @@ if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 
-echo "building-001: story-scoped working tree (retry)" >&2
+echo "building-001-check-entry: story-scoped working tree (retry)" >&2
 exit 0

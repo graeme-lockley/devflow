@@ -113,6 +113,64 @@ status.
 
 Advance one card at a time per repository.
 
+## Board script composition
+
+Boards may use **hierarchical script layout** and **phase loop blocks** to
+compose multi-step validation workflows:
+
+### Flat layout (default)
+
+Scripts directly in `.devflow/boards/<board>/scripts/` matching
+`<phase>-NNN-<name>` are run in lexical order on phase exit.
+
+### Hierarchical layout
+
+Organize scripts into:
+
+- **Root scripts** (auto-discovered): `scripts/<phase>-NNN-<name>` (executable
+  files directly in `scripts/`)
+- **Child scripts** (parent-invoked): `scripts/<phase>/steps/01-name.sh`,
+  `scripts/<phase>/lib/common.sh`
+- **Helpers** (sourced): non-executable libraries in subdirectories
+
+### Loop blocks
+
+Boards may configure **retry loops** for phases in `board.json`:
+
+```json
+{
+  "phaseScripts": {
+    "building": {
+      "loop": {
+        "steps": [
+          "building/steps/01-pi.sh",
+          "building/steps/02-gate-ci.sh",
+          "building/steps/03-gate-scenarios.sh"
+        ],
+        "maxRounds": 5
+      }
+    }
+  }
+}
+```
+
+**Semantics:**
+
+- Root scripts **lexically before** first loop step run first (entry scripts).
+- Loop steps run sequentially; any failure **restarts from first step** (new
+  round).
+- After `maxRounds` with failure, the transition fails (phase unchanged).
+- Root scripts **lexically after** last loop step run after loop completes (exit
+  scripts).
+- Loop steps receive `DEVFLOW_SCRIPT_ROUND` (1-indexed), `DEVFLOW_LOOP_MAX`,
+  `DEVFLOW_SCRIPT_PARENT` environment variables.
+
+Phases without loop config use flat lexical discovery (backward compatible).
+
+See [§9.11](./docs/devflow-requirements.md#911-phase-loop-blocks) and
+[ADR-0014](./docs/adr/0014-script-composition-and-loops.md) for full
+specification.
+
 ## This repository
 
 | Path                                                             | Purpose                            |

@@ -68,6 +68,7 @@ export async function isExecutable(path: string): Promise<boolean> {
 
 /**
  * Lists executable exit scripts for a phase in lexical order (req §9.3).
+ * Only returns root scripts directly in scripts/ (not subdirectories).
  */
 export async function listExitScripts(
   repoRoot: string,
@@ -79,6 +80,7 @@ export async function listExitScripts(
 
   try {
     for await (const entry of Deno.readDir(scriptsDir)) {
+      // Only files directly in scripts/ (not subdirectories) are root scripts
       if (!entry.isFile) continue;
       if (!matchesExitScript(entry.name, phase)) continue;
       const path = `${scriptsDir}/${entry.name}`;
@@ -251,4 +253,44 @@ export async function invokeScript(
   } finally {
     setActiveChild(null);
   }
+}
+
+export interface InvokeChildScriptOptions extends InvokeScriptOptions {
+  parentScript?: string;
+  round?: number;
+  maxRounds?: number;
+}
+
+/**
+ * Invokes a child script (loop step or parent-invoked) with loop context.
+ * Adds DEVFLOW_SCRIPT_PARENT, DEVFLOW_SCRIPT_ROUND, DEVFLOW_LOOP_MAX to env
+ * (req §9.11, §18, ADR-0014).
+ */
+export function invokeChildScript(
+  scriptPath: string,
+  boardName: string,
+  cardId: string,
+  baseEnv: Record<string, string>,
+  repoRoot: string,
+  options?: InvokeChildScriptOptions,
+): Promise<ScriptInvokeResult> {
+  const childEnv = { ...baseEnv };
+  if (options?.parentScript) {
+    childEnv.DEVFLOW_SCRIPT_PARENT = options.parentScript;
+  }
+  if (options?.round !== undefined) {
+    childEnv.DEVFLOW_SCRIPT_ROUND = String(options.round);
+  }
+  if (options?.maxRounds !== undefined) {
+    childEnv.DEVFLOW_LOOP_MAX = String(options.maxRounds);
+  }
+
+  return invokeScript(
+    scriptPath,
+    boardName,
+    cardId,
+    childEnv,
+    repoRoot,
+    options,
+  );
 }

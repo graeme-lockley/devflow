@@ -84,9 +84,10 @@ while IFS= read -r line; do
   case "$status" in
     done)
       if ! path_in_diff "$doc_path"; then
-        # Allow done when planned change was verification-only (file unchanged)
-        if ! printf '%s' "$planned" | grep -qiE '^(none|n/a|verify|unchanged)'; then
-          fail "Spec Updates marks ${doc_path} as done but it is not in the working tree diff"
+        if ! stories_spec_done_without_worktree_diff "$doc_path" "$line" "$planned" "$card_md" "$repo_root"; then
+          if ! printf '%s' "$planned" | grep -qiE '^(none|n/a|verify|unchanged)'; then
+            fail "Spec Updates marks ${doc_path} as done but it is not in the working tree diff"
+          fi
         fi
       fi
       ;;

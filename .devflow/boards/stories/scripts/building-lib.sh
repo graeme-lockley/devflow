@@ -90,6 +90,26 @@ building_collect_allowed_doc_paths() {
   done < <(building_section_body "$card_md" "Spec Updates")
 }
 
+# True when card.md scopes this story to board.json / scripts / skills (e.g. loop stories).
+stories_board_infrastructure_in_scope() {
+  local card_md="$1"
+  grep -qiE \
+    'board\.json|phaseScripts|Stories board|/scripts/|/skills/|building/steps|refactor.*\.devflow/boards' \
+    "$card_md"
+}
+
+# Set BUILDING_BOARD_REL and BUILDING_ALLOW_BOARD_INFRA=1 when card allows board infra edits.
+building_apply_board_infra_scope() {
+  local card_md="$1"
+  local board_rel="$2"
+  BUILDING_BOARD_REL=""
+  BUILDING_ALLOW_BOARD_INFRA=0
+  if stories_board_infrastructure_in_scope "$card_md"; then
+    BUILDING_BOARD_REL="$board_rel"
+    BUILDING_ALLOW_BOARD_INFRA=1
+  fi
+}
+
 # True when path is allowed for story implementation (card, src, docs, README).
 building_path_allowed_for_story() {
   local path="$1"
@@ -100,6 +120,13 @@ building_path_allowed_for_story() {
     README.md) return 0 ;;
     deno.json|deno.lock) return 0 ;;
   esac
+  if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ] && [ -n "${BUILDING_BOARD_REL:-}" ]; then
+    case "$path" in
+      "${BUILDING_BOARD_REL}/board.json") return 0 ;;
+      "${BUILDING_BOARD_REL}/scripts/"*) return 0 ;;
+      "${BUILDING_BOARD_REL}/skills/"*) return 0 ;;
+    esac
+  fi
   local doc
   for doc in "${BUILDING_ALLOWED_DOC_PATHS[@]}"; do
     [ "$path" = "$doc" ] && return 0

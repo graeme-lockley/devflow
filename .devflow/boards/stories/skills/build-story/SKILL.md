@@ -84,8 +84,8 @@ For each **Build Task** in order:
 3. Prefer extending existing functions over new parallel implementations.
 4. Mark the task `[x]` in `card.md` immediately when done.
 5. Append to **Build Notes**: what changed, file paths, and any deviation from
-   Impact Analysis. Remove the `_To be completed in building._` placeholder
-   line once real notes exist.
+   Impact Analysis. Remove the `_To be completed in building._` placeholder line
+   once real notes exist.
 
 ### 3. Tests
 
@@ -150,15 +150,17 @@ Exit 0 only when implementation is ready for verification.
 
 ## pi invocation
 
-Invoked by `building-002-do-build` (with CI + Test Scenarios retry loop) when leaving **building**:
+Invoked by `building/steps/01-pi.sh` inside the **building** loop (`board.json`
+`phaseScripts.building.loop`) when leaving **building**:
 
 ```bash
 pi --skill .devflow/boards/stories/skills/build-story \
-  --model "${DEVFLOW_HEAVY_MODEL}" --print \
+  --model "${DEVFLOW_MEDIUM_MODEL}" --print \
   "Using the skill build-story, implement <card-id>."
 ```
 
-Set `DEVFLOW_SKIP_PI=1` to skip pi (runs quality gates only). Each round runs
-`deno task ci` then automated **Test Scenarios** from the card (with the same
-`deno test` permissions as `deno.json`). Set `DEVFLOW_BUILD_MAX_ROUNDS` to cap
-retries (default 5). Non-zero exit fails the transition.
+Set `DEVFLOW_SKIP_PI=1` to skip pi (runs quality gates only). Each loop round
+runs `deno task ci` then automated **Test Scenarios** from the card (with the
+same `deno test` permissions as `deno.json`). `maxRounds` is set in
+`board.json` (`phaseScripts.building.loop.maxRounds`, default 5). Non-zero exit
+fails the transition.

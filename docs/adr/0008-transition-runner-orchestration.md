@@ -22,6 +22,9 @@ Implement a **`services/transition.ts`** module that:
   → (M6) git service.
 - Returns structured failure (script name, log path) for the command layer to
   print.
+- (ADR-0014) Orchestrates loop blocks when configured for a phase: runs loop
+  steps with round counter, restarts on failure, fails transition when max
+  rounds exhausted.
 
 The `card-advance` command handler only: validates preconditions (blocked,
 backward phase), acquires locks, calls `transition.runAdvance`, releases locks.
@@ -42,3 +45,4 @@ backward phase), acquires locks, calls `transition.runAdvance`, releases locks.
 
 - Requirements [§11](../devflow-requirements.md#11-transition-model)
 - [`architecture.md` §5.3](../architecture.md#53-transition-runner-srcservicestransitionts)
+- [ADR-0014](./0014-script-composition-and-loops.md) — loop block orchestration

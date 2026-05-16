@@ -19,6 +19,7 @@ requirements remain authoritative in
 | [0011](./0011-console-output-levels.md)           | Three console output levels                      | Accepted |
 | [0012](./0012-inline-validation.md)               | Inline validation without JSON Schema            | Accepted |
 | [0013](./0013-cli-command-duality.md)             | Object-first commands with verb-command synonyms | Accepted |
+| [0014](./0014-script-composition-and-loops.md)    | Script composition and phase loops               | Accepted |
 
 ## Format
 

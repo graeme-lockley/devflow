@@ -44,16 +44,17 @@ Satisfy gates marked **finishing** or **exit finishing**.
 The [story template](../../assets/story.template.md) fixes **top-level `##`
 headings and order**. Subsections belong only under the parent shown:
 
-| `##` section      | Phase gates (template)              | What belongs here |
-| ----------------- | ----------------------------------- | ----------------- |
-| **Notes**         | optional; verify + finish subsections | Planning decisions, blockers, **`### Verification summary`** (from validate-story), **`### Finished`** (this skill) |
-| **Build Notes**   | started building; complete finishing | As-built implementation log, file lists, deviations—**not** `### Finished` |
-| **Spec Updates**  | planned planning; completed finishing | Table only; close statuses here |
+| `##` section     | Phase gates (template)                | What belongs here                                                                                                   |
+| ---------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Notes**        | optional; verify + finish subsections | Planning decisions, blockers, **`### Verification summary`** (from validate-story), **`### Finished`** (this skill) |
+| **Build Notes**  | started building; complete finishing  | As-built implementation log, file lists, deviations—**not** `### Finished`                                          |
+| **Spec Updates** | planned planning; completed finishing | Table only; close statuses here                                                                                     |
 
-**Critical:** `### Finished (YYYY-MM-DD)` must be added under **`## Notes`**, as a
-sibling of `### Verification summary`—typically immediately after the
+**Critical:** `### Finished (YYYY-MM-DD)` must be added under **`## Notes`**, as
+a sibling of `### Verification summary`—typically immediately after the
 verification summary bullets and **before** any older planning-decision
-subsections, or at the end of **`## Notes`** but still **above** `## Build Notes`.
+subsections, or at the end of **`## Notes`** but still **above**
+`## Build Notes`.
 
 Never place `### Finished` under **`## Build Notes`**. The exit script
 `finishing-003-check-finishing-quality` reads only the **Notes** section body.
@@ -88,11 +89,11 @@ If verifying is incomplete, exit 1.
 
 For each row in **Spec Updates**:
 
-| Planned                    | Action                                                                       |
-| -------------------------- | ---------------------------------------------------------------------------- |
-| `none` / N/A               | Set status `n/a`                                                             |
+| Planned                    | Action                                                                                                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `none` / N/A               | Set status `n/a`                                                                                                                                               |
 | `pending`                  | Apply the documented change, or mark `deferred` with reason in **Notes** (mention the document path or e.g. `requirements` for `docs/devflow-requirements.md`) |
-| Doc requires user approval | Do not edit; set status `blocked` and exit 1 unless approval is in **Notes** |
+| Doc requires user approval | Do not edit; set status `blocked` and exit 1 unless approval is in **Notes**                                                                                   |
 
 **Immutable docs** (`docs/devflow-requirements.md`, `docs/architecture.md`,
 `docs/adr/*`):
@@ -146,6 +147,7 @@ only when the implementation truly matches the milestone description.
 ## Notes
 
 ### Verification summary (YYYY-MM-DD)
+
 …existing verification content from validate-story…
 
 ### Finished (YYYY-MM-DD)
@@ -171,8 +173,8 @@ Exit 0 when the card is archivable and docs match the repo.
 ## Quality gate (exit finishing)
 
 Enforced by `finishing-003`, `finishing-004`, and `finishing-005` when this hop
-changed docs (see [`scripts/README.md`](../scripts/README.md): no duplicate gates
-from verifying or building).
+changed docs (see [`scripts/README.md`](../scripts/README.md): no duplicate
+gates from verifying or building).
 
 - [ ] Every Spec Updates row has status `done`, `n/a`, or justified `deferred`
       in Notes

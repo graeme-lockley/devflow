@@ -2,10 +2,10 @@
   "id": "stories-000003",
   "board": "stories",
   "title": "Enable native support for script loops",
-  "phase": "building",
+  "phase": "verifying",
   "previousPhase": null,
   "createdAt": "2026-05-16T15:50:41.044Z",
-  "updatedAt": "2026-05-16T17:14:35.738Z",
+  "updatedAt": "2026-05-16T17:53:10.315Z",
   "variables": {},
   "history": [
     {
@@ -25,6 +25,13 @@
       "at": "2026-05-16T17:14:35.738Z",
       "from": "planning",
       "to": "building",
+      "mode": "normal"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-16T17:53:10.315Z",
+      "from": "building",
+      "to": "verifying",
       "mode": "normal"
     }
   ],
