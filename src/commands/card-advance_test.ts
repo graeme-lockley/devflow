@@ -116,7 +116,10 @@ Deno.test("advanceCard script failure (req §11.5)", async () => {
 
     const result = await advanceCard(cardId, "b", dir);
     assertEquals(result.exitCode, 1);
-    assertEquals(result.failureOutput?.includes("a-001-fail"), true);
+    assertEquals(result.failure?.kind, "script");
+    if (result.failure?.kind === "script") {
+      assertEquals(result.failure.script.includes("a-001-fail"), true);
+    }
 
     const state = await loadCardState(dir, "test", cardId);
     assertEquals(state.phase, "a");
@@ -199,7 +202,8 @@ Deno.test("advanceCard already at target (req §11.6)", async () => {
     const cardId = await setupBoard(dir, ["a", "b"]);
     const result = await advanceCard(cardId, "a", dir);
     assertEquals(result.exitCode, 0);
-    assertEquals(result.message?.includes("already"), true);
+    assertEquals(result.notice?.kind, "already-in-phase");
+    assertEquals(result.notice?.phase, "a");
   });
 });
 

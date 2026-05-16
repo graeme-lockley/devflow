@@ -20,7 +20,13 @@ import { releaseCardLockCommand } from "../commands/release-card-lock.ts";
 import { releaseRepoLockCommand } from "../commands/release-repo-lock.ts";
 import { resolveGitRoot } from "../infra/git-root.ts";
 import { boardRoot } from "../infra/paths.ts";
-import { logError, resetLogLevel, setLogLevel } from "../services/console.ts";
+import {
+  logCliMessage,
+  logError,
+  logTransitionFailure,
+  resetLogLevel,
+  setLogLevel,
+} from "../services/console.ts";
 import { parseAddCardFileArgs } from "./add-file-flags.ts";
 import { parseCardListArgs } from "./card-list-flags.ts";
 import { parseAdvanceArgs } from "./advance-flags.ts";
@@ -331,16 +337,26 @@ const handlers = new Map<string, CommandHandler>([
         const result = await advanceCard(cardId, targetPhase, repoRoot, {
           force,
         });
-        if (result.message) {
-          console.error(result.message);
+        if (result.notice?.kind === "already-in-phase") {
+          logCliMessage({
+            kind: "success",
+            command: "card advance",
+            subject: result.notice.cardId,
+            detail: `already in phase "${result.notice.phase}"`,
+          });
         }
-        if (result.failureOutput) {
-          logError(result.failureOutput);
+        if (result.failure && result.cardId) {
+          logTransitionFailure(result.cardId, result.failure);
         }
         return result.exitCode;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error(`devflow card advance ${cardId}: ${message}`);
+        logCliMessage({
+          kind: "error",
+          command: "card advance",
+          subject: cardId,
+          detail: message,
+        });
         return 1;
       }
     },

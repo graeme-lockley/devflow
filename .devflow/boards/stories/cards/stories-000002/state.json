@@ -1,0 +1,18 @@
+{
+  "id": "stories-000002",
+  "board": "stories",
+  "title": "Expand the create-card which allows a description to be passed or a file attached that has the card content",
+  "phase": "preparing",
+  "previousPhase": null,
+  "createdAt": "2026-05-16T11:58:25.428Z",
+  "updatedAt": "2026-05-16T11:58:25.428Z",
+  "variables": {},
+  "history": [
+    {
+      "type": "created",
+      "at": "2026-05-16T11:58:25.428Z",
+      "phase": "preparing"
+    }
+  ],
+  "blocked": null
+}

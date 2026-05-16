@@ -1,0 +1,17 @@
+{
+  "name": "stories",
+  "idPrefix": "stories",
+  "nextSequence": 3,
+  "sequenceWidth": 6,
+  "phases": [
+    "preparing",
+    "planning",
+    "building",
+    "verifying",
+    "finishing",
+    "done"
+  ],
+  "blockedPhase": "blocked",
+  "createdAt": "2026-05-16T11:28:15.074Z",
+  "updatedAt": "2026-05-16T11:58:25.428Z"
+}

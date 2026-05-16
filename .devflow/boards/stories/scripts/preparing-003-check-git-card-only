@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit preparing: after create-story, only this card's directory may have changed.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+repo_root="${repo_root%/}"
+card_dir="${card_dir%/}"
+card_rel="${card_dir#"$repo_root"/}"
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  card_md="${card_dir}/card.md"
+  if [ ! -f "$card_md" ]; then
+    echo "preparing-003: card.md missing (pi skipped)" >&2
+    exit 1
+  fi
+  if ! head -1 "$card_md" | grep -q '^# '; then
+    echo "preparing-003: card.md must start with a # title line" >&2
+    exit 1
+  fi
+  min_chars=80
+  size=$(wc -c < "$card_md" | tr -d ' ')
+  if [ "$size" -lt "$min_chars" ]; then
+    echo "preparing-003: card.md too short for preparing (${size} < ${min_chars} chars; pi skipped)" >&2
+    exit 1
+  fi
+  exit 0
+fi
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "preparing-003: not inside a git work tree" >&2
+  exit 1
+fi
+
+porcelain=$(git status --porcelain)
+if [ -z "$porcelain" ]; then
+  echo "preparing-003: expected changes under ${card_rel}/ after create-story" >&2
+  exit 1
+fi
+
+card_md_seen=0
+
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+
+  path="${line:3}"
+  if [[ "$path" == *" -> "* ]]; then
+    path="${path##* -> }"
+  fi
+  path="${path#\"}"
+  path="${path%\"}"
+
+  case "$path" in
+    "${card_rel}"/*|"$card_rel")
+      if [ "$path" = "${card_rel}/card.md" ]; then
+        card_md_seen=1
+      fi
+      ;;
+    *)
+      echo "preparing-003: change outside card directory: ${path}" >&2
+      echo "preparing-003: only ${card_rel}/ may change" >&2
+      exit 1
+      ;;
+  esac
+done <<< "$porcelain"
+
+if [ "$card_md_seen" -ne 1 ]; then
+  echo "preparing-003: expected ${card_rel}/card.md to be modified" >&2
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    echo "$line" >&2
+  done <<< "$porcelain"
+  exit 1
+fi
+
+exit 0

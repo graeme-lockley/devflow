@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit preparing: run create-story skill via pi.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  echo "DEVFLOW_SKIP_PI=1: skipping pi create-story" >&2
+  exit 0
+fi
+
+if ! command -v pi >/dev/null 2>&1; then
+  echo "preparing-002: pi not on PATH" >&2
+  exit 1
+fi
+
+skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/create-story"
+exec pi run --skill "$skill_dir" --board "$board" --card "$card_id"

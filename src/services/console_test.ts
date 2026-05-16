@@ -1,6 +1,8 @@
 import { assertEquals } from "@std/assert";
 import {
   colorsEnabled,
+  formatTransitionFailurePlain,
+  logCliMessage,
   logError,
   logInfo,
   logSuccess,
@@ -102,4 +104,38 @@ Deno.test("logInfo suppressed in summary mode", () => {
   resetLogLevel();
   setLogLevel("summary");
   assertEquals(captureStderr(() => logInfo("grey")), "");
+});
+
+Deno.test("formatTransitionFailurePlain uses Error headline (req §11.5)", () => {
+  const out = formatTransitionFailurePlain("transition failed", [
+    { label: "card", value: "stories-000001" },
+    { label: "phase", value: "preparing" },
+    { label: "target", value: "planning" },
+    { label: "script", value: "preparing-001-check-git-clean" },
+    { label: "exit", value: "1" },
+    { label: "log", value: ".devflow/.../output.log" },
+  ]);
+  assertEquals(out.startsWith("Error: transition failed"), true);
+  assertEquals(out.includes("card: stories-000001"), true);
+  assertEquals(out.includes("ERROR:"), false);
+});
+
+Deno.test("logCliMessage plain when stderr is not a TTY", () => {
+  resetLogLevel();
+  setLogLevel("info");
+  if (Deno.stderr.isTerminal()) return;
+
+  const out = captureStderr(() =>
+    logCliMessage({
+      kind: "success",
+      command: "card advance",
+      subject: "stories-000001",
+      detail: 'already in phase "preparing"',
+    })
+  );
+  assertEquals(ANSI_RE.test(out), false);
+  assertEquals(
+    out,
+    'Success: card advance: stories-000001: already in phase "preparing"',
+  );
 });

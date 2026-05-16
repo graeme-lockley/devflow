@@ -55,7 +55,7 @@ Deno.test("stories workflow unplanned to planned (req §19)", async () => {
 
       const beforeCommits = await countCommits(dir);
       const advance = await advanceCard(cardId, "planned", dir);
-      assertEquals(advance.exitCode, 0, advance.failureOutput);
+      assertEquals(advance.exitCode, 0);
 
       const state = await loadCardState(dir, "stories", cardId);
       assertEquals(state.phase, "planned");

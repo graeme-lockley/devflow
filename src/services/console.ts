@@ -64,6 +64,49 @@ export function logError(message: string): void {
   writeStderr(colorize(message, RED));
 }
 
+export type CliMessageKind = "error" | "success" | "info";
+
+export interface CliMessageOptions {
+  kind: CliMessageKind;
+  /** Subcommand context, e.g. `card advance`. */
+  command: string;
+  /** Card id, board name, or similar (shown in grey when coloured). */
+  subject?: string;
+  /** Remainder of the line (default terminal colour when coloured). */
+  detail: string;
+}
+
+/**
+ * Structured stderr line for user-facing CLI feedback (req §16.2).
+ * Example: Success: card advance: stories-000001: already in phase "preparing"
+ */
+export function logCliMessage(options: CliMessageOptions): void {
+  const { kind, command, subject, detail } = options;
+  if (activeLevel === "summary" && kind === "info") return;
+
+  const label = kind === "error"
+    ? "Error"
+    : kind === "success"
+    ? "Success"
+    : "Note";
+  const labelColor = kind === "error" ? RED : kind === "success" ? GREEN : GREY;
+
+  if (!colorsEnabled()) {
+    let line = `${label}: ${command}`;
+    if (subject) line += `: ${subject}`;
+    line += `: ${detail}`;
+    writeStderr(line);
+    return;
+  }
+
+  let line = `${labelColor}${label}:${RESET} ${GREY}${command}:${RESET}`;
+  if (subject) {
+    line += ` ${GREY}${subject}:${RESET}`;
+  }
+  line += ` ${detail}`;
+  writeStderr(line);
+}
+
 export function logVerbose(message: string): void {
   if (activeLevel !== "verbose") return;
   writeStderr(colorize(message, GREY));
@@ -79,4 +122,81 @@ export function logSummaryTransition(from: string, to: string): void {
 export function writeMachineStdout(text: string): void {
   const out = text.endsWith("\n") ? text : text + "\n";
   Deno.stdout.writeSync(new TextEncoder().encode(out));
+}
+
+export interface TransitionFailureField {
+  label: string;
+  value: string;
+}
+
+/** Plain-text transition failure block (req §11.5); no ANSI. */
+export function formatTransitionFailurePlain(
+  headline: string,
+  fields: TransitionFailureField[],
+): string {
+  const lines = [`Error: ${headline}`, ""];
+  for (const { label, value } of fields) {
+    lines.push(`${label}: ${value}`);
+  }
+  return lines.join("\n");
+}
+
+function transitionFailureFields(
+  cardId: string,
+  failure: {
+    kind: "script" | "git";
+    from: string;
+    targetPhase: string;
+    script?: string;
+    exitCode?: number;
+    gitError?: string;
+    logPath: string;
+  },
+): { headline: string; fields: TransitionFailureField[] } {
+  const headline = failure.kind === "git"
+    ? "git commit failed"
+    : "transition failed";
+  const fields: TransitionFailureField[] = [
+    { label: "card", value: cardId },
+    { label: "phase", value: failure.from },
+    { label: "target", value: failure.targetPhase },
+  ];
+  if (failure.kind === "script") {
+    fields.push({ label: "script", value: failure.script! });
+    fields.push({ label: "exit", value: String(failure.exitCode!) });
+  } else {
+    fields.push({ label: "git", value: failure.gitError! });
+  }
+  fields.push({ label: "log", value: failure.logPath });
+  return { headline, fields };
+}
+
+/**
+ * Transition failure block for card advance (req §11.5).
+ * Error: (red) headline (default); label: (grey) value (default).
+ */
+export function logTransitionFailure(
+  cardId: string,
+  failure: {
+    kind: "script" | "git";
+    from: string;
+    targetPhase: string;
+    script?: string;
+    exitCode?: number;
+    gitError?: string;
+    logPath: string;
+  },
+): void {
+  const { headline, fields } = transitionFailureFields(cardId, failure);
+
+  if (!colorsEnabled()) {
+    writeStderr(formatTransitionFailurePlain(headline, fields));
+    return;
+  }
+
+  writeStderr(`${RED}Error:${RESET} ${headline}`);
+  writeStderr("");
+  for (const { label, value } of fields) {
+    writeStderr(`${GREY}${label}:${RESET} ${value}`);
+  }
 }

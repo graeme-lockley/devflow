@@ -1,0 +1,94 @@
+# {title}
+
+{description}
+
+## Current State
+
+<!-- phase-gate: complete by exit preparing -->
+
+{current_state}
+
+## Objectives
+
+<!-- phase-gate: complete by exit preparing -->
+
+{objectives}
+
+## Spec References
+
+<!-- phase-gate: draft by exit preparing | complete by exit planning -->
+
+_Specification and architecture pointers. Use paths and section anchors._
+
+- [ ] `docs/devflow-requirements.md` — _section(s)_
+- [ ] `docs/architecture.md` — _area(s)_
+- [ ] `docs/adr/` — _ADR id(s), or N/A_
+- [ ] `docs/implementation-roadmap.md` — _milestone(s), or N/A_
+
+## Acceptance Criteria
+
+<!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
+
+{acceptance_criteria}
+
+## Impact Analysis
+
+<!-- phase-gate: complete by exit planning -->
+
+### Scope
+
+_Modules, commands, files, and user-visible behaviour affected._
+
+### Risks and constraints
+
+_Breaking changes, TTY vs machine output, locks, performance, dependencies._
+
+## Test Scenarios
+
+<!-- phase-gate: complete by exit planning | executed by exit verifying -->
+
+| # | Type      | Scenario                | Expected             |
+| - | --------- | ----------------------- | -------------------- |
+| 1 | automated | _e.g. deno test …_      | _pass_               |
+| 2 | manual    | _Given … When … Then …_ | _observable outcome_ |
+
+## Build Tasks
+
+<!-- phase-gate: complete by exit planning | all [x] by exit building -->
+
+1. [ ] _Ordered implementation step_
+2. [ ] _…_
+
+## Spec Updates
+
+<!-- phase-gate: planned by exit planning | completed by exit finishing -->
+
+| Document                       | Planned change | Status  |
+| ------------------------------ | -------------- | ------- |
+| `docs/devflow-requirements.md` | _none / §…_    | pending |
+| `docs/architecture.md`         | _none / …_     | pending |
+| `README.md`                    | _none / …_     | pending |
+
+## Notes
+
+<!-- phase-gate: optional; ongoing across phases -->
+
+_Decisions, questions, blockers, and planning-time design notes._
+
+## Build Notes
+
+<!-- phase-gate: started by exit building | complete by exit finishing -->
+
+_As-built log: what was implemented, deviations from plan, follow-ups._
+
+## Related Cards
+
+<!-- phase-gate: complete or explicit none by exit preparing -->
+
+_None._
+
+## Attachments
+
+<!-- phase-gate: optional preparing–building | evidence by exit verifying when cited in ACs -->
+
+_Screenshots, logs, or files under `files/`._

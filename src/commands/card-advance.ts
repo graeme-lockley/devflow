@@ -26,73 +26,18 @@ export interface AdvanceCardOptions {
   force?: boolean;
 }
 
+export interface AdvanceCardNotice {
+  kind: "already-in-phase";
+  cardId: string;
+  phase: string;
+}
+
 export interface AdvanceCardResult {
   exitCode: number;
-  message?: string;
-  failureOutput?: string;
-}
-
-function formatScriptFailureOutput(
-  cardId: string,
-  phase: string,
-  targetPhase: string,
-  script: string,
-  exitCode: number,
-  logPath: string,
-): string {
-  return [
-    "ERROR: transition failed",
-    "",
-    `card: ${cardId}`,
-    `phase: ${phase}`,
-    `target: ${targetPhase}`,
-    `script: ${script}`,
-    `exit: ${exitCode}`,
-    `log: ${logPath}`,
-  ].join("\n");
-}
-
-function formatGitFailureOutput(
-  cardId: string,
-  phase: string,
-  targetPhase: string,
-  gitError: string,
-  logPath: string,
-): string {
-  return [
-    "ERROR: git commit failed",
-    "",
-    `card: ${cardId}`,
-    `phase: ${phase}`,
-    `target: ${targetPhase}`,
-    `git: ${gitError}`,
-    `log: ${logPath}`,
-  ].join("\n");
-}
-
-function formatFailureOutput(
-  cardId: string,
-  phase: string,
-  targetPhase: string,
-  failure: AdvanceFailure,
-): string {
-  if (failure.kind === "git") {
-    return formatGitFailureOutput(
-      cardId,
-      phase,
-      targetPhase,
-      failure.gitError,
-      failure.logPath,
-    );
-  }
-  return formatScriptFailureOutput(
-    cardId,
-    phase,
-    targetPhase,
-    failure.script,
-    failure.exitCode,
-    failure.logPath,
-  );
+  notice?: AdvanceCardNotice;
+  failure?: AdvanceFailure;
+  /** Card id for displaying {@link AdvanceCardResult.failure}. */
+  cardId?: string;
 }
 
 const defaultInterruptHandler = async (_signal: Deno.Signal) => {
@@ -117,7 +62,11 @@ export async function advanceCard(
   if (isAtTarget(state.phase, targetPhase)) {
     return {
       exitCode: 0,
-      message: `card ${cardId} is already in phase "${targetPhase}"`,
+      notice: {
+        kind: "already-in-phase",
+        cardId,
+        phase: targetPhase,
+      },
     };
   }
 
@@ -155,12 +104,8 @@ export async function advanceCard(
 
     return {
       exitCode: 1,
-      failureOutput: formatFailureOutput(
-        cardId,
-        result.state.phase,
-        targetPhase,
-        result.failure,
-      ),
+      cardId,
+      failure: result.failure,
     };
   } finally {
     setInterruptHandler(defaultInterruptHandler);
