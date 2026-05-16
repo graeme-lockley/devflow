@@ -12,6 +12,31 @@ stories_spec_update_status() {
   stories_spec_update_status_raw "$1" | awk '{print $1}'
 }
 
+# True when card.md (Build Notes or Notes) documents work on doc_path.
+stories_doc_mentioned_in_card() {
+  local doc_path="$1"
+  local card_md="$2"
+  local base="${doc_path##*/}"
+  local body adr_id
+
+  body=$(building_section_body "$card_md" "Build Notes")
+  body+=$(printf '\n%s' "$(building_section_body "$card_md" "Notes")")
+
+  if printf '%s' "$body" | grep -qF "$doc_path"; then
+    return 0
+  fi
+  if printf '%s' "$body" | grep -qF "$base"; then
+    return 0
+  fi
+  case "$doc_path" in
+    docs/adr/[0-9][0-9][0-9][0-9]-*)
+      adr_id=$(printf '%s' "$base" | sed -n 's/^\([0-9][0-9][0-9][0-9]\).*/ADR-\1/p')
+      [ -n "$adr_id" ] && printf '%s' "$body" | grep -qF "$adr_id" && return 0
+      ;;
+  esac
+  return 1
+}
+
 # Finishing: "done" row with no porcelain diff — shipped in an earlier hop or annotated pointer.
 stories_spec_done_without_worktree_diff() {
   local doc_path="$1"
@@ -19,7 +44,7 @@ stories_spec_done_without_worktree_diff() {
   local planned="$3"
   local card_md="$4"
   local repo_root="$5"
-  local status_raw build_notes
+  local status_raw
 
   status_raw=$(stories_spec_update_status_raw "$line")
 
@@ -31,9 +56,7 @@ stories_spec_done_without_worktree_diff() {
   fi
   if git -C "$repo_root" diff --quiet HEAD -- "$doc_path" 2>/dev/null \
     && git -C "$repo_root" rev-parse --verify "HEAD:${doc_path}" >/dev/null 2>&1; then
-    build_notes=$(building_section_body "$card_md" "Build Notes")
-    if printf '%s' "$build_notes" | grep -qF "$doc_path" \
-      && printf '%s' "$build_notes" | grep -qi 'done'; then
+    if stories_doc_mentioned_in_card "$doc_path" "$card_md"; then
       return 0
     fi
   fi
