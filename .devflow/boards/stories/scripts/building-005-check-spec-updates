@@ -9,6 +9,10 @@ card_id="${2:?card id required}"
 card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
 card_md="${card_dir}/card.md"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=building-lib.sh
+source "${script_dir}/building-lib.sh"
 
 fail() {
   echo "building-005: $*" >&2
@@ -71,7 +75,7 @@ while IFS= read -r line; do
   row_count=$((row_count + 1))
 
   planned=$(printf '%s' "$line" | awk -F'|' '{print $3}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-  status=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | tr -d ' ')
+  status=$(stories_spec_update_status "$line")
 
   if immutable_doc_changed_without_approval "$doc_path"; then
     fail "${doc_path} changed but card lacks explicit user approval in Notes"

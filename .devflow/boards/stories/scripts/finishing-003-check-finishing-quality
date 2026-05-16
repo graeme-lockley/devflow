@@ -8,6 +8,10 @@ card_id="${2:?card id required}"
 
 card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
 card_md="${card_dir}/card.md"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=building-lib.sh
+source "${script_dir}/building-lib.sh"
 
 fail() {
   echo "finishing-003: $*" >&2
@@ -51,7 +55,7 @@ notes_all=$(section_body "Notes")
 while IFS= read -r line; do
   [[ "$line" =~ ^\|[[:space:]]*\`([^\`]+)\`[[:space:]]*\| ]] || continue
   doc_path="${BASH_REMATCH[1]}"
-  status=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | tr -d ' ')
+  status=$(stories_spec_update_status "$line")
 
   case "$status" in
     done|n/a) ;;

@@ -1,6 +1,14 @@
 # Shared helpers for building exit scripts (not invoked by Devflow).
 # shellcheck shell=bash
 
+# Spec Updates table: last column, first token only (allows "deferred (reason)", "done (…)" ).
+stories_spec_update_status() {
+  local line="$1"
+  local raw
+  raw=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  printf '%s' "$raw" | awk '{print $1}'
+}
+
 # Populates BUILDING_ALLOWED_DOC_PATHS from Spec Updates (done|pending rows).
 building_collect_allowed_doc_paths() {
   local card_md="$1"
@@ -10,7 +18,7 @@ building_collect_allowed_doc_paths() {
   while IFS= read -r line; do
     [[ "$line" =~ ^\|[[:space:]]*\`([^\`]+)\`[[:space:]]*\| ]] || continue
     doc="${BASH_REMATCH[1]}"
-    status=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | tr -d ' ')
+    status=$(stories_spec_update_status "$line")
     case "$status" in
       done|pending) BUILDING_ALLOWED_DOC_PATHS+=("$doc") ;;
     esac
