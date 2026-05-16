@@ -5,6 +5,7 @@ export interface ParsedFlags {
   verbose: boolean;
   summary: boolean;
   ignoreLock: boolean;
+  help: boolean;
 }
 
 export function parseGlobalFlags(args: string[]): ParsedFlags {
@@ -12,6 +13,7 @@ export function parseGlobalFlags(args: string[]): ParsedFlags {
   let verbose = false;
   let summary = false;
   let ignoreLock = false;
+  let help = false;
 
   for (const arg of args) {
     if (arg === "--verbose") {
@@ -20,12 +22,14 @@ export function parseGlobalFlags(args: string[]): ParsedFlags {
       summary = true;
     } else if (arg === "--ignore-lock") {
       ignoreLock = true;
+    } else if (arg === "--help" || arg === "-h") {
+      help = true;
     } else {
       remaining.push(arg);
     }
   }
 
-  return { remaining, verbose, summary, ignoreLock };
+  return { remaining, verbose, summary, ignoreLock, help };
 }
 
 export function resolveLogLevel(flags: ParsedFlags): LogLevel {

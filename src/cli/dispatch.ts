@@ -146,8 +146,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [boardName, ...rest] = positional;
       if (!boardName) {
-        console.error("devflow board init: board name required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow board init",
+          detail: "board name required",
+        });
         return 1;
       }
       try {
@@ -182,8 +185,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [boardName] = positional;
       if (!boardName) {
-        console.error("devflow board show: board name required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow board show",
+          detail: "board name required",
+        });
         return 1;
       }
       try {
@@ -267,8 +273,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [cardId] = positional;
       if (!cardId) {
-        console.error("devflow card show: card id required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow card show",
+          detail: "card id required",
+        });
         return 1;
       }
       try {
@@ -292,8 +301,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [cardId] = positional;
       if (!cardId) {
-        console.error("devflow card dir: card id required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow card dir",
+          detail: "card id required",
+        });
         return 1;
       }
       try {
@@ -317,8 +329,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [cardId, title] = positional;
       if (!cardId || title === undefined) {
-        console.error("devflow card rename: card id and title required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow card rename",
+          detail: "card id and title required",
+        });
         return 1;
       }
       try {
@@ -360,8 +375,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [cardId, reason] = positional;
       if (!cardId || reason === undefined) {
-        console.error("devflow card block: card id and reason required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow card block",
+          detail: "card id and reason required",
+        });
         return 1;
       }
       try {
@@ -384,10 +402,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const { cardId, targetPhase, force } = parseAdvanceArgs(positional);
       if (!cardId || !targetPhase) {
-        console.error(
-          "devflow card advance: card id and target phase required\n",
-        );
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow card advance",
+          detail: "card id and target phase required",
+        });
         return 1;
       }
       try {
@@ -423,8 +442,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [cardId] = positional;
       if (!cardId) {
-        console.error("devflow card unblock: card id required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow card unblock",
+          detail: "card id required",
+        });
         return 1;
       }
       try {
@@ -447,8 +469,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [cardId] = positional;
       if (!cardId) {
-        console.error("devflow card validate: card id required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow card validate",
+          detail: "card id required",
+        });
         return 1;
       }
       try {
@@ -470,10 +495,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [cardId, name] = positional;
       if (!cardId || !name) {
-        console.error(
-          "devflow variable get: card id and variable name required\n",
-        );
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow variable get",
+          detail: "card id and variable name required",
+        });
         return 1;
       }
       try {
@@ -492,10 +518,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [cardId, name, ...rest] = positional;
       if (!cardId || !name || rest.length === 0) {
-        console.error(
-          "devflow variable set: card id, name, and value required\n",
-        );
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow variable set",
+          detail: "card id, name, and value required",
+        });
         return 1;
       }
       const value = rest.join(" ");
@@ -516,8 +543,11 @@ const handlers = new Map<string, CommandHandler>([
     async (positional, repoRoot, _ctx) => {
       const [boardName] = positional;
       if (!boardName) {
-        console.error("devflow board validate: board name required\n");
-        console.log(USAGE.trimEnd());
+        logCliMessage({
+          kind: "error",
+          command: "devflow board validate",
+          detail: "board name required",
+        });
         return 1;
       }
       return await validateBoardCommand(boardName, repoRoot);
@@ -529,8 +559,11 @@ const handlers = new Map<string, CommandHandler>([
       try {
         const { target: cardId, force } = parseLockForceArgs(positional);
         if (!cardId) {
-          console.error("devflow lock release: card id required\n");
-          console.log(USAGE.trimEnd());
+          logCliMessage({
+            kind: "error",
+            command: "devflow lock release",
+            detail: "card id required",
+          });
           return 1;
         }
         const message = await releaseCardLockCommand(cardId, repoRoot, force);
@@ -549,8 +582,11 @@ const handlers = new Map<string, CommandHandler>([
       try {
         const { target: boardName, force } = parseLockForceArgs(positional);
         if (!boardName) {
-          console.error("devflow lock release-board: board name required\n");
-          console.log(USAGE.trimEnd());
+          logCliMessage({
+            kind: "error",
+            command: "devflow lock release-board",
+            detail: "board name required",
+          });
           return 1;
         }
         const message = await releaseBoardLockCommand(
@@ -596,13 +632,20 @@ export async function runCli(args: string[]): Promise<number> {
   const flags = parseGlobalFlags(args);
   const flagError = validateGlobalFlags(flags);
   if (flagError) {
-    console.error(flagError);
+    // Strip "devflow: " prefix if present to avoid duplication in logCliMessage
+    const detail = flagError.replace(/^devflow:\s*/, "");
+    logCliMessage({ kind: "error", command: "devflow", detail });
     return 1;
   }
 
   setLogLevel(resolveLogLevel(flags));
 
-  if (flags.remaining.length === 0) {
+  // Print usage when no args, --help/-h, or "help" command (works outside repo)
+  if (
+    flags.remaining.length === 0 ||
+    flags.help ||
+    flags.remaining[0] === "help"
+  ) {
     console.log(USAGE.trimEnd());
     return 0;
   }
@@ -620,21 +663,31 @@ export async function runCli(args: string[]): Promise<number> {
 
   const parsed = parseCommand(flags.remaining);
   if (!parsed) {
-    console.error(`Unknown command: ${flags.remaining.join(" ")}\n`);
-    console.log(USAGE.trimEnd());
+    logCliMessage({
+      kind: "error",
+      command: "devflow",
+      detail: `unknown command "${flags.remaining.join(" ")}"`,
+    });
     return 1;
   }
 
   const key = `${parsed.object}:${parsed.verb}`;
   const handler = handlers.get(key);
   if (!handler) {
-    console.error(`Unknown command: ${flags.remaining.join(" ")}\n`);
-    console.log(USAGE.trimEnd());
+    logCliMessage({
+      kind: "error",
+      command: "devflow",
+      detail: `unknown command "${flags.remaining.join(" ")}"`,
+    });
     return 1;
   }
 
   if (flags.ignoreLock && !IGNORE_LOCK_COMMANDS.has(key)) {
-    console.error("devflow: --ignore-lock is not supported for this command");
+    logCliMessage({
+      kind: "error",
+      command: "devflow",
+      detail: "--ignore-lock is not supported for this command",
+    });
     return 1;
   }
 

@@ -56,6 +56,7 @@ Commands use **object-first** form. Each command has a **verb-command** synonym
 | Command                                             | Notes                                                             |
 | --------------------------------------------------- | ----------------------------------------------------------------- |
 | `devflow`                                           | Prints usage                                                      |
+| `devflow help`                                      | Prints usage (same as `devflow` with no args or `--help`/`-h`)    |
 | `devflow validate`                                  | Repository, all boards, all cards (§17)                           |
 | `devflow board init` / `init-board`                 | Creates board layout; `--template`, `--sequence-width`; repo lock |
 | `devflow board list` / `list-boards`                | Board names, one per line (plain stdout)                          |
@@ -77,8 +78,13 @@ Commands use **object-first** form. Each command has a **verb-command** synonym
 | `devflow lock release-board` / `release-board-lock` | Release stale board lock (`--force`)                              |
 | `devflow lock release-repo` / `release-repo-lock`   | Release stale repository lock (`--force`)                         |
 
-Global flags: `--verbose` (extra diagnostics), `--summary` (phase lines and
-errors only). Machine-parseable stdout never includes ANSI codes.
+Global flags: `--help` / `-h` (print usage and exit 0), `--verbose` (extra
+diagnostics), `--summary` (phase lines and errors only). Machine-parseable
+stdout never includes ANSI codes.
+
+Argument and parsing errors emit a single structured error line on stderr; the
+full usage block is printed only by `devflow` with no args, `devflow help`, or
+`--help`/`-h`.
 
 `--ignore-lock` on `variable set` and `card add-file` only (skip card lock when
 the parent advance already holds it).

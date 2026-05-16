@@ -1,0 +1,18 @@
+{
+  "id": "stories-000005",
+  "board": "stories",
+  "title": "Skip Action",
+  "phase": "preparing",
+  "previousPhase": null,
+  "createdAt": "2026-05-16T19:07:31.717Z",
+  "updatedAt": "2026-05-16T19:07:31.717Z",
+  "variables": {},
+  "history": [
+    {
+      "type": "created",
+      "at": "2026-05-16T19:07:31.717Z",
+      "phase": "preparing"
+    }
+  ],
+  "blocked": null
+}

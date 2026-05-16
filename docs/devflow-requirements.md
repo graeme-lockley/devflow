@@ -1324,7 +1324,7 @@ Acquisition:
 ```text
 1. Attempt to create the lock directory (mkdir, no parents beyond the expected path).
 2. If creation succeeds, the caller holds the lock.
-3. If creation fails because the directory already exists, another holder has the lock, the command must fail with a clear error—unless `--ignore-lock` was passed (section 16.1).
+3. If creation fails because the directory already exists, another holder has the lock, the command must fail with a clear error-unless `--ignore-lock` was passed (section 16.1).
 ```
 
 `--ignore-lock` does not remove an existing `.lock/` directory; it only allows
@@ -1453,7 +1453,8 @@ All commands:
 
 | Command                      | Synonym              | Purpose                                    |
 | ---------------------------- | -------------------- | ------------------------------------------ |
-| `devflow`                    | —                    | Print usage; exit `0`                      |
+| `devflow`                    | -                    | Print usage; exit `0`                      |
+| `devflow help`               | -                    | Print usage; exit `0`                      |
 | `devflow validate`           | `validate`           | Validate repository, all boards, all cards |
 | `devflow board init`         | `init-board`         | Create a board                             |
 | `devflow board list`         | `list-boards`        | List boards                                |
@@ -1487,6 +1488,7 @@ devflow init-board stories unplanned planning planned
 
 | Flag            | Commands                             | Effect                                                                                                                 |
 | --------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `--help`, `-h`  | all                                  | Print usage and exit `0`. Processed before repository detection, works outside a Git repository.                       |
 | `--ignore-lock` | `variable set`, `card add-file` only | Skip lock acquisition. Required when called from a script during `card advance`. Other commands must reject this flag. |
 | `--verbose`     | all                                  | Console output level `verbose` (section 16.2).                                                                         |
 | `--summary`     | all                                  | Console output level `summary` (section 16.2).                                                                         |
@@ -1507,13 +1509,27 @@ When stderr/stdout is a TTY, Devflow uses **ANSI colour escape codes**:
 | ----------- | ------ | --------------------------------------------------- |
 | Success     | Green  | Command completed, phase advanced, card created     |
 | Error       | Red    | Validation failure, script exit non-zero, lock held |
-| Boilerplate | Grey   | Timestamps, “Running …”, lock paths, debug detail   |
+| Boilerplate | Grey   | Timestamps, "Running …", lock paths, debug detail   |
+
+**CLI parameter and argument errors:**
+
+When a command is invoked with invalid or missing arguments, unknown flags, or
+an unrecognised command, Devflow writes a single structured error line to stderr
+in the form `Error: <command>: <subject>: <detail>` (with `Error:` in red and
+the command/subject in grey when colours are enabled). The usage block is
+**not** printed alongside these errors.
+
+The usage block is printed on stdout (exit `0`) only by:
+
+- `devflow` with no arguments,
+- `devflow help`, or
+- the global `--help` / `-h` flag.
 
 **`info`** (default):
 
 ```text
 - Print grey boilerplate for Devflow actions (which script is running, transition hop, git commit, and similar).
-- Stream each exit script’s stdout and stderr to the console as it runs (commit-message script stdout is not streamed; section 13.4).
+- Stream each exit script's stdout and stderr to the console as it runs (commit-message script stdout is not streamed; section 13.4).
 - Print green messages on success and red messages on errors.
 - Always write the full script transcript to the transition log under logs/ (section 15).
 ```
@@ -1553,12 +1569,12 @@ on success unless stated otherwise.
 | ---------------------------- | -------------------------------------- |
 | `devflow board init`         | 5.1, 5.2, 5.5                          |
 | `devflow board list`         | Prints board names, one per line       |
-| `devflow board show`         | 5.4 — formatted metadata on stdout     |
+| `devflow board show`         | 5.4 - formatted metadata on stdout     |
 | `devflow card rename`        | 6.7                                    |
 | `devflow board validate`     | 17.1                                   |
 | `devflow card create`        | 6.2, 5.7                               |
 | `devflow card list`          | Prints card IDs; `--phase` filters     |
-| `devflow card show`          | 6.4, 16.4 — YAML frontmatter + card.md |
+| `devflow card show`          | 6.4, 16.4 - YAML frontmatter + card.md |
 | `devflow card dir`           | Absolute path on stdout                |
 | `devflow card add-file`      | 8                                      |
 | `devflow card advance`       | 11, 13                                 |

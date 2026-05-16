@@ -254,12 +254,26 @@ building_collect_scenario_commands() {
   BUILDING_SCENARIO_COMMANDS=()
   local scenarios
   scenarios=$(building_section_body "$card_md" "Test Scenarios")
-  local line cmd
+  local line cmd path deno_cmd existing
+
+  _scenario_cmds_add() {
+    local candidate="$1"
+    for existing in "${BUILDING_SCENARIO_COMMANDS[@]}"; do
+      [ "$existing" = "$candidate" ] && return 0
+    done
+    BUILDING_SCENARIO_COMMANDS+=("$candidate")
+  }
+
   while IFS= read -r line; do
     [[ "$line" =~ \|[[:space:]]*automated[[:space:]]*\| ]] || continue
     while IFS= read -r cmd; do
-      [ -n "$cmd" ] && BUILDING_SCENARIO_COMMANDS+=("$cmd")
-    done < <(printf '%s\n' "$line" | grep -oE '`deno test[^`]+`' | tr -d '`')
+      [ -n "$cmd" ] && _scenario_cmds_add "$cmd"
+    done < <(printf '%s\n' "$line" | grep -oE '`deno test[^`]*`' | tr -d '`')
+    while IFS= read -r path; do
+      [ -n "$path" ] || continue
+      deno_cmd="deno test ${path}"
+      _scenario_cmds_add "$deno_cmd"
+    done < <(printf '%s\n' "$line" | grep -oE '`src/[^`]+\.ts`' | tr -d '`')
   done <<< "$scenarios"
 }
 
@@ -270,9 +284,16 @@ building_run_deno_test_cmd() {
     echo "building: expected command to start with 'deno test': ${cmd}" >&2
     return 1
   fi
-  local rest="${cmd#deno test }"
-  # shellcheck disable=SC2086
-  deno test "${BUILDING_DENO_TEST_FLAGS[@]}" $rest
+  local rest=""
+  if [[ "$cmd" == deno\ test\ * ]]; then
+    rest="${cmd#deno test }"
+  fi
+  if [ -z "$rest" ]; then
+    deno test "${BUILDING_DENO_TEST_FLAGS[@]}"
+  else
+    # shellcheck disable=SC2086
+    deno test "${BUILDING_DENO_TEST_FLAGS[@]}" $rest
+  fi
 }
 
 # Run all automated scenario commands; optional log file captures combined output.

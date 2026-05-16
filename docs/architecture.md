@@ -314,10 +314,13 @@ Copy order ([§5.6](./devflow-requirements.md#56-board-templates)):
 | Situation          | Exit code | Stdout                        | Stderr                                                                           |
 | ------------------ | --------- | ----------------------------- | -------------------------------------------------------------------------------- |
 | Success            | 0         | Machine output when specified | Optional info (grey/green)                                                       |
-| Usage / flag error | non-zero  | —                             | Error + usage                                                                    |
+| Usage / flag error | non-zero  | —                             | Error only (no usage)                                                            |
 | Validation failure | non-zero  | —                             | Red error details                                                                |
 | Lock held          | non-zero  | —                             | Lock path                                                                        |
 | Script failure     | non-zero  | —                             | Script name, log path ([§11.5](./devflow-requirements.md#115-failure-behaviour)) |
+
+The full usage block is printed on stdout (exit `0`) only by `devflow` with no
+arguments, `devflow help`, or the global `--help`/`-h` flag.
 
 Use typed errors in domain/services; commands map them to messages and codes.
 

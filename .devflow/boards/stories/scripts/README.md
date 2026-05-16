@@ -31,12 +31,12 @@ exit scripts.
 `board.json` configures `phaseScripts.building.loop` with steps under
 `scripts/building/steps/`. Root scripts use sequence bands (req §9.11.3):
 
-| Band        | Scripts                                                                 |
-| ----------- | ----------------------------------------------------------------------- |
-| `001`       | Entry (e.g. `building-001-check-entry`) — run before the loop           |
-| `002`       | Reserved (thin orchestrator slot; native loop uses `board.json` steps)  |
-| `003`+      | Exit (e.g. `building-003`, `005`, `007`) — run after the loop succeeds  |
-| loop steps  | `01-pi`, `02-fmt`, `03-gate-ci`, `04-gate-scenarios` under `building/steps/` |
+| Band       | Scripts                                                                      |
+| ---------- | ---------------------------------------------------------------------------- |
+| `001`      | Entry (e.g. `building-001-check-entry`) — run before the loop                |
+| `002`      | Reserved (thin orchestrator slot; native loop uses `board.json` steps)       |
+| `003`+     | Exit (e.g. `building-003`, `005`, `007`) — run after the loop succeeds       |
+| loop steps | `01-pi`, `02-fmt`, `03-gate-ci`, `04-gate-scenarios` under `building/steps/` |
 
 Do not duplicate loop gates as separate root scripts (`building-004`,
 `building-006` removed).
@@ -54,7 +54,7 @@ Canonical layout: [../assets/story.template.md](../assets/story.template.md).
 | `deno fmt` after pi edits                                            | `building/steps/02-fmt` (loop)                                   |
 | `deno task ci` + automated Test Scenarios (retries)                  | `building/steps/03-gate-ci`, `04-gate-scenarios` (loop)          |
 | pi **build-story**                                                   | `building/steps/01-pi` (loop)                                    |
-| Spec Updates vs git; repo change scope                               | `building-005`, `building-007` (exit, after loop)              |
+| Spec Updates vs git; repo change scope                               | `building-005`, `building-007` (exit, after loop)                |
 | `### Verification summary` under **Notes**                           | `verifying-003`                                                  |
 | Acceptance Criteria `[x]`                                            | `verifying-003`                                                  |
 | Spec Updates closed; `### Finished` under **Notes**                  | `finishing-003`, `finishing-004`                                 |
@@ -65,9 +65,10 @@ targeted message if `### Finished` appears only under Build Notes.
 
 Immutable doc edits (`docs/devflow-requirements.md`, `docs/architecture.md`,
 `docs/adr/*`) require approval language in `card.md` (`building-005`,
-`finishing-004`). Recognised phrases include `user approval`, `explicitly
-approved`, `authorised` / `authorises`, and `immutable doc` notes—not only the
-exact string `explicitly approved`.
+`finishing-004`). Recognised phrases include `user approval`,
+`explicitly
+approved`, `authorised` / `authorises`, and `immutable doc`
+notes—not only the exact string `explicitly approved`.
 
 At **finishing** exit, a Spec Updates row may be `done` without an uncommitted
 diff when the doc was committed in **building** (e.g.

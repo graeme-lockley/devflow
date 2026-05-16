@@ -13,6 +13,7 @@ Deno.test("parseGlobalFlags strips known flags", () => {
       verbose: true,
       summary: false,
       ignoreLock: false,
+      help: false,
     },
   );
 });
@@ -29,4 +30,37 @@ Deno.test("resolveLogLevel defaults to info", () => {
   assertEquals(resolveLogLevel(parseGlobalFlags([])), "info");
   assertEquals(resolveLogLevel(parseGlobalFlags(["--verbose"])), "verbose");
   assertEquals(resolveLogLevel(parseGlobalFlags(["--summary"])), "summary");
+});
+
+Deno.test("parseGlobalFlags recognizes --help and -h", () => {
+  assertEquals(
+    parseGlobalFlags(["--help"]),
+    {
+      remaining: [],
+      verbose: false,
+      summary: false,
+      ignoreLock: false,
+      help: true,
+    },
+  );
+  assertEquals(
+    parseGlobalFlags(["-h"]),
+    {
+      remaining: [],
+      verbose: false,
+      summary: false,
+      ignoreLock: false,
+      help: true,
+    },
+  );
+  assertEquals(
+    parseGlobalFlags(["board", "init", "--help"]),
+    {
+      remaining: ["board", "init"],
+      verbose: false,
+      summary: false,
+      ignoreLock: false,
+      help: true,
+    },
+  );
 });
