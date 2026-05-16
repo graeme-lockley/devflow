@@ -1,5 +1,6 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { withTempGitRepo } from "../../test/helpers/git-repo.ts";
+import { resetLogLevel, setLogLevel } from "./console.ts";
 import {
   assertGitAdvanceAllowed,
   commit,
@@ -76,5 +77,29 @@ Deno.test("stageAll and commit create a commit (req §13.5)", async () => {
     }).output();
     const after = Number(new TextDecoder().decode(count.stdout).trim());
     assertEquals(after, before + 1);
+  });
+});
+
+Deno.test("commit logs committed paths in info mode (req §16.2)", async () => {
+  await withTempGitRepo(async (dir) => {
+    resetLogLevel();
+    setLogLevel("info");
+    const stderrLines: string[] = [];
+    const origError = console.error;
+    console.error = (...args: unknown[]) => {
+      stderrLines.push(args.map(String).join(" "));
+      origError.apply(console, args);
+    };
+    try {
+      await Deno.writeTextFile(`${dir}/tracked.txt`, "hello\n");
+      await stageAll(dir);
+      await commit(dir, "feat: add tracked file");
+      const out = stderrLines.join("\n");
+      assertEquals(out.includes("git commit"), true);
+      assertEquals(out.includes("tracked.txt"), true);
+    } finally {
+      console.error = origError;
+      resetLogLevel();
+    }
   });
 });

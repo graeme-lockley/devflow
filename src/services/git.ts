@@ -1,6 +1,6 @@
 /** Git preconditions and commits for advance (req §13, ADR-0009). */
 
-import { logVerbose } from "./console.ts";
+import { logInfo, logVerbose } from "./console.ts";
 
 const GIT_STATE_MARKERS = [
   "MERGE_HEAD",
@@ -62,6 +62,40 @@ export async function stageAll(repoRoot: string): Promise<void> {
   }
 }
 
+/** Paths included in the given commit (default HEAD). */
+async function listCommitFiles(
+  repoRoot: string,
+  ref = "HEAD",
+): Promise<string[]> {
+  const result = await new Deno.Command("git", {
+    args: ["show", "--name-only", "--pretty=format:", ref],
+    cwd: repoRoot,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  if (result.code !== 0) return [];
+  const text = new TextDecoder().decode(result.stdout).trim();
+  if (!text) return [];
+  return text.split("\n").filter((line) => line.length > 0);
+}
+
+function logCommittedFiles(message: string, files: string[]): void {
+  const subject = message.split("\n")[0]?.trim() ?? message;
+  const preview = subject.length > 72 ? `${subject.slice(0, 69)}...` : subject;
+  if (files.length === 0) {
+    logInfo(`git commit: ${preview}`);
+    return;
+  }
+  logInfo(
+    `git commit (${files.length} file${
+      files.length === 1 ? "" : "s"
+    }): ${preview}`,
+  );
+  for (const file of files) {
+    logInfo(`  ${file}`);
+  }
+}
+
 /** Creates a commit with the given message (req §13.5). */
 export async function commit(
   repoRoot: string,
@@ -75,4 +109,6 @@ export async function commit(
   if (code !== 0) {
     throw new Error(stderr || "git commit failed");
   }
+  const files = await listCommitFiles(repoRoot);
+  logCommittedFiles(message, files);
 }
