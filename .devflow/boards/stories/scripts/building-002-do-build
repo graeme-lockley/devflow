@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit building: run build-story via pi with CI retry loop (option A).
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+SCRIPT_ID="building-002"
+MAX_ROUNDS="${DEVFLOW_BUILD_MAX_ROUNDS:-5}"
+repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
+skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/build-story"
+
+# Logging aligned with Devflow console (req §16.2, DEVFLOW_LOG_LEVEL).
+_is_tty_stderr() {
+  [ -t 2 ]
+}
+
+_log_grey() {
+  [ "${DEVFLOW_LOG_LEVEL:-info}" = "summary" ] && return 0
+  local msg="$1"
+  if _is_tty_stderr; then
+    printf '\033[90m%s\033[0m\n' "$msg" >&2
+  else
+    printf '%s\n' "$msg" >&2
+  fi
+}
+
+_log_plain() {
+  [ "${DEVFLOW_LOG_LEVEL:-info}" = "summary" ] && return 0
+  printf '%s\n' "$1" >&2
+}
+
+_log_error() {
+  local msg="$1"
+  if _is_tty_stderr; then
+    printf '\033[31m%s\033[0m\n' "$msg" >&2
+  else
+    printf '%s\n' "$msg" >&2
+  fi
+}
+
+log_info() {
+  _log_grey "${SCRIPT_ID}: $*"
+}
+
+log_verbose() {
+  [ "${DEVFLOW_LOG_LEVEL:-info}" = "verbose" ] || return 0
+  _log_grey "${SCRIPT_ID}: $*"
+}
+
+log_error() {
+  _log_error "${SCRIPT_ID}: $*"
+}
+
+fail() {
+  log_error "$*"
+  exit 1
+}
+
+run_ci() {
+  local round="$1"
+  local log_file="${run_dir}/building-ci-round-${round}.log"
+  log_info "round ${round}/${MAX_ROUNDS}: running deno task ci (log: ${log_file})"
+  cd "$repo_root"
+  if deno task ci >"$log_file" 2>&1; then
+    log_info "round ${round}/${MAX_ROUNDS}: deno task ci passed"
+    return 0
+  fi
+  log_error "round ${round}/${MAX_ROUNDS}: deno task ci failed"
+  local tail_lines=30
+  [ "${DEVFLOW_LOG_LEVEL:-info}" = "verbose" ] && tail_lines=120
+  _log_plain "--- deno task ci (last ${tail_lines} lines, round ${round}) ---"
+  tail -n "$tail_lines" "$log_file" >&2 || true
+  _log_plain "--- end ci output ---"
+  return 1
+}
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  log_info "DEVFLOW_SKIP_PI=1: skipping pi build-story"
+  if run_ci 1; then
+    exit 0
+  fi
+  fail "deno task ci failed (pi skipped; fix tree or unset DEVFLOW_SKIP_PI)"
+fi
+
+if ! command -v pi >/dev/null 2>&1; then
+  fail "pi not on PATH"
+fi
+
+if [ -z "${DEVFLOW_HEAVY_MODEL:-}" ]; then
+  fail "DEVFLOW_HEAVY_MODEL is not set"
+fi
+
+feedback=""
+round=1
+
+while [ "$round" -le "$MAX_ROUNDS" ]; do
+  log_info "round ${round}/${MAX_ROUNDS}: starting"
+  log_verbose "model: ${DEVFLOW_HEAVY_MODEL}"
+
+  prompt="Using the skill build-story, implement ${card_id}."
+  if [ -n "$feedback" ]; then
+    prompt="${prompt}
+
+${feedback}"
+  fi
+
+  log_info "round ${round}/${MAX_ROUNDS}: invoking pi (build-story)"
+  if ! pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print "$prompt"; then
+    log_error "round ${round}/${MAX_ROUNDS}: pi exited non-zero"
+    if [ "$round" -ge "$MAX_ROUNDS" ]; then
+      fail "pi failed after ${MAX_ROUNDS} rounds"
+    fi
+    feedback="Previous pi invocation failed (non-zero exit). Continue from unchecked Build Tasks and fix any issues."
+    round=$((round + 1))
+    continue
+  fi
+
+  if run_ci "$round"; then
+    log_info "build complete after ${round} round(s)"
+    exit 0
+  fi
+
+  if [ "$round" -ge "$MAX_ROUNDS" ]; then
+    fail "deno task ci still failing after ${MAX_ROUNDS} rounds (see ${run_dir}/building-ci-round-*.log)"
+  fi
+
+  ci_log="${run_dir}/building-ci-round-${round}.log"
+  feedback="Previous round failed deno task ci. Read Build Tasks and Build Notes, fix lint/format/test failures, and re-run. CI log (${ci_log}):
+
+$(tail -n 200 "$ci_log" 2>/dev/null || echo '(log unavailable)')"
+  log_info "round ${round}/${MAX_ROUNDS}: will retry (${MAX_ROUNDS} max)"
+  round=$((round + 1))
+done
+
+fail "exhausted build rounds"

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit building: final lint, format, and test gate (matches deno.json ci task).
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
+log_file="${run_dir}/building-ci-final.log"
+
+echo "building-006: running deno task ci" >&2
+
+cd "$repo_root"
+if ! deno task ci >"$log_file" 2>&1; then
+  echo "building-006: deno task ci failed (see ${log_file})" >&2
+  if [ "${DEVFLOW_LOG_LEVEL:-info}" = "verbose" ]; then
+    tail -n 80 "$log_file" >&2
+  else
+    tail -n 30 "$log_file" >&2
+  fi
+  exit 1
+fi
+
+echo "building-006: deno task ci passed" >&2
+exit 0

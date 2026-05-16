@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit building: run automated Test Scenarios and verify test files exist.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+card_md="${card_dir}/card.md"
+repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+
+fail() {
+  echo "building-004: $*" >&2
+  exit 1
+}
+
+section_body() {
+  local heading="$1"
+  awk -v h="$heading" '
+    $0 == "## " h { found=1; next }
+    found && /^## / { exit }
+    found { print }
+  ' "$card_md"
+}
+
+if [ ! -f "$card_md" ]; then
+  fail "missing card.md"
+fi
+
+scenarios=$(section_body "Test Scenarios")
+commands=()
+while IFS= read -r line; do
+  [[ "$line" =~ \|[[:space:]]*automated[[:space:]]*\| ]] || continue
+  while IFS= read -r cmd; do
+    [ -n "$cmd" ] && commands+=("$cmd")
+  done < <(printf '%s\n' "$line" | grep -oE '`deno test[^`]+`' | tr -d '`')
+done <<< "$scenarios"
+
+if [ "${#commands[@]}" -eq 0 ]; then
+  fail "no automated Test Scenarios with deno test commands found"
+fi
+
+cd "$repo_root"
+
+for cmd in "${commands[@]}"; do
+  # Extract first path argument ending in _test.ts
+  test_file=""
+  for arg in $cmd; do
+    if [[ "$arg" == *_test.ts ]]; then
+      test_file="$arg"
+      break
+    fi
+  done
+  if [ -n "$test_file" ] && [ ! -f "$test_file" ]; then
+    fail "test file not found: ${test_file} (from: ${cmd})"
+  fi
+
+  echo "building-004: running: ${cmd}" >&2
+  if ! bash -c "$cmd"; then
+    fail "automated scenario failed: ${cmd}"
+  fi
+done
+
+exit 0

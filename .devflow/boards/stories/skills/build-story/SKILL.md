@@ -146,11 +146,16 @@ Exit 0 only when implementation is ready for verification.
 - [ ] Spec Updates statuses are `pending` or `done`—not left blank
 - [ ] Immutable spec docs unchanged without explicit user approval
 
-## pi-mono invocation
+## pi invocation
+
+Invoked by `building-002-do-build` (with CI retry loop) when leaving **building**:
 
 ```bash
-pi-mono run --skill .devflow/boards/stories/skills/build-story \
-  --board stories --card <card-id>
+pi --skill .devflow/boards/stories/skills/build-story \
+  --model "${DEVFLOW_HEAVY_MODEL}" --print \
+  "Using the skill build-story, implement <card-id>."
 ```
 
-Non-zero exit fails the transition.
+Set `DEVFLOW_SKIP_PI=1` to skip pi in CI (runs `deno task ci` only). Set
+`DEVFLOW_BUILD_MAX_ROUNDS` to cap retry rounds (default 5). Non-zero exit fails
+the transition.

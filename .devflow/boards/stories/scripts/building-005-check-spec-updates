@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit building: Spec Updates rows must match git changes.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+card_md="${card_dir}/card.md"
+repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+
+fail() {
+  echo "building-005: $*" >&2
+  exit 1
+}
+
+section_body() {
+  local heading="$1"
+  awk -v h="$heading" '
+    $0 == "## " h { found=1; next }
+    found && /^## / { exit }
+    found { print }
+  ' "$card_md"
+}
+
+path_in_diff() {
+  local path="$1"
+  local p
+  while IFS= read -r p; do
+    [ "$p" = "$path" ] && return 0
+  done < <(git -C "$repo_root" status --porcelain | while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    local entry="${line:3}"
+    if [[ "$entry" == *" -> "* ]]; then
+      printf '%s\n' "${entry##* -> }"
+    else
+      printf '%s\n' "$entry"
+    fi
+  done | sed 's/^"//;s/"$//')
+  return 1
+}
+
+immutable_doc_changed_without_approval() {
+  local path="$1"
+  case "$path" in
+    docs/devflow-requirements.md|docs/architecture.md|docs/adr/*) ;;
+    *) return 1 ;;
+  esac
+  path_in_diff "$path" || return 1
+  if grep -qiE 'user approval|explicitly approved|approved spec' "$card_md"; then
+    return 1
+  fi
+  return 0
+}
+
+if [ ! -f "$card_md" ]; then
+  fail "missing card.md"
+fi
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  fail "not inside a git work tree"
+fi
+
+updates=$(section_body "Spec Updates")
+row_count=0
+
+while IFS= read -r line; do
+  [[ "$line" =~ ^\|[[:space:]]*\`([^\`]+)\`[[:space:]]*\| ]] || continue
+  doc_path="${BASH_REMATCH[1]}"
+  row_count=$((row_count + 1))
+
+  planned=$(printf '%s' "$line" | awk -F'|' '{print $3}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  status=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | tr -d ' ')
+
+  if immutable_doc_changed_without_approval "$doc_path"; then
+    fail "${doc_path} changed but card lacks explicit user approval in Notes"
+  fi
+
+  case "$status" in
+    done)
+      if ! path_in_diff "$doc_path"; then
+        # Allow done when planned change was verification-only (file unchanged)
+        if ! printf '%s' "$planned" | grep -qiE '^(none|n/a|verify|unchanged)'; then
+          fail "Spec Updates marks ${doc_path} as done but it is not in the working tree diff"
+        fi
+      fi
+      ;;
+    n/a)
+      if path_in_diff "$doc_path"; then
+        fail "Spec Updates marks ${doc_path} as n/a but it appears in the diff"
+      fi
+      ;;
+    pending)
+      if printf '%s' "$planned" | grep -qiE '^(none|n/a)'; then
+        if path_in_diff "$doc_path"; then
+          fail "Spec Updates marks ${doc_path} pending/none but it was modified"
+        fi
+      fi
+      ;;
+  esac
+done <<< "$updates"
+
+if [ "$row_count" -lt 1 ]; then
+  fail "Spec Updates must include at least one document row"
+fi
+
+exit 0
