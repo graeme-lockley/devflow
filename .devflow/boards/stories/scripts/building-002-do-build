@@ -110,8 +110,8 @@ if ! command -v pi >/dev/null 2>&1; then
   fail "pi not on PATH"
 fi
 
-if [ -z "${DEVFLOW_HEAVY_MODEL:-}" ]; then
-  fail "DEVFLOW_HEAVY_MODEL is not set"
+if [ -z "${DEVFLOW_MEDIUM_MODEL:-}" ]; then
+  fail "DEVFLOW_MEDIUM_MODEL is not set"
 fi
 
 if [ ! -f "$card_md" ]; then
@@ -123,7 +123,7 @@ round=1
 
 while [ "$round" -le "$MAX_ROUNDS" ]; do
   log_info "round ${round}/${MAX_ROUNDS}: starting"
-  log_verbose "model: ${DEVFLOW_HEAVY_MODEL}"
+  log_verbose "model: ${DEVFLOW_MEDIUM_MODEL}"
 
   prompt="Using the skill build-story, implement ${card_id}."
   if [ -n "$feedback" ]; then
@@ -133,7 +133,7 @@ ${feedback}"
   fi
 
   log_info "round ${round}/${MAX_ROUNDS}: invoking pi (build-story)"
-  if ! pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print "$prompt"; then
+  if ! pi --skill "$skill_dir" --model "${DEVFLOW_MEDIUM_MODEL}" --print "$prompt"; then
     log_error "round ${round}/${MAX_ROUNDS}: pi exited non-zero"
     if [ "$round" -ge "$MAX_ROUNDS" ]; then
       fail "pi failed after ${MAX_ROUNDS} rounds"

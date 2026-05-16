@@ -1,7 +1,7 @@
 {
   "name": "stories",
   "idPrefix": "stories",
-  "nextSequence": 3,
+  "nextSequence": 4,
   "sequenceWidth": 6,
   "phases": [
     "preparing",
@@ -13,5 +13,5 @@
   ],
   "blockedPhase": "blocked",
   "createdAt": "2026-05-16T11:28:15.074Z",
-  "updatedAt": "2026-05-16T11:58:25.428Z"
+  "updatedAt": "2026-05-16T15:50:41.044Z"
 }
