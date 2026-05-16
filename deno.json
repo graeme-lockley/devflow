@@ -2,10 +2,10 @@
   "tasks": {
     "dev": "deno run --watch --allow-read --allow-write --allow-run --allow-env main.ts",
     "devflow": "deno run --allow-read --allow-write --allow-run --allow-env main.ts",
-    "lint": "deno lint",
-    "fmt:check": "deno fmt --check",
+    "lint": "deno lint --ignore=.devflow",
+    "fmt:check": "deno fmt --check --ignore=.devflow",
     "test": "deno test --allow-read --allow-write --allow-run --allow-env",
-    "ci": "deno lint && deno fmt --check && deno task test"
+    "ci": "deno task lint && deno task fmt:check && deno task test"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1"
