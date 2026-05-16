@@ -2,10 +2,10 @@
   "id": "stories-000002",
   "board": "stories",
   "title": "Expand the create-card which allows a description to be passed or a file attached that has the card content",
-  "phase": "planning",
+  "phase": "building",
   "previousPhase": null,
   "createdAt": "2026-05-16T11:58:25.428Z",
-  "updatedAt": "2026-05-16T14:26:30.186Z",
+  "updatedAt": "2026-05-16T15:00:22.185Z",
   "variables": {},
   "history": [
     {
@@ -18,6 +18,13 @@
       "at": "2026-05-16T14:26:30.186Z",
       "from": "preparing",
       "to": "planning",
+      "mode": "normal"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-16T15:00:22.185Z",
+      "from": "planning",
+      "to": "building",
       "mode": "normal"
     }
   ],
