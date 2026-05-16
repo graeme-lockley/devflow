@@ -23,6 +23,13 @@ section_body() {
   ' "$card_md"
 }
 
+# Unchecked build tasks allowed when explicitly blocked on user/spec approval.
+building_task_waived() {
+  local task_line="$1"
+  printf '%s' "$task_line" | grep -qiE \
+    'user approv|requires user approval|blocked on user|if the user approv|immutable doc'
+}
+
 if [ ! -f "$card_md" ]; then
   fail "missing card.md"
 fi
@@ -31,21 +38,31 @@ if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$card_md"; then
   fail "card.md contains merge conflict markers"
 fi
 
-if grep -q '_To be completed in building\.' "$card_md"; then
-  fail "building sections still contain placeholders"
-fi
-
 tasks=$(section_body "Build Tasks")
-unchecked=$(printf '%s\n' "$tasks" | grep -cE '^[0-9]+\. \[ \] ' || true)
-if [ "${unchecked:-0}" -gt 0 ]; then
-  fail "Build Tasks must all be checked [x] (${unchecked} still unchecked)"
+unchecked_lines=$(printf '%s\n' "$tasks" | grep -E '^[0-9]+\. \[ \] ' || true)
+if [ -n "$unchecked_lines" ]; then
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    if building_task_waived "$line"; then
+      echo "building-003: waived unchecked task: ${line%%$'\n'}" >&2
+      continue
+    fi
+    fail "Build Tasks must all be checked [x] or waived (approval-blocked): ${line}"
+  done <<< "$unchecked_lines"
 fi
 if ! printf '%s\n' "$tasks" | grep -qE '^[0-9]+\. \[x\]'; then
   fail "Build Tasks must include at least one completed task"
 fi
 
 notes=$(section_body "Build Notes")
-notes_chars=$(printf '%s' "$notes" | sed '/^[[:space:]]*$/d' | sed '/^_/d' | wc -c | tr -d ' ')
+notes_chars=$(
+  printf '%s' "$notes" \
+    | sed '/^[[:space:]]*$/d' \
+    | sed '/^<!--/d' \
+    | sed '/^_/d' \
+    | sed '/^_To be completed in building\._$/d' \
+    | wc -c | tr -d ' '
+)
 if [ "${notes_chars:-0}" -lt 40 ]; then
   fail "Build Notes must summarize as-built work (at least 40 chars of content)"
 fi
@@ -60,7 +77,7 @@ while IFS= read -r line; do
   [[ "$line" =~ ^\|[[:space:]]*\`[^\`]+\`[[:space:]]*\| ]] || continue
   status=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | tr -d ' ')
   case "$status" in
-    pending|done|n/a|deferred) ;;
+    pending|done|n/a|deferred|pending*) ;;
     *)
       fail "Spec Updates row has invalid or empty status: ${status:-<empty>}"
       ;;

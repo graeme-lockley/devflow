@@ -84,7 +84,8 @@ For each **Build Task** in order:
 3. Prefer extending existing functions over new parallel implementations.
 4. Mark the task `[x]` in `card.md` immediately when done.
 5. Append to **Build Notes**: what changed, file paths, and any deviation from
-   Impact Analysis.
+   Impact Analysis. Remove the `_To be completed in building._` placeholder
+   line once real notes exist.
 
 ### 3. Tests
 
@@ -138,7 +139,8 @@ Exit 0 only when implementation is ready for verification.
 
 ## Quality gate (exit building)
 
-- [ ] Every Build Task is `[x]`
+- [ ] Every Build Task is `[x]`, or left `[ ]` only when blocked on user/spec
+      approval (immutable docs) and documented in **Build Notes**
 - [ ] Build Notes describe what was built and any deviations
 - [ ] `deno test` passes
 - [ ] No unrelated files changed
