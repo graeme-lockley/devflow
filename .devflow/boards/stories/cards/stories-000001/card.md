@@ -212,7 +212,7 @@ _Specification and architecture pointers. Use paths and section anchors._
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
 | `docs/devflow-requirements.md` | none — changes stay within the existing §16.2/§16.4 envelope (bold is an additional grey-role styling, not a new role). Requires user approval before any edit per AGENTS.md.                                            | n/a     |
 | `docs/architecture.md`         | none — module boundaries unchanged; new helper lives in the existing `services/console.ts`. Requires user approval before any edit.                                                                                      | n/a     |
-| `README.md`                    | If the `board show` example output or any CLI message text shown in README changes as a result of build task 8, update the affected snippet(s) to match. If nothing user-documented changes, leave README untouched.    | pending |
+| `README.md`                    | If the `board show` example output or any CLI message text shown in README changes as a result of build task 8, update the affected snippet(s) to match. If nothing user-documented changes, leave README untouched. _Finishing: README's `board show` row still reads `Board metadata on stdout`, which remains accurate for the now-richer output; no swept command's error wording is quoted in README. No change required._ | n/a     |
 
 ## Notes
 
@@ -232,6 +232,10 @@ Decisions taken during planning:
   existing `colorsEnabled()` (stderr-based) continues to gate `logCliMessage`
   and friends. Req §16.2 explicitly allows this for non-machine-parseable
   stdout commands and §16.4 lists `board show` as formatted human output.
+
+### Finished (2026-05-16)
+
+Story complete. Spec updates: requirements / architecture / ADR rows `n/a` (within existing §16.2/§16.4 envelope; AGENTS.md immutable docs respected); README `n/a` — current `board show` row (`Board metadata on stdout`) still describes the new output and no swept error wording is quoted in README. Build Notes already capture as-built changes and file pointers. Ready for done.
 
 ### Verification summary (2026-05-16)
 
