@@ -75,27 +75,27 @@ arguments, or an explicit help command).
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] Running `./devflow` (no args) prints the full `USAGE` text on stdout and
+1. [x] Running `./devflow` (no args) prints the full `USAGE` text on stdout and
        exits `0` (unchanged behaviour, regression-guarded by a test).
-2. [ ] Running `./devflow help` and `./devflow --help` (and `-h`) prints the
+2. [x] Running `./devflow help` and `./devflow --help` (and `-h`) prints the
        same `USAGE` text on stdout and exits `0`.
-3. [ ] Running `./devflow bogus-command` writes a single structured error line
+3. [x] Running `./devflow bogus-command` writes a single structured error line
        to stderr in the form `Error: devflow: unknown command "bogus-command"`
        (red `Error:` label, grey subject when colours are enabled, plain text
        under `NO_COLOR=1`), does NOT print `USAGE`, and exits non‑zero.
-4. [ ] Running a known command with missing/invalid arguments (e.g.
+4. [x] Running a known command with missing/invalid arguments (e.g.
        `./devflow board init` with no board name, `./devflow card show` with
        no id, `./devflow --log-level=garbage validate`) emits exactly one
        `Error: <command>: <subject>: <detail>` line on stderr, no `USAGE`
        block, exits non‑zero.
-5. [ ] All previously direct `console.error(...)` argument-validation messages
+5. [x] All previously direct `console.error(...)` argument-validation messages
        in `src/cli/dispatch.ts` are routed through `logCliMessage({ kind:
        "error", … })` (or an equivalent shared helper) so colourisation and
        label are consistent.
-6. [ ] `deno test` passes, including new tests covering: no-args usage, `help`
+6. [x] `deno test` passes, including new tests covering: no-args usage, `help`
        command, `--help`/`-h` flag, unknown command stderr shape, at least one
        per-handler "missing argument" error shape, and `NO_COLOR=1` behaviour.
-7. [ ] `docs/devflow-requirements.md`, `docs/architecture.md`, and `README.md`
+7. [x] `docs/devflow-requirements.md`, `docs/architecture.md`, and `README.md`
        reflect the new help/usage and error-format contract.
 
 ## Impact Analysis
@@ -297,6 +297,24 @@ arguments, or an explicit help command).
 ### Open questions
 
 - None blocking. Per-subcommand help is deferred (see decision above).
+
+### Verification summary (2026-05-16)
+
+- Test scenarios: 13/13 pass (11 automated in dispatch_test.ts, 2 manual)
+- Acceptance criteria: 7/7 checked
+- Commands:
+  - `deno test --allow-all`: 218 passed | 0 failed
+  - `./devflow validate-card stories-000004`: pass (exit 0)
+  - Manual testing confirmed: help commands print USAGE on stdout (exit 0), error commands emit structured errors without USAGE (exit non-zero)
+- NO_COLOR behavior verified: `NO_COLOR=1 ./devflow bogus-command` produces plain text "Error: devflow: unknown command \"bogus-command\""
+- Machine-parseable output verified: `./devflow board list` produces plain text output without ANSI codes
+- Regression checks:
+  - All error messages use structured `logCliMessage` format
+  - No `console.error(...required)` calls remain in dispatch.ts
+  - Stderr conventions (req §16.2) maintained
+  - Docs updated: requirements.md §16.0, §16.1, §16.2; architecture.md §8; README.md
+
+**Verification complete. All acceptance criteria satisfied.**
 
 ## Build Notes
 
