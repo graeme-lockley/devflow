@@ -4,8 +4,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+IGNORE=".devflow,${HOME}/.devflow"
+
 echo "pre-commit: deno lint"
-deno lint
+deno lint --ignore="${IGNORE}"
 
 echo "pre-commit: deno fmt --check"
-deno fmt --check
+deno fmt --check --ignore="${IGNORE}"
