@@ -1,4 +1,8 @@
-import { createBoardConfig, saveBoardConfig } from "../domain/board.ts";
+import {
+  createBoardConfig,
+  type PhaseScriptConfig,
+  saveBoardConfig,
+} from "../domain/board.ts";
 import { validateIdentifier } from "../domain/identifiers.ts";
 import { parseInitArgs, validateSequenceWidth } from "../cli/init-flags.ts";
 import { ensureDevflowGitignoreEntries } from "../infra/gitignore.ts";
@@ -13,6 +17,7 @@ import {
 import { acquireRepoLock, releaseRepoLock } from "../services/locks.ts";
 import {
   copyTemplateScriptsAndSkills,
+  loadTemplatePhaseScripts,
   resolveTemplateDirOrThrow,
 } from "../services/templates.ts";
 
@@ -84,17 +89,22 @@ export async function initBoard(
       await Deno.mkdir(dir, { recursive: true });
     }
 
+    let phaseScripts: Record<string, PhaseScriptConfig> | undefined;
     if (options.template) {
       const templateDir = await resolveTemplateDirOrThrow(
         options.template,
         repoRoot,
       );
       await copyTemplateScriptsAndSkills(templateDir, repoRoot, boardName);
+      phaseScripts = await loadTemplatePhaseScripts(templateDir, phaseNames);
     }
 
     const config = createBoardConfig(boardName, phaseNames, {
       sequenceWidth: options.sequenceWidth,
     });
+    if (phaseScripts) {
+      config.phaseScripts = phaseScripts;
+    }
     await saveBoardConfig(repoRoot, config);
 
     await ensureDevflowGitignoreEntries(repoRoot);

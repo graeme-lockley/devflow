@@ -13,12 +13,22 @@ devflow board init stories unplanned planning planned building built verifying v
 Exit scripts run when **leaving** a phase (lexical order). Each hop also runs
 `<phase>.commit-message` when present, then one git commit.
 
-| Leaving phase       | Exit scripts                         | Commit message             |
-| ------------------- | ------------------------------------ | -------------------------- |
-| unplanned           | `unplanned-001-*`, `unplanned-002-*` | `unplanned.commit-message` |
-| planning            | `planning-001` … `planning-005`      | `planning.commit-message`  |
-| planned             | `planned-001-noop`                   | `planned.commit-message`   |
-| building … finished | `*-001-noop` each                    | `<phase>.commit-message`   |
+| Leaving phase    | Exit scripts                                                       | Commit message             |
+| ---------------- | ------------------------------------------------------------------ | -------------------------- |
+| unplanned        | `unplanned-001-*`, `unplanned-002-*`                               | `unplanned.commit-message` |
+| planning         | `planning-001` … `planning-005`                                    | `planning.commit-message`  |
+| planned          | `planned-001-noop`                                                 | `planned.commit-message`   |
+| building         | `building-001-check-entry` → loop → `building-003` / `005` / `007` | `building.commit-message`  |
+| built … finished | `*-001-noop` each                                                  | `<phase>.commit-message`   |
+
+## Building phase loop
+
+When the init phase list includes `building`, `board.phaseScripts.json`
+configures a native loop (entry → `building/steps/*` → exit). Steps: pi
+(`build-story`), `deno task ci`, then card Test Scenarios; up to 5 rounds on
+failure.
+
+Requires `build-story` and `commit-message` skills (copied with this template).
 
 ## pi-mono
 

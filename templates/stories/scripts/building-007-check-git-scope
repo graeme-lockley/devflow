@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit building: changes must be scoped to this story (card dir, src, planned docs).
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
+repo_root="${repo_root%/}"
+card_dir="${card_dir%/}"
+card_rel="${card_dir#"$repo_root"/}"
+board_cards_rel="${board_dir#"$repo_root"/}/cards"
+card_md="${card_dir}/card.md"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=building-lib.sh
+source "${script_dir}/building-lib.sh"
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  echo "building-007: skipping git scope check (DEVFLOW_SKIP_PI=1)" >&2
+  exit 0
+fi
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "building-007: not inside a git work tree" >&2
+  exit 1
+fi
+
+porcelain=$(git -C "$repo_root" status --porcelain)
+if [ -z "$porcelain" ]; then
+  echo "building-007: expected repository changes after build-story" >&2
+  exit 1
+fi
+
+building_collect_allowed_doc_paths "$card_md"
+board_rel="${board_dir#"$repo_root"/}"
+building_apply_board_infra_scope "$card_md" "$board_rel"
+
+card_md_seen=0
+board_infra_seen=0
+src_seen=0
+failed=0
+
+_allowed_scope_hint() {
+  local hint="${card_rel}/, src/, README.md, Spec Updates rows marked done/pending"
+  if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
+    hint="${board_rel}/board.json, ${board_rel}/scripts/, ${board_rel}/skills/, ${hint}"
+  fi
+  printf '%s' "$hint"
+}
+
+_reject_path() {
+  local path="$1"
+  case "$path" in
+    .devflow/boards/*/scripts/*|.devflow/boards/*/skills/*)
+      if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
+        echo "building-007: change outside allowed scope: ${path}" >&2
+      else
+        echo "building-007: board script/skill changes are not part of this story: ${path}" >&2
+        echo "building-007: commit or stash infrastructure changes, then re-run advance" >&2
+      fi
+      ;;
+    *)
+      echo "building-007: change outside allowed scope: ${path}" >&2
+      ;;
+  esac
+  echo "building-007: allowed: $(_allowed_scope_hint)" >&2
+  failed=1
+}
+
+_check_path() {
+  local path="$1"
+
+  if [ "$path" = "${card_rel}/card.md" ]; then
+    card_md_seen=1
+  fi
+  if [[ "$path" == src/* ]]; then
+    src_seen=1
+  fi
+  if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
+    case "$path" in
+      "${board_rel}/board.json") board_infra_seen=1 ;;
+      "${board_rel}/scripts/"*) board_infra_seen=1 ;;
+    esac
+  fi
+
+  if [[ "$path" == "${board_cards_rel}"/* ]] && [[ "$path" != "${card_rel}"/* ]]; then
+    echo "building-007: change to another card: ${path}" >&2
+    failed=1
+    return 0
+  fi
+  if [[ "$path" == .devflow/boards/*/cards/* ]] && [[ "$path" != "${card_rel}"/* ]]; then
+    echo "building-007: change outside this card directory: ${path}" >&2
+    failed=1
+    return 0
+  fi
+
+  if ! building_path_allowed_for_story "$path" "$card_rel"; then
+    _reject_path "$path"
+  fi
+}
+
+building_foreach_porcelain_path "$repo_root" _check_path
+
+if [ "$failed" -ne 0 ]; then
+  exit 1
+fi
+
+if [ "$card_md_seen" -ne 1 ]; then
+  echo "building-007: expected ${card_rel}/card.md to be modified" >&2
+  exit 1
+fi
+
+if [ "$src_seen" -ne 1 ]; then
+  echo "building-007: expected changes under src/ after build-story" >&2
+  exit 1
+fi
+
+if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ] && [ "$board_infra_seen" -ne 1 ]; then
+  echo "building-007: expected ${board_rel}/board.json or scripts/ to be modified (board infra story)" >&2
+  exit 1
+fi
+
+exit 0

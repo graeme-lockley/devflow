@@ -1,3 +1,4 @@
+import type { PhaseScriptConfig } from "../domain/board.ts";
 import { devflowPackageRoot } from "../infra/package-root.ts";
 import { boardRoot, templatesRoot } from "../infra/paths.ts";
 
@@ -41,6 +42,48 @@ async function copyDirRecursive(src: string, dest: string): Promise<void> {
       await Deno.copyFile(srcPath, destPath);
     }
   }
+}
+
+/**
+ * Optional `board.phaseScripts.json` in a template (phase → PhaseScriptConfig).
+ * Only phases present in the init list are applied.
+ */
+export async function loadTemplatePhaseScripts(
+  templateDir: string,
+  phaseNames: string[],
+): Promise<Record<string, PhaseScriptConfig> | undefined> {
+  const path = `${templateDir}/board.phaseScripts.json`;
+  let raw: string;
+  try {
+    raw = await Deno.readTextFile(path);
+  } catch (e) {
+    if (e instanceof Deno.errors.NotFound) return undefined;
+    throw e;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("template board.phaseScripts.json is not valid JSON");
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("template board.phaseScripts.json must be a JSON object");
+  }
+
+  const out: Record<string, PhaseScriptConfig> = {};
+  for (const [phase, config] of Object.entries(parsed)) {
+    if (!phaseNames.includes(phase)) continue;
+    if (
+      typeof config !== "object" || config === null || Array.isArray(config)
+    ) {
+      throw new Error(
+        `template board.phaseScripts.json: "${phase}" must be an object`,
+      );
+    }
+    out[phase] = config as PhaseScriptConfig;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 export async function copyTemplateScriptsAndSkills(
