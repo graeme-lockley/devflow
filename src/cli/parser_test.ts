@@ -16,3 +16,26 @@ Deno.test("parseCommand init-board synonym", () => {
     positional: ["stories", "todo"],
   });
 });
+
+Deno.test("parseCommand board list and synonyms", () => {
+  assertEquals(parseCommand(["board", "list"]), {
+    object: "board",
+    verb: "list",
+    positional: [],
+  });
+  assertEquals(parseCommand(["list-boards"]), {
+    object: "board",
+    verb: "list",
+    positional: [],
+  });
+  assertEquals(parseCommand(["show-board", "stories"]), {
+    object: "board",
+    verb: "show",
+    positional: ["stories"],
+  });
+  assertEquals(parseCommand(["validate-board", "stories"]), {
+    object: "board",
+    verb: "validate",
+    positional: ["stories"],
+  });
+});

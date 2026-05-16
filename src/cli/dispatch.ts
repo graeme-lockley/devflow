@@ -1,4 +1,7 @@
-import { initBoard } from "../commands/init-board.ts";
+import { initBoardFromArgs } from "../commands/init-board.ts";
+import { formatBoardList, listBoards } from "../commands/list-boards.ts";
+import { showBoard } from "../commands/show-board.ts";
+import { validateBoardCommand } from "../commands/validate-board-cmd.ts";
 import { resolveGitRoot } from "../infra/git-root.ts";
 import { boardRoot } from "../infra/paths.ts";
 import { resetLogLevel, setLogLevel } from "../services/console.ts";
@@ -12,8 +15,17 @@ import { parseCommand } from "./parser.ts";
 export const USAGE = `devflow — deterministic workflow harness for development boards
 
 Usage:
-  devflow board init <board> <phase> [<phase> ...]
-  devflow init-board <board> <phase> [<phase> ...]
+  devflow board init <board> <phase> [<phase> ...] [--sequence-width N] [--template NAME]
+  devflow init-board <board> <phase> [<phase> ...] [--sequence-width N] [--template NAME]
+
+  devflow board list
+  devflow list-boards
+
+  devflow board show <board>
+  devflow show-board <board>
+
+  devflow board validate <board>
+  devflow validate-board <board>
 
   <board>   Board name (^[a-z][a-z0-9_]*$)
   <phase>   Phase names in forward order (blocked is added automatically)
@@ -34,14 +46,14 @@ const handlers = new Map<string, CommandHandler>([
   [
     "board:init",
     async (positional, repoRoot) => {
-      const [boardName, ...phaseNames] = positional;
+      const [boardName, ...rest] = positional;
       if (!boardName) {
         console.error("devflow board init: board name required\n");
         console.log(USAGE.trimEnd());
         return 1;
       }
       try {
-        await initBoard(boardName, phaseNames, repoRoot);
+        await initBoardFromArgs(boardName, rest, repoRoot);
         console.log(
           `Initialized board "${boardName}" at ${boardRoot(boardName)}/`,
         );
@@ -51,6 +63,47 @@ const handlers = new Map<string, CommandHandler>([
         console.error(`devflow board init ${boardName}: ${message}`);
         return 1;
       }
+    },
+  ],
+  [
+    "board:list",
+    async (_positional, repoRoot) => {
+      const names = await listBoards(repoRoot);
+      const out = formatBoardList(names);
+      if (out) Deno.stdout.writeSync(new TextEncoder().encode(out));
+      return 0;
+    },
+  ],
+  [
+    "board:show",
+    async (positional, repoRoot) => {
+      const [boardName] = positional;
+      if (!boardName) {
+        console.error("devflow board show: board name required\n");
+        console.log(USAGE.trimEnd());
+        return 1;
+      }
+      try {
+        const out = await showBoard(boardName, repoRoot);
+        Deno.stdout.writeSync(new TextEncoder().encode(out));
+        return 0;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error(`devflow board show ${boardName}: ${message}`);
+        return 1;
+      }
+    },
+  ],
+  [
+    "board:validate",
+    async (positional, repoRoot) => {
+      const [boardName] = positional;
+      if (!boardName) {
+        console.error("devflow board validate: board name required\n");
+        console.log(USAGE.trimEnd());
+        return 1;
+      }
+      return await validateBoardCommand(boardName, repoRoot);
     },
   ],
 ]);

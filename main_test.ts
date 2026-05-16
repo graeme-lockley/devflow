@@ -8,7 +8,7 @@ import { withTempGitRepo } from "./test/helpers/git-repo.ts";
 
 Deno.test("createBoardConfig builds spec board.json shape", () => {
   const fixed = new Date("2026-05-16T07:00:00.000Z");
-  assertEquals(createBoardConfig("stories", ["todo", "done"], fixed), {
+  assertEquals(createBoardConfig("stories", ["todo", "done"], { now: fixed }), {
     name: "stories",
     idPrefix: "stories",
     nextSequence: 1,
@@ -149,6 +149,44 @@ Deno.test("runCli unknown command", async () => {
     try {
       Deno.chdir(dir);
       assertEquals(await runCli(["card", "create", "stories", "x"]), 1);
+    } finally {
+      Deno.chdir(original);
+    }
+  });
+});
+
+Deno.test("initBoard respects --sequence-width via initBoardFromArgs", async () => {
+  const dir = await Deno.makeTempDir();
+  const { initBoardFromArgs } = await import("./src/commands/init-board.ts");
+  await initBoardFromArgs("stories", ["todo", "--sequence-width", "4"], dir);
+  const raw = await Deno.readTextFile(`${dir}/${boardConfigFile("stories")}`);
+  assertEquals(JSON.parse(raw).sequenceWidth, 4);
+});
+
+Deno.test("runCli M1 e2e: init template, validate, list, show", async () => {
+  await withTempGitRepo(async (dir) => {
+    const original = Deno.cwd();
+    try {
+      Deno.chdir(dir);
+      const phases = ["unplanned", "planning", "planned"];
+      assertEquals(
+        await runCli([
+          "board",
+          "init",
+          "stories",
+          ...phases,
+          "--template",
+          "stories",
+        ]),
+        0,
+      );
+      assertEquals(await runCli(["board", "validate", "stories"]), 0);
+      assertEquals(await runCli(["board", "list"]), 0);
+      assertEquals(await runCli(["board", "show", "stories"]), 0);
+
+      const script = `${dir}/${boardRoot("stories")}/scripts/planning-001-stub`;
+      const stat = await Deno.stat(script);
+      assertEquals(stat.isFile, true);
     } finally {
       Deno.chdir(original);
     }

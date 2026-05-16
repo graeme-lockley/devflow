@@ -6,6 +6,9 @@ export interface ParsedCommand {
 
 const SYNONYMS: Record<string, { object: string; verb: string }> = {
   "init-board": { object: "board", verb: "init" },
+  "list-boards": { object: "board", verb: "list" },
+  "show-board": { object: "board", verb: "show" },
+  "validate-board": { object: "board", verb: "validate" },
 };
 
 /**

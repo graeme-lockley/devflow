@@ -45,23 +45,28 @@ Add to `.gitignore` (also ensured automatically on `board init`):
 
 Commands use **object-first** form. Each command has a **verb-command** synonym (`board init` → `init-board`).
 
-### Implemented (M0)
+### Implemented (M0 + M1)
 
 | Command | Notes |
 |---------|--------|
 | `devflow` | Prints usage |
-| `devflow board init` / `init-board` | Creates `board.json`, `cards/`, `scripts/`, `skills/`; requires a Git repo |
+| `devflow board init` / `init-board` | Creates board layout; `--template`, `--sequence-width`; repo lock |
+| `devflow board list` / `list-boards` | Board names, one per line (plain stdout) |
+| `devflow board show` / `show-board` | Board metadata on stdout |
+| `devflow board validate` / `validate-board` | §17.1 checks; exit 0 when valid |
 
 Global flags: `--verbose`, `--summary` (parsed; full console behaviour in M7). `--ignore-lock` is rejected until card commands exist.
 
 ```bash
-devflow board init stories todo planning done
-devflow init-board stories todo planning done
+devflow board init stories unplanned planning planned --template stories
+devflow board list
+devflow board show stories
+devflow board validate stories
 ```
 
 ### Planned (not yet implemented)
 
-`board list`, `board show`, `board validate`, `--template`, card commands, `card advance`, variables, locks, and `devflow validate` — see [`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md).
+Card commands, `card advance`, variables, lock release commands, and `devflow validate` — see [`docs/implementation-roadmap.md`](./docs/implementation-roadmap.md).
 
 Git commits are created only by `card advance` (one per successful phase hop). Other commands do not commit.
 

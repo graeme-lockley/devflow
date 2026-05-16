@@ -1,5 +1,6 @@
-import { createBoardConfig } from "../domain/board.ts";
+import { createBoardConfig, saveBoardConfig } from "../domain/board.ts";
 import { validateIdentifier } from "../domain/identifiers.ts";
+import { parseInitArgs, validateSequenceWidth } from "../cli/init-flags.ts";
 import { ensureDevflowGitignoreEntries } from "../infra/gitignore.ts";
 import {
   boardCardsDir,
@@ -9,6 +10,16 @@ import {
   boardsRoot,
   devflowRoot,
 } from "../infra/paths.ts";
+import { acquireRepoLock, releaseRepoLock } from "../services/locks.ts";
+import {
+  copyTemplateScriptsAndSkills,
+  resolveTemplateDirOrThrow,
+} from "../services/templates.ts";
+
+export interface InitBoardOptions {
+  sequenceWidth?: number;
+  template?: string;
+}
 
 async function assertDirectory(path: string, label: string): Promise<void> {
   try {
@@ -26,6 +37,7 @@ export async function initBoard(
   boardName: string,
   phaseNames: string[],
   repoRoot = Deno.cwd(),
+  options: InitBoardOptions = {},
 ): Promise<void> {
   const boardErr = validateIdentifier(boardName, "board");
   if (boardErr) throw new Error(boardErr);
@@ -39,38 +51,63 @@ export async function initBoard(
     if (err) throw new Error(err);
   }
 
-  const devflowPath = `${repoRoot}/${devflowRoot()}`;
-  const boardsPath = `${repoRoot}/${boardsRoot()}`;
-  await assertDirectory(devflowPath, devflowRoot());
-  await assertDirectory(boardsPath, boardsRoot());
+  if (options.sequenceWidth !== undefined) {
+    validateSequenceWidth(options.sequenceWidth);
+  }
 
-  const configRel = boardConfigFile(boardName);
-  const configPath = `${repoRoot}/${configRel}`;
+  await acquireRepoLock(repoRoot);
   try {
-    await Deno.stat(configPath);
-    throw new Error(
-      `board "${boardName}" already exists at ${configRel}; remove it before re-initializing`,
-    );
-  } catch (e) {
-    if (!(e instanceof Deno.errors.NotFound)) throw e;
+    const devflowPath = `${repoRoot}/${devflowRoot()}`;
+    const boardsPath = `${repoRoot}/${boardsRoot()}`;
+    await assertDirectory(devflowPath, devflowRoot());
+    await assertDirectory(boardsPath, boardsRoot());
+
+    const configRel = boardConfigFile(boardName);
+    const configPath = `${repoRoot}/${configRel}`;
+    try {
+      await Deno.stat(configPath);
+      throw new Error(
+        `board "${boardName}" already exists at ${configRel}; remove it before re-initializing`,
+      );
+    } catch (e) {
+      if (!(e instanceof Deno.errors.NotFound)) throw e;
+    }
+
+    const dirs = [
+      `${repoRoot}/${boardsRoot()}`,
+      `${repoRoot}/${boardCardsDir(boardName)}`,
+      `${repoRoot}/${boardScriptsDir(boardName)}`,
+      `${repoRoot}/${boardSkillsDir(boardName)}`,
+    ];
+
+    for (const dir of dirs) {
+      await Deno.mkdir(dir, { recursive: true });
+    }
+
+    if (options.template) {
+      const templateDir = await resolveTemplateDirOrThrow(
+        options.template,
+        repoRoot,
+      );
+      await copyTemplateScriptsAndSkills(templateDir, repoRoot, boardName);
+    }
+
+    const config = createBoardConfig(boardName, phaseNames, {
+      sequenceWidth: options.sequenceWidth,
+    });
+    await saveBoardConfig(repoRoot, config);
+
+    await ensureDevflowGitignoreEntries(repoRoot);
+  } finally {
+    await releaseRepoLock(repoRoot);
   }
+}
 
-  const dirs = [
-    `${repoRoot}/${boardsRoot()}`,
-    `${repoRoot}/${boardCardsDir(boardName)}`,
-    `${repoRoot}/${boardScriptsDir(boardName)}`,
-    `${repoRoot}/${boardSkillsDir(boardName)}`,
-  ];
-
-  for (const dir of dirs) {
-    await Deno.mkdir(dir, { recursive: true });
-  }
-
-  const config = createBoardConfig(boardName, phaseNames);
-  await Deno.writeTextFile(
-    configPath,
-    JSON.stringify(config, null, 2) + "\n",
-  );
-
-  await ensureDevflowGitignoreEntries(repoRoot);
+export async function initBoardFromArgs(
+  boardName: string,
+  args: string[],
+  repoRoot = Deno.cwd(),
+): Promise<void> {
+  const { phaseNames, options } = parseInitArgs(args);
+  await initBoard(boardName, phaseNames, repoRoot, options);
 }

@@ -13,18 +13,20 @@ This roadmap turns the requirements specification into a **command-ordered build
 
 ## Current state (baseline)
 
-**M0 complete.** Foundation matches the specification for paths, identifiers, git root, CLI parsing, and `board init`.
+**M1 complete.** Board lifecycle: atomic `board.json` I/O, init with `--template` / `--sequence-width`, repo lock on init, `board list` / `show` / `validate`, built-in `stories` template stub.
 
 | Area | Status | Gap |
 |------|--------|-----|
 | Layout | `[x]` | `.devflow/boards/<board>/` |
-| Board file | `[x]` | `board.json` with `phases` |
-| CLI | `[x]` | `board init` / `init-board`; global flags parsed |
+| Board file | `[x]` | load/save/validate `board.json` |
+| CLI | `[x]` | board init/list/show/validate + synonyms |
 | Identifiers | `[x]` | `^[a-z][a-z0-9_]*$` |
 | Git root | `[x]` | Resolved via `git rev-parse` |
-| Cards, transitions, locks, validate | `[ ]` | M2+ |
+| Templates | `[x]` | built-in `stories` stub; local `.devflow/templates/` override |
+| Repo lock on init | `[x]` | `.devflow/.lock/` |
+| Cards, transitions, board/card locks | `[ ]` | M2+ |
 
-Next milestone: **M1** (board lifecycle, templates, `board list` / `show` / `validate`).
+Next milestone: **M2** (card CRUD, variables, attachments).
 
 ---
 
@@ -88,22 +90,22 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 
 ### Deliverables
 
-- [ ] `board.json` read/write with full schema ([§5.4](./devflow-requirements.md#54-board-configuration-file))
-- [ ] `board init`: phases, `blockedPhase`, `sequenceWidth`, `--template` ([§5.1](./devflow-requirements.md#51-board-creation), [§5.6](./devflow-requirements.md#56-board-templates))
-- [ ] Built-in `stories` template (minimal stub scripts/skills acceptable)
-- [ ] Repository-local template override: `.devflow/templates/<name>/` ([§5.6](./devflow-requirements.md#56-board-templates))
-- [ ] `board list`, `board show` ([§16.3](./devflow-requirements.md#163-command-reference))
-- [ ] `board validate` ([§17.1](./devflow-requirements.md#171-board-validation))
-- [ ] Repo lock on `board init` ([§14.3](./devflow-requirements.md#143-commands-and-locks))
+- [x] `board.json` read/write with full schema ([§5.4](./devflow-requirements.md#54-board-configuration-file))
+- [x] `board init`: phases, `blockedPhase`, `sequenceWidth`, `--template` ([§5.1](./devflow-requirements.md#51-board-creation), [§5.6](./devflow-requirements.md#56-board-templates))
+- [x] Built-in `stories` template (minimal stub scripts/skills acceptable)
+- [x] Repository-local template override: `.devflow/templates/<name>/` ([§5.6](./devflow-requirements.md#56-board-templates))
+- [x] `board list`, `board show` ([§16.3](./devflow-requirements.md#163-command-reference))
+- [x] `board validate` ([§17.1](./devflow-requirements.md#171-board-validation))
+- [x] Repo lock on `board init` ([§14.3](./devflow-requirements.md#143-commands-and-locks))
 
 ### Commands (M1)
 
 | Command | Spec | Status |
 |---------|------|--------|
-| `devflow board init` / `init-board` | §5.1–5.6 | `[ ]` |
-| `devflow board list` / `list-boards` | §16.3 | `[ ]` |
-| `devflow board show` / `show-board` | §5.4, §16.4 | `[ ]` |
-| `devflow board validate` / `validate-board` | §17.1 | `[ ]` |
+| `devflow board init` / `init-board` | §5.1–5.6 | `[x]` |
+| `devflow board list` / `list-boards` | §16.3 | `[x]` |
+| `devflow board show` / `show-board` | §5.4, §16.4 | `[x]` |
+| `devflow board validate` / `validate-board` | §17.1 | `[x]` |
 
 ### Done when
 
@@ -297,9 +299,9 @@ Cross-reference: [§16.0 command index](./devflow-requirements.md#160-command-in
 | `devflow` | M0 | `[x]` |
 | `devflow validate` | M7 | `[ ]` |
 | `devflow board init` | M0/M1 | `[x]` |
-| `devflow board list` | M1 | `[ ]` |
-| `devflow board show` | M1 | `[ ]` |
-| `devflow board validate` | M1 | `[ ]` |
+| `devflow board list` | M1 | `[x]` |
+| `devflow board show` | M1 | `[x]` |
+| `devflow board validate` | M1 | `[x]` |
 | `devflow card create` | M2 | `[ ]` |
 | `devflow card list` | M2 | `[ ]` |
 | `devflow card show` | M2 | `[ ]` |

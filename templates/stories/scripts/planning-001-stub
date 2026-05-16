@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# M1 stub: replace with real planning scripts in M7.
+exit 0
