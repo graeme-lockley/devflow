@@ -7,6 +7,12 @@ import {
   boardScriptsDir,
   boardSkillsDir,
   boardsRoot,
+  cardDir,
+  cardFilesDir,
+  cardLockDir,
+  cardLogsDir,
+  cardMdFile,
+  cardStateFile,
   devflowRoot,
   repoLockDir,
   templatesRoot,
@@ -26,4 +32,31 @@ Deno.test("path helpers match spec layout", () => {
   assertEquals(boardLockDir("stories"), ".devflow/boards/stories/.lock");
   assertEquals(repoLockDir(), ".devflow/.lock");
   assertEquals(templatesRoot(), ".devflow/templates");
+});
+
+Deno.test("card path helpers match spec layout (req §6.3)", () => {
+  assertEquals(
+    cardDir("stories", "stories-000042"),
+    ".devflow/boards/stories/cards/stories-000042",
+  );
+  assertEquals(
+    cardStateFile("stories", "stories-000042"),
+    ".devflow/boards/stories/cards/stories-000042/state.json",
+  );
+  assertEquals(
+    cardMdFile("stories", "stories-000042"),
+    ".devflow/boards/stories/cards/stories-000042/card.md",
+  );
+  assertEquals(
+    cardFilesDir("stories", "stories-000042"),
+    ".devflow/boards/stories/cards/stories-000042/files",
+  );
+  assertEquals(
+    cardLogsDir("stories", "stories-000042"),
+    ".devflow/boards/stories/cards/stories-000042/logs",
+  );
+  assertEquals(
+    cardLockDir("stories", "stories-000042"),
+    ".devflow/boards/stories/cards/stories-000042/.lock",
+  );
 });

@@ -15,22 +15,22 @@ on it.
 
 ## Current state (baseline)
 
-**M1 complete.** Board lifecycle: atomic `board.json` I/O, init with
-`--template` / `--sequence-width`, repo lock on init, `board list` / `show` /
-`validate`, built-in `stories` template stub.
+**M2 complete.** Card CRUD, variables, attachments; board and card locks on
+mutating commands; `card validate` per §17.2.
 
-| Area                                 | Status | Gap                                                           |
-| ------------------------------------ | ------ | ------------------------------------------------------------- |
-| Layout                               | `[x]`  | `.devflow/boards/<board>/`                                    |
-| Board file                           | `[x]`  | load/save/validate `board.json`                               |
-| CLI                                  | `[x]`  | board init/list/show/validate + synonyms                      |
-| Identifiers                          | `[x]`  | `^[a-z][a-z0-9_]*$`                                           |
-| Git root                             | `[x]`  | Resolved via `git rev-parse`                                  |
-| Templates                            | `[x]`  | built-in `stories` stub; local `.devflow/templates/` override |
-| Repo lock on init                    | `[x]`  | `.devflow/.lock/`                                             |
-| Cards, transitions, board/card locks | `[ ]`  | M2+                                                           |
+| Area                                  | Status | Gap                                     |
+| ------------------------------------- | ------ | --------------------------------------- |
+| Layout                                | `[x]`  | `.devflow/boards/<board>/`              |
+| Board file                            | `[x]`  | load/save/validate `board.json`         |
+| CLI                                   | `[x]`  | board + card + variable commands        |
+| Identifiers                           | `[x]`  | `^[a-z][a-z0-9_]*$`                     |
+| Git root                              | `[x]`  | Resolved via `git rev-parse`            |
+| Templates                             | `[x]`  | built-in `stories` stub; local override |
+| Repo lock on init                     | `[x]`  | `.devflow/.lock/`                       |
+| Cards, board/card locks               | `[x]`  | create/list/show/dir/rename/add-file/…  |
+| Transitions, `--ignore-lock`, signals | `[ ]`  | M3–M4                                   |
 
-Next milestone: **M2** (card CRUD, variables, attachments).
+Next milestone: **M3** (block / unblock).
 
 ---
 
@@ -144,37 +144,37 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 
 ### Deliverables
 
-- [ ] `card create`: sequence allocation, board lock, atomic writes
+- [x] `card create`: sequence allocation, board lock, atomic writes
       ([§6.2](./devflow-requirements.md#62-card-creation))
-- [ ] Sequence exhaustion handling
+- [x] Sequence exhaustion handling
       ([§5.7](./devflow-requirements.md#57-sequence-exhaustion))
-- [ ] `card list` with `--phase` filter
+- [x] `card list` with `--phase` filter
       ([§16.3](./devflow-requirements.md#163-command-reference))
-- [ ] `card show`: YAML frontmatter + `card.md`
+- [x] `card show`: YAML frontmatter + `card.md`
       ([§6.4](./devflow-requirements.md#64-card-state-file),
       [§16.4](./devflow-requirements.md#164-command-output-formats))
-- [ ] `card dir`, `card rename`, `card add-file`
+- [x] `card dir`, `card rename`, `card add-file`
       ([§6.7](./devflow-requirements.md#67-card-title-and-rename),
       [§8](./devflow-requirements.md#8-attachments))
-- [ ] `variable get` / `variable set`
+- [x] `variable get` / `variable set`
       ([§7](./devflow-requirements.md#7-variables))
-- [ ] `card validate` ([§17.2](./devflow-requirements.md#172-card-validation))
-- [ ] History events: `created`, rename (as applicable)
+- [x] `card validate` ([§17.2](./devflow-requirements.md#172-card-validation))
+- [x] History events: `created`, rename (as applicable)
       ([§6.4](./devflow-requirements.md#64-card-state-file))
 
 ### Commands (M2)
 
 | Command                                   | Spec        | Status |
 | ----------------------------------------- | ----------- | ------ |
-| `devflow card create` / `create-card`     | §6.2        | `[ ]`  |
-| `devflow card list` / `list-cards`        | §16.3       | `[ ]`  |
-| `devflow card show` / `show-card`         | §6.4, §16.4 | `[ ]`  |
-| `devflow card dir` / `card-dir`           | §16.3       | `[ ]`  |
-| `devflow card rename` / `rename-card`     | §6.7        | `[ ]`  |
-| `devflow card add-file` / `add-card-file` | §8          | `[ ]`  |
-| `devflow variable get` / `get-variable`   | §7.1        | `[ ]`  |
-| `devflow variable set` / `set-variable`   | §7.2        | `[ ]`  |
-| `devflow card validate` / `validate-card` | §17.2       | `[ ]`  |
+| `devflow card create` / `create-card`     | §6.2        | `[x]`  |
+| `devflow card list` / `list-cards`        | §16.3       | `[x]`  |
+| `devflow card show` / `show-card`         | §6.4, §16.4 | `[x]`  |
+| `devflow card dir` / `card-dir`           | §16.3       | `[x]`  |
+| `devflow card rename` / `rename-card`     | §6.7        | `[x]`  |
+| `devflow card add-file` / `add-card-file` | §8          | `[x]`  |
+| `devflow variable get` / `get-variable`   | §7.1        | `[x]`  |
+| `devflow variable set` / `set-variable`   | §7.2        | `[x]`  |
+| `devflow card validate` / `validate-card` | §17.2       | `[x]`  |
 
 ### Done when
 
@@ -369,29 +369,29 @@ M7 Polish ◄── M6 Git ◄── M5 Advance ◄── M4 Locks
 Cross-reference:
 [§16.0 command index](./devflow-requirements.md#160-command-index).
 
-| Command                      | Milestone | Status   |
-| ---------------------------- | --------- | -------- |
-| `devflow`                    | M0        | `[x]`    |
-| `devflow validate`           | M7        | `[ ]`    |
-| `devflow board init`         | M0/M1     | `[x]`    |
-| `devflow board list`         | M1        | `[x]`    |
-| `devflow board show`         | M1        | `[x]`    |
-| `devflow board validate`     | M1        | `[x]`    |
-| `devflow card create`        | M2        | `[ ]`    |
-| `devflow card list`          | M2        | `[ ]`    |
-| `devflow card show`          | M2        | `[ ]`    |
-| `devflow card dir`           | M2        | `[ ]`    |
-| `devflow card add-file`      | M2        | M4 locks |
-| `devflow card advance`       | M5/M6     | `[ ]`    |
-| `devflow card block`         | M3        | `[ ]`    |
-| `devflow card unblock`       | M3        | `[ ]`    |
-| `devflow card rename`        | M2        | M4 locks |
-| `devflow card validate`      | M2        | `[ ]`    |
-| `devflow variable get`       | M2        | `[ ]`    |
-| `devflow variable set`       | M2        | M4 locks |
-| `devflow lock release`       | M4        | `[ ]`    |
-| `devflow lock release-board` | M4        | `[ ]`    |
-| `devflow lock release-repo`  | M4        | `[ ]`    |
+| Command                      | Milestone | Status |
+| ---------------------------- | --------- | ------ |
+| `devflow`                    | M0        | `[x]`  |
+| `devflow validate`           | M7        | `[ ]`  |
+| `devflow board init`         | M0/M1     | `[x]`  |
+| `devflow board list`         | M1        | `[x]`  |
+| `devflow board show`         | M1        | `[x]`  |
+| `devflow board validate`     | M1        | `[x]`  |
+| `devflow card create`        | M2        | `[x]`  |
+| `devflow card list`          | M2        | `[x]`  |
+| `devflow card show`          | M2        | `[x]`  |
+| `devflow card dir`           | M2        | `[x]`  |
+| `devflow card add-file`      | M2        | `[x]`  |
+| `devflow card advance`       | M5/M6     | `[ ]`  |
+| `devflow card block`         | M3        | `[ ]`  |
+| `devflow card unblock`       | M3        | `[ ]`  |
+| `devflow card rename`        | M2        | `[x]`  |
+| `devflow card validate`      | M2        | `[x]`  |
+| `devflow variable get`       | M2        | `[x]`  |
+| `devflow variable set`       | M2        | `[x]`  |
+| `devflow lock release`       | M4        | `[ ]`  |
+| `devflow lock release-board` | M4        | `[ ]`  |
+| `devflow lock release-repo`  | M4        | `[ ]`  |
 
 Verb-command synonyms (`init-board`, `create-card`, …) ship with each milestone
 alongside object-first forms.

@@ -9,6 +9,15 @@ const SYNONYMS: Record<string, { object: string; verb: string }> = {
   "list-boards": { object: "board", verb: "list" },
   "show-board": { object: "board", verb: "show" },
   "validate-board": { object: "board", verb: "validate" },
+  "create-card": { object: "card", verb: "create" },
+  "list-cards": { object: "card", verb: "list" },
+  "show-card": { object: "card", verb: "show" },
+  "card-dir": { object: "card", verb: "dir" },
+  "rename-card": { object: "card", verb: "rename" },
+  "add-card-file": { object: "card", verb: "add-file" },
+  "validate-card": { object: "card", verb: "validate" },
+  "get-variable": { object: "variable", verb: "get" },
+  "set-variable": { object: "variable", verb: "set" },
 };
 
 /**

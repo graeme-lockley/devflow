@@ -1,5 +1,5 @@
 import { writeTextFileAtomic } from "../infra/atomic-write.ts";
-import { boardConfigFile } from "../infra/paths.ts";
+import { boardConfigFile, boardsRoot } from "../infra/paths.ts";
 
 export interface BoardConfig {
   name: string;
@@ -145,4 +145,29 @@ export async function saveBoardConfig(
 ): Promise<void> {
   const path = boardConfigPath(repoRoot, config.name);
   await writeTextFileAtomic(path, serializeBoardConfig(config));
+}
+
+export async function listBoardNames(repoRoot: string): Promise<string[]> {
+  const boardsPath = `${repoRoot}/${boardsRoot()}`;
+  const names: string[] = [];
+
+  try {
+    for await (const entry of Deno.readDir(boardsPath)) {
+      if (!entry.isDirectory) continue;
+      const configPath = `${boardsPath}/${entry.name}/board.json`;
+      try {
+        const stat = await Deno.stat(configPath);
+        if (stat.isFile) names.push(entry.name);
+      } catch (e) {
+        if (e instanceof Deno.errors.NotFound) continue;
+        throw e;
+      }
+    }
+  } catch (e) {
+    if (e instanceof Deno.errors.NotFound) return [];
+    throw e;
+  }
+
+  names.sort();
+  return names;
 }

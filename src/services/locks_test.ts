@@ -1,6 +1,13 @@
 import { assertRejects } from "@std/assert";
 import { initBoard } from "../commands/init-board.ts";
-import { acquireRepoLock, releaseRepoLock } from "./locks.ts";
+import {
+  acquireBoardLock,
+  acquireCardLock,
+  acquireRepoLock,
+  releaseBoardLock,
+  releaseCardLock,
+  releaseRepoLock,
+} from "./locks.ts";
 import { repoLockDir } from "../infra/paths.ts";
 
 Deno.test("acquireRepoLock fails when lock already held", async () => {
@@ -14,6 +21,39 @@ Deno.test("acquireRepoLock fails when lock already held", async () => {
     );
   } finally {
     await releaseRepoLock(dir);
+  }
+});
+
+Deno.test("acquireBoardLock fails when lock already held (req §14.4)", async () => {
+  const dir = await Deno.makeTempDir();
+  await initBoard("stories", ["todo"], dir);
+  await acquireBoardLock(dir, "stories");
+  try {
+    await assertRejects(
+      () => acquireBoardLock(dir, "stories"),
+      Error,
+      "board lock held",
+    );
+  } finally {
+    await releaseBoardLock(dir, "stories");
+  }
+});
+
+Deno.test("acquireCardLock fails when lock already held (req §14.4)", async () => {
+  const dir = await Deno.makeTempDir();
+  await initBoard("stories", ["todo"], dir);
+  const cardId = "stories-000001";
+  const cardDir = `${dir}/.devflow/boards/stories/cards/${cardId}`;
+  await Deno.mkdir(cardDir, { recursive: true });
+  await acquireCardLock(dir, "stories", cardId);
+  try {
+    await assertRejects(
+      () => acquireCardLock(dir, "stories", cardId),
+      Error,
+      "card lock held",
+    );
+  } finally {
+    await releaseCardLock(dir, "stories", cardId);
   }
 });
 

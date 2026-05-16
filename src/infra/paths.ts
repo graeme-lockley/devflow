@@ -33,6 +33,30 @@ export function boardLockDir(boardName: string): string {
   return `${boardRoot(boardName)}/.lock`;
 }
 
+export function cardDir(boardName: string, cardId: string): string {
+  return `${boardCardsDir(boardName)}/${cardId}`;
+}
+
+export function cardStateFile(boardName: string, cardId: string): string {
+  return `${cardDir(boardName, cardId)}/state.json`;
+}
+
+export function cardMdFile(boardName: string, cardId: string): string {
+  return `${cardDir(boardName, cardId)}/card.md`;
+}
+
+export function cardFilesDir(boardName: string, cardId: string): string {
+  return `${cardDir(boardName, cardId)}/files`;
+}
+
+export function cardLogsDir(boardName: string, cardId: string): string {
+  return `${cardDir(boardName, cardId)}/logs`;
+}
+
+export function cardLockDir(boardName: string, cardId: string): string {
+  return `${cardDir(boardName, cardId)}/.lock`;
+}
+
 export function repoLockDir(): string {
   return `${DEVFLOW_ROOT}/.lock`;
 }
