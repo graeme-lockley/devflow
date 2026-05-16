@@ -1,12 +1,43 @@
 # Shared helpers for building exit scripts (not invoked by Devflow).
 # shellcheck shell=bash
 
+# Spec Updates table: last column, trimmed (full status cell).
+stories_spec_update_status_raw() {
+  local line="$1"
+  printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+}
+
 # Spec Updates table: last column, first token only (allows "deferred (reason)", "done (…)" ).
 stories_spec_update_status() {
-  local line="$1"
-  local raw
-  raw=$(printf '%s' "$line" | awk -F'|' '{print $(NF-1)}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-  printf '%s' "$raw" | awk '{print $1}'
+  stories_spec_update_status_raw "$1" | awk '{print $1}'
+}
+
+# Finishing: "done" row with no porcelain diff — shipped in an earlier hop or annotated pointer.
+stories_spec_done_without_worktree_diff() {
+  local doc_path="$1"
+  local line="$2"
+  local planned="$3"
+  local card_md="$4"
+  local repo_root="$5"
+  local status_raw build_notes
+
+  status_raw=$(stories_spec_update_status_raw "$line")
+
+  if printf '%s' "$planned" | grep -qiE '^(none|n/a|verify|unchanged)'; then
+    return 0
+  fi
+  if [[ "$status_raw" == done* ]] && [ "$status_raw" != "done" ]; then
+    return 0
+  fi
+  if git -C "$repo_root" diff --quiet HEAD -- "$doc_path" 2>/dev/null \
+    && git -C "$repo_root" rev-parse --verify "HEAD:${doc_path}" >/dev/null 2>&1; then
+    build_notes=$(building_section_body "$card_md" "Build Notes")
+    if printf '%s' "$build_notes" | grep -qF "$doc_path" \
+      && printf '%s' "$build_notes" | grep -qi 'done'; then
+      return 0
+    fi
+  fi
+  return 1
 }
 
 # True when ## Notes documents a deferred Spec Updates row for doc_path.

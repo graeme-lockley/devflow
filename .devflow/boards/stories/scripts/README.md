@@ -44,3 +44,9 @@ Canonical layout:
 Subsections **`### Verification summary`** and **`### Finished`** must live under
 **`## Notes`**, not **`## Build Notes`**. `finishing-003` fails with a targeted
 message if `### Finished` appears only under Build Notes.
+
+At **finishing** exit, a Spec Updates row may be `done` without an uncommitted
+diff when the doc was committed in **building** (e.g. `done (README.md lines
+90–91)` or Build Notes records the path as done). `finishing-004` allows that;
+it still requires a porcelain diff when marking `done` for a change made only in
+this finishing hop.
