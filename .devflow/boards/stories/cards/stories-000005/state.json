@@ -2,16 +2,23 @@
   "id": "stories-000005",
   "board": "stories",
   "title": "Skip Action",
-  "phase": "preparing",
+  "phase": "planning",
   "previousPhase": null,
   "createdAt": "2026-05-16T19:18:34.965Z",
-  "updatedAt": "2026-05-16T19:18:34.965Z",
+  "updatedAt": "2026-05-16T19:23:44.914Z",
   "variables": {},
   "history": [
     {
       "type": "created",
       "at": "2026-05-16T19:18:34.965Z",
       "phase": "preparing"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-16T19:23:44.914Z",
+      "from": "preparing",
+      "to": "planning",
+      "mode": "normal"
     }
   ],
   "blocked": null
