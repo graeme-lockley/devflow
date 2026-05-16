@@ -33,7 +33,7 @@ Canonical layout:
 
 | `##` section | Exit script(s) that gate it |
 | ------------ | --------------------------- |
-| Current State, Objectives | `planning-002` (preparing complete) |
+| Current State, Objectives (preparing) | `planning-002`, `preparing-003` (idempotent if already prepared) |
 | Spec References, Acceptance Criteria (draft) | `planning-002`, `planning-004` |
 | Impact Analysis, Test Scenarios, Build Tasks, Spec Updates (planned) | `planning-004` |
 | Build Tasks `[x]`, Build Notes (substance), AC still `[ ]` | `building-003` |

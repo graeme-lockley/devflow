@@ -135,6 +135,61 @@ building_section_body() {
   ' "$card_md"
 }
 
+# Preparing exit / planning entry: same bar as planning-002-check-card-structure.
+# Echoes failures to stderr with optional prefix; returns 0 when ready.
+stories_card_preparing_ready() {
+  local card_md="$1"
+  local prefix="${2:-stories}"
+  local min_section_chars="${3:-40}"
+  local heading body chars
+
+  if [ ! -f "$card_md" ]; then
+    echo "${prefix}: missing card.md" >&2
+    return 1
+  fi
+  if ! head -1 "$card_md" | grep -q '^# '; then
+    echo "${prefix}: card.md must start with a # title line" >&2
+    return 1
+  fi
+  if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$card_md"; then
+    echo "${prefix}: card.md contains merge conflict markers" >&2
+    return 1
+  fi
+  for heading in \
+    "Current State" \
+    "Objectives" \
+    "Spec References" \
+    "Acceptance Criteria"; do
+    grep -q "^## ${heading}$" "$card_md" || {
+      echo "${prefix}: missing ## ${heading} section" >&2
+      return 1
+    }
+  done
+  if grep -q '_To be completed in preparing\.' "$card_md"; then
+    echo "${prefix}: preparing sections still contain placeholders" >&2
+    return 1
+  fi
+  for heading in "Current State" "Objectives"; do
+    body=$(building_section_body "$card_md" "$heading" | sed '/^[[:space:]]*$/d' | sed '/^<!--/d')
+    chars=$(printf '%s' "$body" | wc -c | tr -d ' ')
+    if [ "${chars:-0}" -lt "$min_section_chars" ]; then
+      echo "${prefix}: ## ${heading} is too short or empty (${chars:-0} < ${min_section_chars} chars)" >&2
+      return 1
+    fi
+  done
+  body=$(building_section_body "$card_md" "Acceptance Criteria")
+  if ! printf '%s\n' "$body" | grep -qE '^[0-9]+\.[[:space:]]+\[[ xX]\]'; then
+    echo "${prefix}: Acceptance Criteria must include at least one numbered criterion" >&2
+    return 1
+  fi
+  body=$(building_section_body "$card_md" "Spec References")
+  if ! printf '%s\n' "$body" | grep -qE '^- \[[ xX]\]'; then
+    echo "${prefix}: Spec References must include at least one checklist item" >&2
+    return 1
+  fi
+  return 0
+}
+
 # Populates BUILDING_SCENARIO_COMMANDS array from card.md Test Scenarios.
 building_collect_scenario_commands() {
   local card_md="$1"

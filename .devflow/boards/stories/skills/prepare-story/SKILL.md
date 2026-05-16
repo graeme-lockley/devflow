@@ -68,7 +68,9 @@ does not have enough input yet.
   `docs/architecture.md` for areas related to StoryDetail.
 - Search `src/` for relevant commands, modules, and tests.
 - Read existing `card.md` if present—preserve user edits unless StoryDetail
-  overrides.
+  overrides. If preparing sections already meet the quality bar, make **no
+  changes** and exit 0 (`preparing-003` allows an idempotent exit when the
+  working tree is clean).
 
 ### 3. Populate preparing sections
 

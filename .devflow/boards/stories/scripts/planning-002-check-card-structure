@@ -8,62 +8,10 @@ card_id="${2:?card id required}"
 
 card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
 card_md="${card_dir}/card.md"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-fail() {
-  echo "planning-002: $*" >&2
-  exit 1
-}
+# shellcheck source=building-lib.sh
+source "${script_dir}/building-lib.sh"
 
-section_body() {
-  local heading="$1"
-  awk -v h="$heading" '
-    $0 == "## " h { found=1; next }
-    found && /^## / { exit }
-    found { print }
-  ' "$card_md"
-}
-
-if [ ! -f "$card_md" ]; then
-  fail "missing card.md"
-fi
-
-if ! head -1 "$card_md" | grep -q '^# '; then
-  fail "card.md must start with a # title line"
-fi
-
-if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$card_md"; then
-  fail "card.md contains merge conflict markers"
-fi
-
-for heading in \
-  "Current State" \
-  "Objectives" \
-  "Spec References" \
-  "Acceptance Criteria"; do
-  grep -q "^## ${heading}$" "$card_md" || fail "missing ## ${heading} section"
-done
-
-if grep -q '_To be completed in preparing\.' "$card_md"; then
-  fail "preparing sections still contain placeholders"
-fi
-
-min_section_chars=40
-for heading in "Current State" "Objectives"; do
-  body=$(section_body "$heading" | sed '/^[[:space:]]*$/d' | sed '/^<!--/d')
-  chars=$(printf '%s' "$body" | wc -c | tr -d ' ')
-  if [ "${chars:-0}" -lt "$min_section_chars" ]; then
-    fail "## ${heading} is too short or empty (${chars:-0} < ${min_section_chars} chars)"
-  fi
-done
-
-ac_body=$(section_body "Acceptance Criteria")
-if ! printf '%s\n' "$ac_body" | grep -qE '^[0-9]+\.[[:space:]]+\[[ xX]\]'; then
-  fail "Acceptance Criteria must include at least one numbered criterion"
-fi
-
-spec_body=$(section_body "Spec References")
-if ! printf '%s\n' "$spec_body" | grep -qE '^- \[[ xX]\]'; then
-  fail "Spec References must include at least one checklist item"
-fi
-
+stories_card_preparing_ready "$card_md" "planning-002" || exit 1
 exit 0
