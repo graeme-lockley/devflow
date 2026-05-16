@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Loop step 03: Run Test Scenarios from card.md
+# Loop step 04: Run Test Scenarios from card.md
 set -euo pipefail
 board="${1:?board name required}"
 card_id="${2:?card id required}"
 : "$board" "$card_id"
 
-SCRIPT_ID="building/steps/03-gate-scenarios"
+SCRIPT_ID="building/steps/04-gate-scenarios"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
 run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
 card_md="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}/card.md"
@@ -13,7 +13,6 @@ round="${DEVFLOW_SCRIPT_ROUND:-1}"
 max="${DEVFLOW_LOOP_MAX:-1}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# Source building-lib.sh for building_run_scenario_tests function
 # shellcheck source=../../building-lib.sh
 source "${script_dir}/building-lib.sh"
 

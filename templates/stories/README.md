@@ -25,8 +25,8 @@ Exit scripts run when **leaving** a phase (lexical order). Each hop also runs
 
 When the init phase list includes `building`, `board.phaseScripts.json`
 configures a native loop (entry → `building/steps/*` → exit). Steps: pi
-(`build-story`), `deno task ci`, then card Test Scenarios; up to 5 rounds on
-failure.
+(`build-story`), `deno fmt`, `deno task ci`, then card Test Scenarios; up to 5
+rounds on failure.
 
 Requires `build-story` and `commit-message` skills (copied with this template).
 

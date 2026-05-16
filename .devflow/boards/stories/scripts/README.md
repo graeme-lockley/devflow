@@ -36,7 +36,7 @@ exit scripts.
 | `001`       | Entry (e.g. `building-001-check-entry`) — run before the loop           |
 | `002`       | Reserved (thin orchestrator slot; native loop uses `board.json` steps)  |
 | `003`+      | Exit (e.g. `building-003`, `005`, `007`) — run after the loop succeeds  |
-| loop steps  | `building/steps/01-pi.sh`, `02-gate-ci.sh`, `03-gate-scenarios.sh`      |
+| loop steps  | `01-pi`, `02-fmt`, `03-gate-ci`, `04-gate-scenarios` under `building/steps/` |
 
 Do not duplicate loop gates as separate root scripts (`building-004`,
 `building-006` removed).
@@ -51,7 +51,8 @@ Canonical layout: [../assets/story.template.md](../assets/story.template.md).
 | Spec References, Acceptance Criteria (draft)                         | `planning-002`, `planning-004`                                   |
 | Impact Analysis, Test Scenarios, Build Tasks, Spec Updates (planned) | `planning-004`                                                   |
 | Build Tasks `[x]`, Build Notes (substance), AC still `[ ]`           | `building-003` (exit, after loop)                                |
-| `deno task ci` + automated Test Scenarios (retries)                  | `building/steps/02-gate-ci`, `03-gate-scenarios` (loop)          |
+| `deno fmt` after pi edits                                            | `building/steps/02-fmt` (loop)                                   |
+| `deno task ci` + automated Test Scenarios (retries)                  | `building/steps/03-gate-ci`, `04-gate-scenarios` (loop)          |
 | pi **build-story**                                                   | `building/steps/01-pi` (loop)                                    |
 | Spec Updates vs git; repo change scope                               | `building-005`, `building-007` (exit, after loop)              |
 | `### Verification summary` under **Notes**                           | `verifying-003`                                                  |

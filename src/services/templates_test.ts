@@ -53,8 +53,9 @@ Deno.test("initBoard with template applies building loop config", async () => {
     board.phaseScripts?.building?.loop?.steps,
     [
       "building/steps/01-pi.sh",
-      "building/steps/02-gate-ci.sh",
-      "building/steps/03-gate-scenarios.sh",
+      "building/steps/02-fmt.sh",
+      "building/steps/03-gate-ci.sh",
+      "building/steps/04-gate-scenarios.sh",
     ],
   );
 

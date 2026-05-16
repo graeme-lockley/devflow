@@ -160,7 +160,8 @@ pi --skill .devflow/boards/stories/skills/build-story \
 ```
 
 Set `DEVFLOW_SKIP_PI=1` to skip pi (runs quality gates only). Each loop round
-runs `deno task ci` then automated **Test Scenarios** from the card (with the
-same `deno test` permissions as `deno.json`). `maxRounds` is set in
+runs `deno fmt` (same scope as `fmt:check`), then `deno task ci`, then automated
+**Test Scenarios** from the card (with the same `deno test` permissions as
+`deno.json`). `maxRounds` is set in
 `board.json` (`phaseScripts.building.loop.maxRounds`, default 5). Non-zero exit
 fails the transition.
