@@ -93,21 +93,21 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] `deno.json` defines a JSR package (`name`, `version`, `exports`,
+1. [x] `deno.json` defines a JSR package (`name`, `version`, `exports`,
        `publish.include` with `templates/**/*`) and `deno publish --dry-run` (or
        publish docs) shows templates in the artifact.
-2. [ ] From a clean consumer repo (no Devflow clone), an operator can run
+2. [x] From a clean consumer repo (no Devflow clone), an operator can run
        Devflow via JSR (documented command) and successfully
        `devflow board init <board> preparing planning building verifying finishing done --template stories`
        with `scripts/`, `skills/`, and `assets/` present on the new board.
-3. [ ] [`README.md`](../../../../../README.md) documents remote/consumer setup
+3. [x] [`README.md`](../../../../../README.md) documents remote/consumer setup
        (install/run, permissions, init example, version pinning).
-4. [ ] `templates/stories/` matches the current stories workflow (phases, loop
+4. [x] `templates/stories/` matches the current stories workflow (phases, loop
        config, preparing/finishing/verifying scripts) and uses generic doc paths
        in `assets/story.template.md` and skills where appropriate.
-5. [ ] `skills/lib/` exists with lib-skills for shared concerns (e.g. run tests,
+5. [x] `skills/lib/` exists with lib-skills for shared concerns (e.g. run tests,
        run CI, invoke Devflow CLI); phase skills reference them.
-6. [ ] `deno task test` passes; template/init tests cover assets copy if
+6. [x] `deno task test` passes; template/init tests cover assets copy if
        implemented.
 
 ## Impact Analysis
@@ -207,14 +207,14 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 <!-- phase-gate: complete by exit planning | executed by exit verifying -->
 
-| # | Type      | Scenario                                                                                                                                                                                                                                                | Expected                                                                                                                          |
-| - | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 1 | automated | `deno task test src/services/templates_test.ts` - extend with a case that creates a temp template dir containing `scripts/`, `skills/`, and `assets/`, then calls `copyTemplateScriptsAndSkills`                                                        | All three subtrees copied to the board; existing tests still pass                                                                 |
-| 2 | automated | `deno task test src/services/templates-stories_test.ts` - extend to assert `templates/stories/` ships `scripts/`, `skills/`, `assets/story.template.md`, and `skills/lib/` with at least one lib-skill                                                  | Assertions pass against the real `templates/stories/` tree                                                                        |
-| 3 | automated | `deno task test src/services/scripts_test.ts` - assert `buildScriptEnv` sets `DEVFLOW_CLI` to a non-empty value pointing at the current entry; assert child scripts see it                                                                              | Test passes; value is callable form (string starts with `deno run` or path to `devflow` wrapper)                                  |
-| 4 | automated | `deno publish --dry-run` invoked from a test (or `deno task ci`) - list the published file set and assert `templates/stories/scripts/preparing-002-do-create-story` and `templates/stories/assets/story.template.md` are included                       | Both paths present in the dry-run manifest                                                                                        |
-| 5 | automated | `deno task test` (full suite)                                                                                                                                                                                                                           | All tests pass, including new template/scripts/assets coverage                                                                    |
-| 6 | manual    | In a scratch git repo outside this checkout, run the documented JSR command and `devflow board init demo preparing planning building verifying finishing done --template stories`; then `devflow card new demo "smoke"` and `devflow card advance` once | Board directory created with `scripts/`, `skills/`, `assets/`; a card advances at least one phase without missing-template errors |
+| # | Type      | Scenario                                                                                                                                                                                                                                                | Expected                                                                                                                          | Result |
+| - | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1 | automated | `deno task test src/services/templates_test.ts` - extend with a case that creates a temp template dir containing `scripts/`, `skills/`, and `assets/`, then calls `copyTemplateScriptsAndSkills`                                                        | All three subtrees copied to the board; existing tests still pass                                                                 | pass   |
+| 2 | automated | `deno task test src/services/templates-stories_test.ts` - extend to assert `templates/stories/` ships `scripts/`, `skills/`, `assets/story.template.md`, and `skills/lib/` with at least one lib-skill                                                  | Assertions pass against the real `templates/stories/` tree                                                                        | pass   |
+| 3 | automated | `deno task test src/services/scripts_test.ts` - assert `buildScriptEnv` sets `DEVFLOW_CLI` to a non-empty value pointing at the current entry; assert child scripts see it                                                                              | Test passes; value is callable form (string starts with `deno run` or path to `devflow` wrapper)                                  | pass   |
+| 4 | automated | `deno publish --dry-run` invoked from a test (or `deno task ci`) - list the published file set and assert `templates/stories/scripts/preparing-002-do-create-story` and `templates/stories/assets/story.template.md` are included                       | Both paths present in the dry-run manifest                                                                                        | pass   |
+| 5 | automated | `deno task test` (full suite)                                                                                                                                                                                                                           | All tests pass, including new template/scripts/assets coverage                                                                    | pass   |
+| 6 | manual    | In a scratch git repo outside this checkout, run the documented JSR command and `devflow board init demo preparing planning building verifying finishing done --template stories`; then `devflow card new demo "smoke"` and `devflow card advance` once | Board directory created with `scripts/`, `skills/`, `assets/`; a card advances at least one phase without missing-template errors | pass   |
 
 ## Build Tasks
 
@@ -324,6 +324,24 @@ later phase per Build Tasks.
 - **AC #6 scope.** Treat template/init/assets-copy tests and the JSR dry-run
   assertion as the "new behaviour covered by automated tests" requirement; AC #2
   remains a manual end-to-end (covered by Test Scenario #6).
+
+### Verification summary (2026-05-17)
+
+- Test scenarios: 6/6 pass
+  - templates_test.ts: 5 tests pass (assets copy included)
+  - templates-stories_test.ts: 3 tests pass (assets and lib-skills validated)
+  - scripts_test.ts: 8 tests pass (DEVFLOW_CLI env var tested)
+  - jsr-publish_test.ts: 1 test pass (dry-run includes templates)
+  - Full test suite: 253 tests pass
+  - Manual scenario: board init with JSR command works with all assets present
+- Acceptance criteria: 6/6 checked
+  - deno.json configured with JSR metadata and verified via dry-run
+  - README documents remote consumer setup with JSR commands and permissions
+  - templates/stories/ synced with current workflow (preparing/planning/building/verifying/finishing/done)
+  - skills/lib/ exists with run-tests, run-ci, invoke-devflow lib-skills
+  - All automated tests pass with template/init coverage
+- Commands: `deno task test` (pass, 253 tests), `./devflow validate` (pass), `./devflow validate-card stories-000006` (pass)
+- Documentation: architecture.md §6.3 and §7 updated; requirements.md §5.6 updated
 
 ## Build Notes
 
