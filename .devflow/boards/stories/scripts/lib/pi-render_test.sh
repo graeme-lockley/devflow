@@ -24,13 +24,13 @@ assert_contains() {
   
   if echo "$haystack" | grep -qF "$needle"; then
     echo -e "${GREEN}✓${RESET} $test_name"
-    ((pass_count++))
+    pass_count=$((pass_count + 1))
     return 0
   else
     echo -e "${RED}✗${RESET} $test_name"
     echo "  Expected to find: $needle"
     echo "  In output: $haystack"
-    ((fail_count++))
+    fail_count=$((fail_count + 1))
     return 1
   fi
 }
@@ -44,11 +44,11 @@ assert_not_contains() {
     echo -e "${RED}✗${RESET} $test_name"
     echo "  Expected NOT to find: $needle"
     echo "  In output: $haystack"
-    ((fail_count++))
+    fail_count=$((fail_count + 1))
     return 1
   else
     echo -e "${GREEN}✓${RESET} $test_name"
-    ((pass_count++))
+    pass_count=$((pass_count + 1))
     return 0
   fi
 }
@@ -60,13 +60,13 @@ assert_equals() {
   
   if [ "$actual" = "$expected" ]; then
     echo -e "${GREEN}✓${RESET} $test_name"
-    ((pass_count++))
+    pass_count=$((pass_count + 1))
     return 0
   else
     echo -e "${RED}✗${RESET} $test_name"
     echo "  Expected: $expected"
     echo "  Got: $actual"
-    ((fail_count++))
+    fail_count=$((fail_count + 1))
     return 1
   fi
 }
@@ -78,13 +78,13 @@ assert_exit_code() {
   
   if [ "$actual" -eq "$expected" ]; then
     echo -e "${GREEN}✓${RESET} $test_name"
-    ((pass_count++))
+    pass_count=$((pass_count + 1))
     return 0
   else
     echo -e "${RED}✗${RESET} $test_name"
     echo "  Expected exit code: $expected"
     echo "  Got: $actual"
-    ((fail_count++))
+    fail_count=$((fail_count + 1))
     return 1
   fi
 }

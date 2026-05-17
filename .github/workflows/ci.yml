@@ -18,5 +18,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: CI Lint and Test
-        run: deno task test
+      - name: Install jq (stories board pi-render)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: CI (lint, format check, test)
+        run: deno task ci

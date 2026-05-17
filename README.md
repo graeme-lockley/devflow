@@ -256,8 +256,9 @@ Boards may configure **retry loops** for phases in `board.json`:
       "loop": {
         "steps": [
           "building/steps/01-pi.sh",
-          "building/steps/02-gate-ci.sh",
-          "building/steps/03-gate-scenarios.sh"
+          "building/steps/02-fmt.sh",
+          "building/steps/03-gate-ci.sh",
+          "building/steps/04-gate-scenarios.sh"
         ],
         "maxRounds": 5
       }
@@ -354,11 +355,15 @@ deno fmt --check
 deno task test
 ```
 
-Or run the full CI checks locally:
+Or run the same pipeline as the stories board **building** loop gate
+(`building/steps/03-gate-ci.sh`) in one command:
 
 ```bash
 deno task ci
 ```
+
+`deno task ci` runs **`deno task lint`**, then **`deno task fmt:check`**, then
+**`deno task test`** (see [`deno.json`](./deno.json)). It is not tests-only.
 
 ### Git hooks
 
@@ -370,6 +375,6 @@ Install the pre-commit hook (runs `deno lint` and `deno fmt --check`):
 
 ### Continuous integration
 
-GitHub Actions runs the same checks on push and pull requests: `deno lint`,
-`deno fmt --check`, and `deno task test` (see
+GitHub Actions runs `deno task ci` on push and pull requests (lint, format
+check, and tests — see
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
