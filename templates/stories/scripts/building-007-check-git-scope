@@ -46,6 +46,9 @@ failed=0
 
 _allowed_scope_hint() {
   local hint="${card_rel}/, src/, README.md, Spec Updates rows marked done/pending"
+  if [ "${BUILDING_ALLOW_TEMPLATES_STORIES:-0}" = 1 ]; then
+    hint="templates/stories/, ${hint}"
+  fi
   if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
     hint="${board_rel}/board.json, ${board_rel}/scripts/, ${board_rel}/skills/, ${hint}"
   fi

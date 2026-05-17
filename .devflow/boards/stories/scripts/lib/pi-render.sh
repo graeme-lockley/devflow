@@ -44,6 +44,10 @@ if [ "$LOG_LEVEL" = "summary" ]; then
   silent=true
 fi
 
+# Current tool call tracking (for sequential processing)
+current_tool_name=""
+current_tool_args=""
+
 # Process each NDJSON line
 while IFS= read -r line; do
   event_type=$(echo "$line" | jq -r '.type // empty')
@@ -72,29 +76,50 @@ while IFS= read -r line; do
           ;;
         
         toolcall_start)
-          # Start of tool call
-          if [ "$silent" = "false" ]; then
-            tool_name=$(echo "$line" | jq -r '.assistantMessageEvent.partial.content[-1].name // empty')
-            if [ -n "$tool_name" ]; then
-              printf '%b> %s: %b' "$GREY" "$tool_name" "$RESET" >&2
-            fi
-          fi
+          # Start of tool call - reset current tool tracking
+          current_tool_name=""
+          current_tool_args=""
           ;;
         
         toolcall_delta)
-          # Tool call arguments (streaming)
-          if [ "$silent" = "false" ]; then
-            delta=$(echo "$line" | jq -r '.assistantMessageEvent.delta // empty')
-            if [ -n "$delta" ]; then
-              printf '%s' "$delta" >&2
-            fi
-          fi
+          # Accumulate tool call arguments (not used, we use toolcall_end)
+          :
           ;;
         
         toolcall_end)
-          # End of tool call - newline
+          # Render one concise line for the tool call
           if [ "$silent" = "false" ]; then
-            echo >&2
+            tool_name=$(echo "$line" | jq -r '.assistantMessageEvent.toolCall.name // empty')
+            args=$(echo "$line" | jq -r '.assistantMessageEvent.toolCall.arguments // empty')
+            
+            if [ -n "$tool_name" ] && [ "$args" != "null" ] && [ -n "$args" ]; then
+              # Extract primary argument based on tool name
+              case "$tool_name" in
+                bash)
+                  primary=$(echo "$args" | jq -r '.command // empty')
+                  ;;
+                read)
+                  primary=$(echo "$args" | jq -r '.path // empty')
+                  ;;
+                write)
+                  primary=$(echo "$args" | jq -r '.path // empty')
+                  ;;
+                edit)
+                  primary=$(echo "$args" | jq -r '.path // empty')
+                  ;;
+                browse_page)
+                  primary=$(echo "$args" | jq -r '.url // empty')
+                  ;;
+                *)
+                  # Generic fallback: show first non-empty value
+                  primary=$(echo "$args" | jq -r 'to_entries | .[0].value // empty')
+                  ;;
+              esac
+              
+              if [ -n "$primary" ]; then
+                printf '%b%s:%b %s\n' "$GREY" "$tool_name" "$RESET" "$primary" >&2
+              fi
+            fi
           fi
           ;;
         
@@ -114,13 +139,8 @@ while IFS= read -r line; do
       ;;
     
     tool_execution_start)
-      # Tool execution started
-      if [ "$silent" = "false" ]; then
-        tool_name=$(echo "$line" | jq -r '.toolName // empty')
-        if [ -n "$tool_name" ]; then
-          printf '%b  Executing %s...%b\n' "$GREY" "$tool_name" "$RESET" >&2
-        fi
-      fi
+      # Tool execution started - suppress (redundant with toolcall_end)
+      :
       ;;
     
     tool_execution_end)

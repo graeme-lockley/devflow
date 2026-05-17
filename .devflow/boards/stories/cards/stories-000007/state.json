@@ -2,10 +2,10 @@
   "id": "stories-000007",
   "board": "stories",
   "title": "Have pi show its workings when running devflow",
-  "phase": "building",
+  "phase": "verifying",
   "previousPhase": null,
   "createdAt": "2026-05-17T07:16:30.223Z",
-  "updatedAt": "2026-05-17T07:32:43.190Z",
+  "updatedAt": "2026-05-17T08:39:18.855Z",
   "variables": {},
   "history": [
     {
@@ -25,6 +25,20 @@
       "at": "2026-05-17T07:32:43.190Z",
       "from": "planning",
       "to": "building",
+      "mode": "normal"
+    },
+    {
+      "type": "actionSkipped",
+      "at": "2026-05-17T08:39:18.855Z",
+      "from": "building",
+      "to": "verifying",
+      "script": "building-007-check-git-scope"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-17T08:39:18.855Z",
+      "from": "building",
+      "to": "verifying",
       "mode": "normal"
     }
   ],

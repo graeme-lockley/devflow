@@ -121,15 +121,25 @@ stories_board_infrastructure_in_scope() {
     "$card_md"
 }
 
-# Set BUILDING_BOARD_REL and BUILDING_ALLOW_BOARD_INFRA=1 when card allows board infra edits.
+# True when card.md requires mirroring into bundled templates (e.g. stories board + templates/stories).
+stories_templates_mirror_in_scope() {
+  local card_md="$1"
+  grep -qE 'templates/stories' "$card_md"
+}
+
+# Set BUILDING_BOARD_REL, board-infra and templates mirror flags from card.md scope.
 building_apply_board_infra_scope() {
   local card_md="$1"
   local board_rel="$2"
   BUILDING_BOARD_REL=""
   BUILDING_ALLOW_BOARD_INFRA=0
+  BUILDING_ALLOW_TEMPLATES_STORIES=0
   if stories_board_infrastructure_in_scope "$card_md"; then
     BUILDING_BOARD_REL="$board_rel"
     BUILDING_ALLOW_BOARD_INFRA=1
+  fi
+  if stories_templates_mirror_in_scope "$card_md"; then
+    BUILDING_ALLOW_TEMPLATES_STORIES=1
   fi
 }
 
@@ -148,6 +158,11 @@ building_path_allowed_for_story() {
       "${BUILDING_BOARD_REL}/board.json") return 0 ;;
       "${BUILDING_BOARD_REL}/scripts/"*) return 0 ;;
       "${BUILDING_BOARD_REL}/skills/"*) return 0 ;;
+    esac
+  fi
+  if [ "${BUILDING_ALLOW_TEMPLATES_STORIES:-0}" = 1 ]; then
+    case "$path" in
+      templates/stories/*) return 0 ;;
     esac
   fi
   local doc
@@ -250,7 +265,8 @@ building_collect_scenario_commands() {
 
   _scenario_cmds_add() {
     local candidate="$1"
-    for existing in "${BUILDING_SCENARIO_COMMANDS[@]}"; do
+    local existing
+    for existing in ${BUILDING_SCENARIO_COMMANDS[@]+"${BUILDING_SCENARIO_COMMANDS[@]}"}; do
       [ "$existing" = "$candidate" ] && return 0
     done
     BUILDING_SCENARIO_COMMANDS+=("$candidate")
