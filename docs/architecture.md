@@ -300,27 +300,46 @@ card advance [--skip <phase>-<seq>[,...]]
 
 ### 6.3 Nested CLI from scripts
 
-Scripts call `devflow variable set … --ignore-lock`. The child process is a
-**new** Deno invocation; it must not deadlock on locks held by the parent
-([§14.1](./devflow-requirements.md#141-locking-model),
+Scripts call `devflow variable set … --ignore-lock` and other Devflow commands.
+The child process is a **new** Deno invocation; it must not deadlock on locks
+held by the parent ([§14.1](./devflow-requirements.md#141-locking-model),
 [§16.1](./devflow-requirements.md#161-global-flags)).
+
+**`DEVFLOW_CLI` environment variable** (`src/services/scripts.ts`):
+
+- Set by `buildScriptEnv` when invoking exit scripts.
+- Resolves to:
+  - `./devflow` — when a local wrapper exists in the repository root
+  - `deno run --allow-read --allow-write --allow-run --allow-env <module>` — for
+    JSR-installed or raw module invocations
+- Scripts **must** use `"$DEVFLOW_CLI"` for nested calls; do not hardcode
+  `./devflow` or construct `deno run` commands.
+
+Example in a script:
+
+```bash
+devflow_cli="${DEVFLOW_CLI:?DEVFLOW_CLI not set}"
+"$devflow_cli" validate-card "$card_id"
+```
 
 ---
 
 ## 7. Templates
 
-Built-in templates ship with the Devflow package (location TBD:
-`templates/stories/` at repo root or embedded path resolved from
-`import.meta.url`).
+Built-in templates ship inside the JSR-published Devflow package at
+`templates/<name>/`. After `deno install` or `deno run jsr:@devflow/devflow`,
+`import.meta.url` resolves to a local cache directory where
+`devflowPackageRoot()` can read `templates/` on disk.
 
 Copy order ([§5.6](./devflow-requirements.md#56-board-templates)):
 
 ```text
 1. .devflow/templates/<name>/   (repository-local)
-2. built-in templates/<name>/   (shipped with Devflow)
+2. templates/<name>/            (built-in, cached with the JSR package)
 ```
 
-`templates.ts` copies `scripts/` and `skills/` only; it does not create cards.
+`templates.ts` copies `scripts/`, `skills/`, and `assets/` (when present); it
+does not create cards.
 
 ---
 

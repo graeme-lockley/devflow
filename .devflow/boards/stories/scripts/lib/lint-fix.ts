@@ -40,7 +40,10 @@ function isImportLine(line: string): boolean {
 }
 
 /** Remove a named binding from `import { a, b } from "…"`. */
-export function removeNamedImportBinding(line: string, name: string): string | null {
+export function removeNamedImportBinding(
+  line: string,
+  name: string,
+): string | null {
   if (!isImportLine(line) || !line.includes(name)) return null;
 
   let next = line;
@@ -59,7 +62,11 @@ export function removeNamedImportBinding(line: string, name: string): string | n
 }
 
 /** Drop a full default/namespace import line when the binding is unused. */
-export function removeWholeImportLine(line: string, name: string, range: LintRange): boolean {
+export function removeWholeImportLine(
+  line: string,
+  name: string,
+  range: LintRange,
+): boolean {
   if (!isImportLine(line)) return false;
   const trimmed = line.trim();
   const defaultRe = new RegExp(`^import\\s+${name}\\s+from\\s`);
@@ -136,7 +143,9 @@ async function fixPass(cwd: string): Promise<string[]> {
       continue;
     }
     const lines = text.split("\n");
-    const sorted = [...fileDiags].sort((a, b) => b.range.start.line - a.range.start.line);
+    const sorted = [...fileDiags].sort((a, b) =>
+      b.range.start.line - a.range.start.line
+    );
     let changed = false;
     for (const diag of sorted) {
       const action = applyFix(lines, diag);

@@ -39,27 +39,26 @@ Shared rules: [_shared/harness.md](../_shared/harness.md).
    and any ADRs implied by the objectives.
 2. **Search** — `src/` for modules, commands, and tests related to the
    objectives.
-3. **Fill sections** below in any order, then sanity-check that
-   ACs ↔ Test Scenarios ↔ Build Tasks ↔ Spec Updates are mutually consistent.
+3. **Fill sections** below in any order, then sanity-check that ACs ↔ Test
+   Scenarios ↔ Build Tasks ↔ Spec Updates are mutually consistent.
 
 Preserve preparing content (Description, Current State, Objectives) unless
 factually wrong; if you change them, explain why in **Notes**.
 
 ## Sections
 
-| Section                 | Requirement                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **Spec References**     | All draft items resolved; mark verified items `[x]`. If no spec applies, **N/A** with reason in **Notes**.               |
-| **Acceptance Criteria** | 3–7 measurable `N. [ ]` items; do not duplicate test steps; ≥1 covers automated tests when code changes.                 |
-| **Impact Analysis**     | `### Scope` (≥20 chars) and `### Risks and constraints` (≥20 chars).                                                     |
+| Section                 | Requirement                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Spec References**     | All draft items resolved; mark verified items `[x]`. If no spec applies, **N/A** with reason in **Notes**.                                       |
+| **Acceptance Criteria** | 3–7 measurable `N. [ ]` items; do not duplicate test steps; ≥1 covers automated tests when code changes.                                         |
+| **Impact Analysis**     | `### Scope` (≥20 chars) and `### Risks and constraints` (≥20 chars).                                                                             |
 | **Test Scenarios**      | Numbered table rows; ≥1 type `automated`; use `deno task test` (full suite) or `deno task test <path>` (one file); each row runnable as written. |
-| **Build Tasks**         | Ordered `N. [ ]` steps mapping to Impact Analysis Scope; smallest sensible increments.                                   |
-| **Spec Updates**        | One row per doc that will change, or `none` with status `n/a`. Status `pending` for planned edits.                       |
-| **Notes**               | Design decisions, alternatives rejected, open questions, dependencies on other cards.                                    |
-| **Related Cards**       | Update if new links discovered.                                                                                          |
+| **Build Tasks**         | Ordered `N. [ ]` steps mapping to Impact Analysis Scope; smallest sensible increments.                                                           |
+| **Spec Updates**        | One row per doc that will change, or `none` with status `n/a`. Status `pending` for planned edits.                                               |
+| **Notes**               | Design decisions, alternatives rejected, open questions, dependencies on other cards.                                                            |
+| **Related Cards**       | Update if new links discovered.                                                                                                                  |
 
-Acceptance Criteria that mention docs ↔ Spec Updates rows that plan those
-edits.
+Acceptance Criteria that mention docs ↔ Spec Updates rows that plan those edits.
 
 ## Examples
 
@@ -73,23 +72,24 @@ edits.
 
 ```markdown
 3. [ ] `deno task test src/foo_test.ts` passes; new behaviour is covered by at
-   least one automated scenario in Test Scenarios.
+       least one automated scenario in Test Scenarios.
 ```
 
 **Test Scenario row — good:**
 
 ```markdown
-| 1 | automated | `deno task test src/cli/commands/card/advance_test.ts` | All tests pass |
+| 1 | automated | `deno task test src/cli/commands/card/advance_test.ts` | All
+tests pass |
 ```
 
 ## Anti-patterns
 
-| DO NOT | DO INSTEAD |
-| ------ | ---------- |
-| Mark ACs `[x]` | Leave unchecked for **validate-story** |
-| Implement code or edit tests | **build-story** |
-| Edit immutable docs without Spec Updates + Notes | `pending` + `requires user approval` |
-| AC that only restates a command from Test Scenarios | AC = outcome; scenario = how |
+| DO NOT                                              | DO INSTEAD                             |
+| --------------------------------------------------- | -------------------------------------- |
+| Mark ACs `[x]`                                      | Leave unchecked for **validate-story** |
+| Implement code or edit tests                        | **build-story**                        |
+| Edit immutable docs without Spec Updates + Notes    | `pending` + `requires user approval`   |
+| AC that only restates a command from Test Scenarios | AC = outcome; scenario = how           |
 
 ## Before exiting
 

@@ -1,4 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
-card_id="$2"
-printf 'Advance %s: leave finishing\n' "$card_id"
+# Capture commit message for finishing → done (req §13.4). stdout only.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board"
+
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+title=$(grep -m1 '^# ' "${card_dir}/card.md" 2>/dev/null | sed 's/^# //' || true)
+title="${title:-$card_id}"
+
+fallback_message() {
+  printf 'docs(stories): finish %s — %s\n' "$card_id" "$title"
+}
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  fallback_message
+  exit 0
+fi
+
+if ! command -v pi >/dev/null 2>&1; then
+  echo "finishing.commit-message: pi not on PATH" >&2
+  exit 1
+fi
+
+if [ -z "${DEVFLOW_LIGHT_MODEL:-}" ]; then
+  echo "finishing.commit-message: DEVFLOW_LIGHT_MODEL is not set" >&2
+  exit 1
+fi
+
+board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
+skill_dir="${board_dir}/skills/commit-message"
+# shellcheck source=lib/pi-prompt.sh
+source "${board_dir}/scripts/lib/pi-prompt.sh"
+exec pi --skill "$skill_dir" --model "${DEVFLOW_LIGHT_MODEL}" --print \
+  "$(pi_prompt_commit finishing done)"

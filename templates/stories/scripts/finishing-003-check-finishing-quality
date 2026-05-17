@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit finishing: checks introduced in finishing only (verifying exit already gated AC and verification summary).
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+card_md="${card_dir}/card.md"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=building-lib.sh
+source "${script_dir}/building-lib.sh"
+
+fail() {
+  echo "finishing-003: $*" >&2
+  exit 1
+}
+
+section_body() {
+  local heading="$1"
+  awk -v h="$heading" '
+    $0 == "## " h { found=1; next }
+    found && /^## / { exit }
+    found { print }
+  ' "$card_md"
+}
+
+if [ ! -f "$card_md" ]; then
+  fail "missing card.md"
+fi
+
+if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$card_md"; then
+  fail "card.md contains merge conflict markers"
+fi
+
+if grep -qE '_To be completed in (planning|building)\.|_TBD_' "$card_md"; then
+  fail "card.md still contains planning or building placeholders"
+fi
+
+build_notes=$(section_body "Build Notes")
+if printf '%s\n' "$build_notes" | grep -qE '^###[[:space:]]+Finished'; then
+  fail "### Finished is under ## Build Notes; move it to ## Notes (sibling of ### Verification summary)"
+fi
+
+all_notes=$(section_body "Notes")
+if ! printf '%s\n' "$all_notes" | grep -qE '^###[[:space:]]+Finished'; then
+  fail "Notes must include a ### Finished subsection (under ## Notes, not ## Build Notes)"
+fi
+
+updates=$(section_body "Spec Updates")
+notes_all=$(section_body "Notes")
+
+while IFS= read -r line; do
+  [[ "$line" =~ ^\|[[:space:]]*\`([^\`]+)\`[[:space:]]*\| ]] || continue
+  doc_path="${BASH_REMATCH[1]}"
+  status=$(stories_spec_update_status "$line")
+
+  case "$status" in
+    done|n/a) ;;
+    deferred)
+      if ! stories_notes_deferred_justified "$doc_path" "$notes_all"; then
+        fail "Spec Updates marks ${doc_path} as deferred but Notes lack deferred justification"
+      fi
+      ;;
+    pending|pending*)
+      fail "Spec Updates must be completed before done (pending: ${doc_path})"
+      ;;
+    *)
+      fail "Spec Updates row has invalid or empty status: ${status:-<empty>}"
+      ;;
+  esac
+done <<< "$updates"
+
+exit 0

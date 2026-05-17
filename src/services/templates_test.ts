@@ -67,3 +67,23 @@ Deno.test("initBoard with template applies building loop config", async () => {
   );
   await Deno.stat(`${dir}/${boardSkillsDir("stories")}/build-story/SKILL.md`);
 });
+
+Deno.test("copyTemplateScriptsAndSkills copies assets when present", async () => {
+  const { copyTemplateScriptsAndSkills } = await import("./templates.ts");
+
+  const tempRoot = await Deno.makeTempDir();
+  const templateDir = `${tempRoot}/test-template`;
+  await Deno.mkdir(`${templateDir}/scripts`, { recursive: true });
+  await Deno.mkdir(`${templateDir}/skills`, { recursive: true });
+  await Deno.mkdir(`${templateDir}/assets`, { recursive: true });
+  await Deno.writeTextFile(`${templateDir}/assets/test.template.md`, "# Test");
+
+  const repoRoot = await Deno.makeTempDir();
+  await copyTemplateScriptsAndSkills(templateDir, repoRoot, "test-board");
+
+  // Verify assets were copied
+  const assetPath =
+    `${repoRoot}/.devflow/boards/test-board/assets/test.template.md`;
+  const content = await Deno.readTextFile(assetPath);
+  assertEquals(content, "# Test");
+});

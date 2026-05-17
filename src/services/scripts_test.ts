@@ -229,3 +229,38 @@ Deno.test("invokeChildScript adds loop env vars (req §9.11, §18)", async () =>
   assertEquals(result.exitCode, 0);
   assertEquals(result.stdout, "building-002-build-loop:3:5");
 });
+
+Deno.test("buildScriptEnv sets DEVFLOW_CLI (req §6.3, §9.9)", async () => {
+  const dir = await Deno.makeTempDir();
+  const { buildScriptEnv } = await import("./scripts.ts");
+
+  // Case 1: Without ./devflow wrapper
+  const envNoWrapper = buildScriptEnv({
+    repoRoot: dir,
+    boardName: "stories",
+    cardId: "stories-000001",
+    fromPhase: "building",
+    toPhase: "verifying",
+    runDirAbs: `${dir}/run`,
+  });
+
+  // Should contain deno run command with permissions
+  assertEquals(envNoWrapper.DEVFLOW_CLI.includes("deno run"), true);
+  assertEquals(envNoWrapper.DEVFLOW_CLI.includes("--allow-read"), true);
+  assertEquals(envNoWrapper.DEVFLOW_CLI.includes("--allow-write"), true);
+
+  // Case 2: With ./devflow wrapper
+  await Deno.writeTextFile(`${dir}/devflow`, "#!/usr/bin/env bash\n");
+  await Deno.chmod(`${dir}/devflow`, 0o755);
+
+  const envWithWrapper = buildScriptEnv({
+    repoRoot: dir,
+    boardName: "stories",
+    cardId: "stories-000001",
+    fromPhase: "building",
+    toPhase: "verifying",
+    runDirAbs: `${dir}/run`,
+  });
+
+  assertEquals(envWithWrapper.DEVFLOW_CLI, "./devflow");
+});

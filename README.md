@@ -120,6 +120,111 @@ implementation structure.
 
 Advance one card at a time per repository.
 
+## Using Devflow in another repository
+
+Devflow can be run remotely from JSR (the Deno registry) without cloning the
+Devflow repository into your project. This keeps consumer projects lightweight
+while providing access to built-in templates.
+
+### Install and run
+
+**One-off command:**
+
+```bash
+deno run --allow-read --allow-write --allow-run --allow-env \
+  jsr:@devflow/devflow@0.1.0 board init stories preparing planning building verifying finishing done --template stories
+```
+
+**Install globally:**
+
+```bash
+deno install --global --allow-read --allow-write --allow-run --allow-env \
+  --name devflow \
+  jsr:@devflow/devflow@0.1.0
+
+devflow board init stories preparing planning building verifying finishing done --template stories
+```
+
+**Local wrapper (recommended):**
+
+Create a `devflow` wrapper in your repository root:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+exec deno run \
+  --allow-read --allow-write --allow-run --allow-env \
+  jsr:@devflow/devflow@0.1.0 "$@"
+```
+
+Then `chmod +x devflow` and use `./devflow` as usual.
+
+### Required permissions
+
+Devflow needs:
+
+- `--allow-read` — read board state, scripts, and repository files
+- `--allow-write` — update card state and create `.devflow/` structure
+- `--allow-run` — invoke exit scripts and Git commands
+- `--allow-env` — pass environment variables to scripts
+
+### Version pinning
+
+**Exact version (recommended for reproducibility):**
+
+```bash
+jsr:@devflow/devflow@0.1.0
+```
+
+**Compatible updates (accept patch-level changes):**
+
+```bash
+jsr:@devflow/devflow@^0.1.0
+```
+
+### Consumer project requirements
+
+- **Git repository** — Devflow creates commits on phase transitions
+- **Deno installed** — Devflow is a Deno CLI tool
+- **`deno.json` with `test` and `ci` tasks** (if using the `stories` template):
+
+  ```json
+  {
+    "tasks": {
+      "lint": "deno lint",
+      "fmt:check": "deno fmt --check",
+      "test": "deno test --allow-read --allow-write --allow-run --allow-env",
+      "ci": "deno task lint && deno task fmt:check && deno task test"
+    }
+  }
+  ```
+
+### Example setup
+
+```bash
+cd /path/to/your-project
+git init
+
+# Create local wrapper
+cat > devflow << 'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+exec deno run \
+  --allow-read --allow-write --allow-run --allow-env \
+  jsr:@devflow/devflow@0.1.0 "$@"
+EOF
+chmod +x devflow
+
+# Initialize board from template
+./devflow board init stories preparing planning building verifying finishing done --template stories
+
+# Create your first card
+./devflow card create stories "My first story"
+
+# Advance it through phases
+./devflow card advance stories-000001 planning
+```
+
 ## Board script composition
 
 Boards may use **hierarchical script layout** and **phase loop blocks** to

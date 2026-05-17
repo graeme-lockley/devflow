@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit verifying: checks introduced in verifying only (building exit already gated tasks, notes, scenarios, ci).
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+card_md="${card_dir}/card.md"
+
+fail() {
+  echo "verifying-003: $*" >&2
+  exit 1
+}
+
+section_body() {
+  local heading="$1"
+  awk -v h="$heading" '
+    $0 == "## " h { found=1; next }
+    found && /^## / { exit }
+    found { print }
+  ' "$card_md"
+}
+
+if [ ! -f "$card_md" ]; then
+  fail "missing card.md"
+fi
+
+if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$card_md"; then
+  fail "card.md contains merge conflict markers"
+fi
+
+build_notes=$(section_body "Build Notes")
+if printf '%s\n' "$build_notes" | grep -qE '^###[[:space:]]+Verification summary'; then
+  fail "### Verification summary is under ## Build Notes; move it to ## Notes"
+fi
+
+all_notes=$(section_body "Notes")
+if ! printf '%s\n' "$all_notes" | grep -qE '^###[[:space:]]+Verification summary'; then
+  fail "Notes must include a ### Verification summary subsection (under ## Notes, not ## Build Notes)"
+fi
+
+ac=$(section_body "Acceptance Criteria")
+unchecked_ac=$(printf '%s\n' "$ac" | grep -E '^[0-9]+\.[[:space:]]+\[ \] ' || true)
+if [ -n "$unchecked_ac" ]; then
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    fail "Acceptance Criteria must all be checked [x] or waived: ${line}"
+  done <<< "$unchecked_ac"
+fi
+
+if ! printf '%s\n' "$ac" | grep -qE '^[0-9]+\.[[:space:]]+\[x\]'; then
+  fail "Acceptance Criteria must include at least one checked [x] item"
+fi
+
+exit 0

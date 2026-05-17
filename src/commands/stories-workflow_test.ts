@@ -9,15 +9,12 @@ import { loadCardState } from "../domain/card.ts";
 import { validateCommand } from "./validate-cmd.ts";
 
 const STORY_PHASES = [
-  "unplanned",
+  "preparing",
   "planning",
-  "planned",
   "building",
-  "built",
   "verifying",
-  "verified",
   "finishing",
-  "finished",
+  "done",
 ];
 
 async function gitCommitAll(repoRoot: string, message: string): Promise<void> {
@@ -37,7 +34,7 @@ async function gitCommitAll(repoRoot: string, message: string): Promise<void> {
   if (commit.code !== 0) throw new Error("git commit failed");
 }
 
-Deno.test("stories workflow unplanned to planned (req §19)", async () => {
+Deno.test("stories workflow preparing to planning (req §19)", async () => {
   const prevSkip = Deno.env.get("DEVFLOW_SKIP_PI");
   Deno.env.set("DEVFLOW_SKIP_PI", "1");
   try {
@@ -54,14 +51,17 @@ Deno.test("stories workflow unplanned to planned (req §19)", async () => {
       await gitCommitAll(dir, "feat: create card Beneficiary Add");
 
       const beforeCommits = await countCommits(dir);
-      const advance = await advanceCard(cardId, "planned", dir);
+      // Skip structure check since test creates minimal card without pi
+      const advance = await advanceCard(cardId, "planning", dir, {
+        skip: ["preparing-003"],
+      });
       assertEquals(advance.exitCode, 0);
 
       const state = await loadCardState(dir, "stories", cardId);
-      assertEquals(state.phase, "planned");
+      assertEquals(state.phase, "planning");
 
-      const hops = STORY_PHASES.indexOf("planned") -
-        STORY_PHASES.indexOf("unplanned");
+      const hops = STORY_PHASES.indexOf("planning") -
+        STORY_PHASES.indexOf("preparing");
       assertEquals(await countCommits(dir), beforeCommits + hops);
 
       await blockCard(cardId, "Waiting for API contract", dir);
@@ -69,7 +69,7 @@ Deno.test("stories workflow unplanned to planned (req §19)", async () => {
       assertEquals(blockedState.phase, "blocked");
       await unblockCard(cardId, dir);
       const unblockedState = await loadCardState(dir, "stories", cardId);
-      assertEquals(unblockedState.phase, "planned");
+      assertEquals(unblockedState.phase, "planning");
 
       assertEquals(await validateCommand(dir), 0);
     });

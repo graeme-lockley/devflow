@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit preparing: card-only git scope; idempotent when prepare-story made no edits.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+card_md="${card_dir}/card.md"
+repo_root="${repo_root%/}"
+card_dir="${card_dir%/}"
+card_rel="${card_dir#"$repo_root"/}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=building-lib.sh
+source "${script_dir}/building-lib.sh"
+
+if [ "${DEVFLOW_SKIP_PI:-}" = "1" ]; then
+  stories_card_preparing_ready "$card_md" "preparing-003" || exit 1
+  exit 0
+fi
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "preparing-003: not inside a git work tree" >&2
+  exit 1
+fi
+
+porcelain=$(git -C "$repo_root" status --porcelain)
+if [ -z "$porcelain" ]; then
+  if stories_card_preparing_ready "$card_md" "preparing-003"; then
+    echo "preparing-003: card already prepared (no working tree changes; idempotent exit)" >&2
+    exit 0
+  fi
+  echo "preparing-003: expected changes under ${card_rel}/ after prepare-story" >&2
+  echo "preparing-003: or populate preparing sections before advance" >&2
+  exit 1
+fi
+
+card_md_seen=0
+
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+
+  path="${line:3}"
+  if [[ "$path" == *" -> "* ]]; then
+    path="${path##* -> }"
+  fi
+  path="${path#\"}"
+  path="${path%\"}"
+
+  case "$path" in
+    "${card_rel}"/*|"$card_rel")
+      if [ "$path" = "${card_rel}/card.md" ]; then
+        card_md_seen=1
+      fi
+      ;;
+    *)
+      echo "preparing-003: change outside card directory: ${path}" >&2
+      echo "preparing-003: only ${card_rel}/ may change" >&2
+      exit 1
+      ;;
+  esac
+done <<< "$porcelain"
+
+if [ "$card_md_seen" -ne 1 ]; then
+  echo "preparing-003: expected ${card_rel}/card.md to be modified" >&2
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    echo "$line" >&2
+  done <<< "$porcelain"
+  exit 1
+fi
+
+stories_card_preparing_ready "$card_md" "preparing-003" || exit 1
+exit 0

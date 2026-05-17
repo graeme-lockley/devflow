@@ -1,4 +1,21 @@
 {
+  "name": "@devflow/devflow",
+  "version": "0.1.0",
+  "exports": "./main.ts",
+  "license": "MIT",
+  "publish": {
+    "include": [
+      "main.ts",
+      "src/**/*.ts",
+      "templates/**/*",
+      "README.md"
+    ],
+    "exclude": [
+      "**/*_test.ts",
+      ".devflow/**",
+      "docs/**"
+    ]
+  },
   "tasks": {
     "dev": "deno run --watch --allow-read --allow-write --allow-run --allow-env main.ts",
     "devflow": "deno run --allow-read --allow-write --allow-run --allow-env main.ts",

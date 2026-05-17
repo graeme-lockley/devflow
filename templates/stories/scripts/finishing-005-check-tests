@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Exit finishing: run tests and validate-card when docs or source changed in this hop.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
+run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
+devflow_cli="${DEVFLOW_CLI:?DEVFLOW_CLI not set}"
+log_file="${run_dir}/finishing-tests.log"
+
+fail() {
+  echo "finishing-005: $*" >&2
+  exit 1
+}
+
+needs_check=0
+if git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    path="${line:3}"
+    if [[ "$path" == *" -> "* ]]; then
+      path="${path##* -> }"
+    fi
+    path="${path#\"}"
+    path="${path%\"}"
+    case "$path" in
+      docs/*|README.md|src/*|deno.json|deno.lock)
+        needs_check=1
+        break
+        ;;
+    esac
+  done < <(git -C "$repo_root" status --porcelain)
+fi
+
+if [ "$needs_check" -eq 0 ]; then
+  echo "finishing-005: no doc or source changes; skipping deno task test and validate-card" >&2
+  exit 0
+fi
+
+cd "$repo_root"
+
+echo "finishing-005: running deno task test" >&2
+if ! deno task test >"$log_file" 2>&1; then
+  if [ "${DEVFLOW_LOG_LEVEL:-info}" = "verbose" ]; then
+    tail -n 80 "$log_file" >&2
+  else
+    tail -n 30 "$log_file" >&2
+  fi
+  fail "deno task test failed (see ${log_file})"
+fi
+
+echo "finishing-005: running devflow validate-card ${card_id}" >&2
+if ! "$devflow_cli" validate-card "$card_id" >>"$log_file" 2>&1; then
+  fail "devflow validate-card failed (see ${log_file})"
+fi
+
+echo "finishing-005: checks passed" >&2
+exit 0

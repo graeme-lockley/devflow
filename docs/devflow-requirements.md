@@ -347,11 +347,11 @@ Template sources, in precedence order:
 
 ```text
 1. Repository-local: .devflow/templates/<name>/
-2. Built-in templates shipped with Devflow
+2. Built-in templates shipped with Devflow (cached from JSR)
 ```
 
-Template content is copied into the new board's `scripts/` and `skills/`
-directories.
+Template content is copied into the new board's `scripts/`, `skills/`, and
+`assets/` directories (when present in the template).
 
 ### 5.7 Sequence exhaustion
 

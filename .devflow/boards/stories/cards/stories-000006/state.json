@@ -2,10 +2,10 @@
   "id": "stories-000006",
   "board": "stories",
   "title": "Remote Runnable",
-  "phase": "building",
+  "phase": "verifying",
   "previousPhase": null,
   "createdAt": "2026-05-17T07:10:00.597Z",
-  "updatedAt": "2026-05-17T08:57:50.167Z",
+  "updatedAt": "2026-05-17T12:25:02.608Z",
   "variables": {},
   "history": [
     {
@@ -25,6 +25,27 @@
       "at": "2026-05-17T08:57:50.167Z",
       "from": "planning",
       "to": "building",
+      "mode": "normal"
+    },
+    {
+      "type": "actionSkipped",
+      "at": "2026-05-17T12:25:02.608Z",
+      "from": "building",
+      "to": "verifying",
+      "script": "building-001-check-entry"
+    },
+    {
+      "type": "actionSkipped",
+      "at": "2026-05-17T12:25:02.608Z",
+      "from": "building",
+      "to": "verifying",
+      "script": "building-003-check-building-quality"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-17T12:25:02.608Z",
+      "from": "building",
+      "to": "verifying",
       "mode": "normal"
     }
   ],

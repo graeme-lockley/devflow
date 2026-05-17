@@ -1,3 +1,0 @@
-- card.md has a clear title and plan section
-- acceptance criteria are testable
-- scope is bounded for one story card

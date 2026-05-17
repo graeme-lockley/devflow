@@ -54,7 +54,29 @@ export function buildScriptEnv(ctx: ScriptHopContext): Record<string, string> {
     DEVFLOW_RUN_DIR: ctx.runDirAbs,
     DEVFLOW_REPO_ROOT: repoRoot,
     DEVFLOW_LOG_LEVEL: getLogLevel(),
+    DEVFLOW_CLI: resolveDevflowCli(repoRoot),
   };
+}
+
+/**
+ * Resolves DEVFLOW_CLI: ./devflow if present, else deno run command (req §6.3, §9.9).
+ */
+function resolveDevflowCli(repoRoot: string): string {
+  // Local checkout with ./devflow wrapper
+  const localWrapper = `${repoRoot}/devflow`;
+  try {
+    const stat = Deno.statSync(localWrapper);
+    if (stat.isFile && (stat.mode ?? 0) & 0o111) {
+      return "./devflow";
+    }
+  } catch {
+    // Not found or not executable
+  }
+
+  // Generic deno run command (works for JSR or raw main.ts)
+  const mainModule = Deno.mainModule;
+  const permissions = "--allow-read --allow-write --allow-run --allow-env";
+  return `deno run ${permissions} ${mainModule}`;
 }
 
 export async function isExecutable(path: string): Promise<boolean> {

@@ -93,6 +93,7 @@ export async function copyTemplateScriptsAndSkills(
 ): Promise<void> {
   const scriptsSrc = `${templateDir}/scripts`;
   const skillsSrc = `${templateDir}/skills`;
+  const assetsSrc = `${templateDir}/assets`;
 
   if (!(await isDirectory(scriptsSrc))) {
     throw new Error(`template missing scripts/ directory: ${scriptsSrc}`);
@@ -104,6 +105,11 @@ export async function copyTemplateScriptsAndSkills(
   const boardBase = `${repoRoot}/${boardRoot(boardName)}`;
   await copyDirRecursive(scriptsSrc, `${boardBase}/scripts`);
   await copyDirRecursive(skillsSrc, `${boardBase}/skills`);
+
+  // Copy assets/ if present (optional)
+  if (await isDirectory(assetsSrc)) {
+    await copyDirRecursive(assetsSrc, `${boardBase}/assets`);
+  }
 }
 
 export async function templateHasScriptsAndSkills(

@@ -1,11 +1,107 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Lightweight planning quality check on card.md content.
-card_md="${DEVFLOW_CARD_DIR:?}/card.md"
-min_chars=10
-size=$(wc -c < "$card_md" | tr -d ' ')
-if [ "$size" -lt "$min_chars" ]; then
-  echo "card.md too short for planning quality check (${size} < ${min_chars})" >&2
+# Exit planning: mechanical quality checks on card.md after plan-story.
+
+board="${1:?board name required}"
+card_id="${2:?card id required}"
+: "$board" "$card_id"
+
+card_dir="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}"
+card_md="${card_dir}/card.md"
+
+fail() {
+  echo "planning-004: $*" >&2
   exit 1
+}
+
+section_body() {
+  local heading="$1"
+  awk -v h="$heading" '
+    $0 == "## " h { found=1; next }
+    found && /^## / { exit }
+    found { print }
+  ' "$card_md"
+}
+
+if [ ! -f "$card_md" ]; then
+  fail "missing card.md"
 fi
+
+if grep -qE '^(<<<<<<<|=======|>>>>>>>)' "$card_md"; then
+  fail "card.md contains merge conflict markers"
+fi
+
+if grep -q '_To be completed in planning\.' "$card_md"; then
+  fail "planning sections still contain placeholders"
+fi
+
+for heading in \
+  "Impact Analysis" \
+  "Test Scenarios" \
+  "Build Tasks" \
+  "Spec Updates" \
+  "Notes" \
+  "Build Notes" \
+  "Related Cards" \
+  "Attachments"; do
+  grep -q "^## ${heading}$" "$card_md" || fail "missing ## ${heading} section (story.template.md)"
+done
+
+impact=$(section_body "Impact Analysis")
+grep -q '^### Scope$' <<< "$impact" || fail "Impact Analysis missing ### Scope"
+grep -q '^### Risks and constraints$' <<< "$impact" || fail "Impact Analysis missing ### Risks and constraints"
+
+scope_body=$(awk '/^### Scope$/{found=1;next} found && /^### /{exit} found{print}' <<< "$impact")
+scope_chars=$(printf '%s' "$scope_body" | sed '/^[[:space:]]*$/d' | sed '/^_/d' | wc -c | tr -d ' ')
+if [ "${scope_chars:-0}" -lt 20 ]; then
+  fail "### Scope must describe affected modules or behaviour"
+fi
+
+risks_body=$(awk '/^### Risks and constraints$/{found=1;next} found && /^### /{exit} found{print}' <<< "$impact")
+risks_chars=$(printf '%s' "$risks_body" | sed '/^[[:space:]]*$/d' | sed '/^_/d' | wc -c | tr -d ' ')
+if [ "${risks_chars:-0}" -lt 20 ]; then
+  fail "### Risks and constraints must describe risks or constraints"
+fi
+
+scenarios=$(section_body "Test Scenarios")
+# Match numbered data rows. Allow padded cells (e.g. "| 1  |") — plan-story and
+# formatters often align columns; the story template uses a single space ("| 1 |").
+scenario_row_re='^\|[[:space:]]*[0-9]+[[:space:]]*\|'
+scenario_rows=$(printf '%s\n' "$scenarios" | grep -cE "$scenario_row_re" || true)
+if [ "${scenario_rows:-0}" -lt 1 ]; then
+  fail "Test Scenarios must include at least one numbered table row"
+fi
+scenario_type_re='\|[[:space:]]*automated[[:space:]]*\|'
+if ! printf '%s\n' "$scenarios" | grep -qE "$scenario_type_re"; then
+  fail "Test Scenarios must include at least one automated scenario"
+fi
+
+tasks=$(section_body "Build Tasks")
+task_count=$(printf '%s\n' "$tasks" | grep -cE '^[0-9]+\. \[ \] ' || true)
+if [ "${task_count:-0}" -lt 1 ]; then
+  fail "Build Tasks must include at least one unchecked task"
+fi
+if printf '%s\n' "$tasks" | grep -qE '^[0-9]+\. \[ \] _To be completed'; then
+  fail "Build Tasks still contain placeholders"
+fi
+
+updates=$(section_body "Spec Updates")
+# Document rows: first column is a backtick path; allow padded pipes like Test Scenarios.
+spec_update_row_re='^\|[[:space:]]*`[^`]+`[[:space:]]*\|'
+update_rows=$(printf '%s\n' "$updates" | grep -cE "$spec_update_row_re" || true)
+if [ "${update_rows:-0}" -lt 1 ]; then
+  fail "Spec Updates must include at least one document row"
+fi
+
+spec_refs=$(section_body "Spec References")
+if ! printf '%s\n' "$spec_refs" | grep -qE '^- \[x\]'; then
+  fail "Spec References must have at least one completed item ([x])"
+fi
+
+ac=$(section_body "Acceptance Criteria")
+ac_count=$(printf '%s\n' "$ac" | grep -cE '^[0-9]+\.[[:space:]]+\[[ xX]\]' || true)
+if [ "${ac_count:-0}" -lt 1 ]; then
+  fail "Acceptance Criteria must include at least one criterion"
+fi
+
 exit 0

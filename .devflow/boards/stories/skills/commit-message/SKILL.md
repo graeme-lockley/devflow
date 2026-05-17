@@ -21,8 +21,8 @@ Produce **one**
 [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
 message for the current Devflow transition commit.
 
-**Philosophy:** The subject states **what** changed and **why** in one line;
-the body adds context only when the diff needs it. Traceability beats cleverness.
+**Philosophy:** The subject states **what** changed and **why** in one line; the
+body adds context only when the diff needs it. Traceability beats cleverness.
 
 Shared rules: [_shared/harness.md](../_shared/harness.md) (commit section).
 
@@ -80,12 +80,12 @@ Wire advance command to phase scripts per requirements §11.
 
 ## Anti-patterns
 
-| DO NOT | DO INSTEAD |
-| ------ | ---------- |
-| `find` / search for `card.md` by card id | Open `DEVFLOW_CARD_MD` directly |
-| Markdown fences or commentary on stdout | Raw message text only |
-| Run `git commit` or write files | Devflow commits |
-| Vague subject (`update stuff`) | Imperative what + why |
+| DO NOT                                     | DO INSTEAD                            |
+| ------------------------------------------ | ------------------------------------- |
+| `find` / search for `card.md` by card id   | Open `DEVFLOW_CARD_MD` directly       |
+| Markdown fences or commentary on stdout    | Raw message text only                 |
+| Run `git commit` or write files            | Devflow commits                       |
+| Vague subject (`update stuff`)             | Imperative what + why                 |
 | Wrong type for diff (`feat` for card-only) | `docs(stories):` or `chore(stories):` |
 
 ## Before exiting
