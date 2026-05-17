@@ -89,9 +89,9 @@ _Specification and architecture pointers. Use paths and section anchors._
 - [x] `docs/adr/0014-script-composition-and-loops.md` — loop step
       `building/steps/01-pi.sh` already composes via parent; renderer fits the
       same pattern.
-- [ ] `docs/adr/` — new ADR proposed: `0015-pi-deliberation-streaming.md`
-      (board-owned renderer over `pi --mode json`); requires user approval per
-      AGENTS.md before adding.
+- [x] `docs/adr/0015-pi-deliberation-streaming.md` — **approved by user
+      2026-05-17** (board-owned renderer over `pi --mode json`; file to be
+      added during build/finish per build task 9).
 
 ## Acceptance Criteria
 
@@ -274,7 +274,7 @@ Files in scope:
 | ---------------------------------------------- | -------------- | ------ |
 | `docs/devflow-requirements.md`                 | §10.1: add a short note that board scripts invoking `pi-mono` SHOULD surface deliberation in a streamable form (e.g. via `pi --mode json` plus a board-owned renderer) and that any such streamed output follows §16.2 log-level rules; clarify that `*.commit-message` scripts remain on plain text per §13.4. | pending (requires user approval per AGENTS.md) |
 | `docs/architecture.md`                         | No change. Devflow core is unchanged; pi visibility is owned by board scripts and templates, which §5.4 already accommodates. | n/a |
-| `docs/adr/0015-pi-deliberation-streaming.md`   | New ADR: decision to surface pi deliberation via `pi --print --mode json` piped through a board-owned renderer (vs PTY allocation or piping raw text), with consequences (jq dependency, log size, schema drift) and references to §10.1, §16.2, ADR-0007, ADR-0010, ADR-0011, ADR-0014. | pending (requires user approval per AGENTS.md) |
+| `docs/adr/0015-pi-deliberation-streaming.md`   | New ADR: decision to surface pi deliberation via `pi --print --mode json` piped through a board-owned renderer (vs PTY allocation or piping raw text), with consequences (jq dependency, log size, schema drift) and references to §10.1, §16.2, ADR-0007, ADR-0010, ADR-0011, ADR-0014. | **approved by user 2026-05-17** — pending write-up in build/finish |
 | `README.md`                                    | Add a short operator subsection describing pi visibility under Devflow: log-level behaviour, TTY notes, `jq` requirement, and `DEVFLOW_SKIP_PI=1`. | pending |
 
 ## Notes
@@ -309,14 +309,13 @@ _Decisions, questions, blockers, and planning-time design notes._
 - **Commit-message scope.** `*.commit-message` scripts stay on `--mode text`
   because their stdout is the commit message and must be clean (§13.4,
   ADR-0011). Explicitly out of scope for streaming changes.
-- **Immutable docs.** §10.1 edit and the new ADR-0015 require user approval
-  per AGENTS.md. The building phase will prepare a patch but will not commit
-  those files without explicit go-ahead.
-- **Open question for the user.** Are we comfortable adding `jq` as an
-  implicit requirement for the stories board (it is already widely available;
-  the renderer degrades to pass-through if missing)? If not, an alternative
-  is to implement the renderer in Deno and ship it as a tiny script under
-  `scripts/lib/`, trading the `jq` dependency for `deno run` startup cost.
+- **Immutable docs.** ADR-0015 is **approved by the user (2026-05-17)** and may
+  be added during build/finish. The §10.1 edit in `docs/devflow-requirements.md`
+  still requires separate approval per AGENTS.md before commit.
+- **`jq` dependency (decided).** User approved **jq** for the stories-board
+  renderer (`scripts/lib/pi-render.sh`). README documents `jq` under project
+  requirements. If `jq` is missing at runtime, the renderer degrades to
+  pass-through with a single stderr warning (see Risks).
 - **Non-goals.** Changing skill contents, model choice, or adding an embedded
   LLM runtime to Devflow (pi remains external per §10.1).
 

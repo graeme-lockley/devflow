@@ -189,7 +189,17 @@ specification.
 
 ## Requirements
 
-- [Deno](https://docs.deno.com/runtime/) (see [`deno.json`](./deno.json))
+To run Devflow and the **stories** board workflow in this repository:
+
+| Tool                                                             | Required for                                   | Notes                                                                                                                            |
+| ---------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| [Deno](https://docs.deno.com/runtime/)                           | Devflow CLI and tests                          | Version per [`deno.json`](./deno.json)                                                                                           |
+| [Git](https://git-scm.com/)                                      | Transitions (`git add` / `git commit` per hop) | Repository must be a git work tree                                                                                               |
+| [jq](https://jqlang.github.io/jq/)                               | Stories board pi deliberation renderer         | Parses `pi --mode json` events in `scripts/lib/pi-render.sh`; if missing, the renderer falls back to pass-through with a warning |
+| `pi` ([pi-mono](https://github.com/badlogic/pi-mono), on `PATH`) | LLM-driven phase scripts on the stories board  | Optional for CI (`DEVFLOW_SKIP_PI=1`); required for full prepare/plan/build/verify/finish flows                                  |
+
+Other boards may define different script dependencies; the table above reflects
+this repo’s dogfood **stories** board.
 
 ### Deno permissions
 
