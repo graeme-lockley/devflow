@@ -39,6 +39,11 @@ solution is produced.
   tool calls, execution). That experience is **not** carried through when pi is
   launched as a subprocess of a Devflow transition—operators report a "black
   box" wait with poor observability and weak skill-debugging signal.
+- **`pi-render.sh` is implemented** (building in progress) and streams
+  deliberation via `pi --mode json`, but **tool-call lines are still noisy**:
+  `toolcall_delta` events print raw JSON argument fragments on stderr (e.g.
+  `> bash: {"command": "find …"}`) instead of a short human summary. Execution
+  lines (`Executing read…`) are separate from the call preview and add clutter.
 
 ## Objectives
 
@@ -65,6 +70,10 @@ solution is produced.
 6. **Testable contract** — Automated or scripted checks where feasible (e.g.
    transition logs capture pi output; tests for streaming/pipe behaviour) so
    regressions to silent pi runs are caught.
+7. **Readable tool-call lines** — The renderer shows each tool invocation as a
+   single concise line (tool name + primary argument), with the **tool-name
+   prefix in light grey** (e.g. grey `bash:`), not raw streaming JSON and not a
+   leading `>` marker.
 
 ## Spec References
 
@@ -115,6 +124,12 @@ _Specification and architecture pointers. Use paths and section anchors._
        any constraints (TTY, `DEVFLOW_SKIP_PI`, log level).
 7. [ ] `deno task test` passes; any new tests for script streaming or pi output
        paths pass.
+8. [ ] Tool-call rendering: for `bash`, `read`, and other common pi tools, stderr
+       shows a **single** concise preview line per invocation — e.g. grey
+       `bash:` followed by the shell command text, grey `read:` followed by the
+       path — **not** `> bash: {"command": "…"}` or other raw `toolcall_delta`
+       JSON. Redundant `Executing …` lines for the same call are suppressed or
+       folded into the preview (see Notes).
 
 ## Impact Analysis
 
@@ -143,10 +158,16 @@ Files in scope:
   `--print --mode json` and pipes through the renderer.
 - **New renderer:** `.devflow/boards/stories/scripts/lib/pi-render.sh`
   (bash + `jq`). Reads NDJSON events on stdin; emits human lines on stderr
-  (`> bash: …` for tool calls, italic-grey thinking deltas at `verbose`, plain
-  text deltas for assistant output, summary footer with usage); writes the
-  final assistant text to stdout so downstream stdout consumers are unchanged;
-  exits with the upstream pi exit code via `PIPESTATUS`.
+  (concise tool previews — grey `bash:` / `read:` + primary arg, not raw JSON;
+  italic-grey thinking deltas at `verbose`; plain text deltas for assistant
+  output; summary footer with usage); writes the final assistant text to stdout
+  so downstream stdout consumers are unchanged; exits with the upstream pi exit
+  code via `PIPESTATUS`.
+- **Renderer follow-up (in scope, not yet done):** parse `toolcall_end` /
+  accumulated `toolcall_delta` JSON and emit one line per tool, e.g.
+  `bash: find …/stories-000007 …` and `read: …/card.md` (tool-name prefix
+  light grey via existing `$GREY` in `pi-render.sh`). Drop the `>` prefix and
+  do not stream partial JSON deltas to the console.
 - **Templates mirror** (`templates/stories/scripts/`): identical changes plus
   `lib/pi-render.sh` so `board init --template stories` provisions the same
   behaviour.
@@ -205,7 +226,9 @@ Files in scope:
 | # | Type      | Scenario | Expected |
 | - | --------- | -------- | -------- |
 | 1 | automated | `deno task test` (full suite, baseline). | Suite passes; no regressions from script/template changes. |
-| 2 | automated | New bash test `templates/stories/scripts/lib/pi-render_test.sh` (run from `deno task test` via a small wrapper, or executed directly in CI): feed a captured `pi --mode json` event stream (fixture under `templates/stories/scripts/lib/fixtures/pi-events.ndjson`) into `pi-render.sh` with `DEVFLOW_LOG_LEVEL=info` and a fake non-TTY stderr. | Stderr contains a `> bash: ls /tmp` line, an assistant text line, and a final usage/summary line; stdout equals the final assistant text only; exit code 0. |
+| 2 | automated | New bash test `templates/stories/scripts/lib/pi-render_test.sh` (run from `deno task test` via a small wrapper, or executed directly in CI): feed a captured `pi --mode json` event stream (fixture under `templates/stories/scripts/lib/fixtures/pi-events.ndjson`) into `pi-render.sh` with `DEVFLOW_LOG_LEVEL=info` and a fake non-TTY stderr. | Stderr contains a grey `bash:` line with the command text (not raw JSON), an assistant text line, and a final usage/summary line; stdout equals the final assistant text only; exit code 0. |
+| 12 | automated | Extend `pi-render_test.sh` / fixture with multi-tool stream (`bash` + `read`) matching a real advance log. | Stderr shows `bash: <command>` and `read: <path>` (grey tool prefixes); no `{"command":` or `{"path":` fragments; no leading `>`. |
+| 13 | manual | Run `./devflow card advance` on a card that invokes pi with several tool calls. | Tool lines match AC 8 (concise grey `tool:` previews); assistant text still readable. |
 | 3 | automated | Same renderer test with `DEVFLOW_LOG_LEVEL=verbose`. | Stderr additionally contains the thinking text (e.g. `· thinking: …`); stdout unchanged. |
 | 4 | automated | Same renderer test with `DEVFLOW_LOG_LEVEL=summary`. | Stderr is empty (renderer silent); stdout still equals final assistant text; exit code 0. |
 | 5 | automated | Renderer with a fixture whose last line is `{"type":"agent_end"}` preceded by an upstream `exit 2` (simulated by piping fixture then `false`). | Renderer exits non-zero (propagates `PIPESTATUS[0]`); stderr surfaces the failure context. |
@@ -265,6 +288,14 @@ Files in scope:
        and **ask the user** to approve before committing (AGENTS.md immutable
        docs rule). Do not edit those files in the building phase without
        explicit approval.
+10. [ ] Improve `pi-render.sh` tool-call display: buffer `toolcall_delta` JSON
+       per `contentIndex` and render **one line on `toolcall_end`** — grey
+       tool-name prefix (`bash:`, `read:`, …) plus primary argument (`command`,
+       `path`, …). Do **not** print streaming JSON fragments or a leading `>`.
+       Suppress or merge redundant `tool_execution_start` “Executing …” lines
+       when a preview line was already emitted for that tool call.
+11. [ ] Extend `fixtures/pi-events.ndjson` and `pi-render_test.sh` for
+       scenario 12; mirror to live board; run `deno task test`.
 
 ## Spec Updates
 
@@ -318,6 +349,44 @@ _Decisions, questions, blockers, and planning-time design notes._
   pass-through with a single stderr warning (see Risks).
 - **Non-goals.** Changing skill contents, model choice, or adding an embedded
   LLM runtime to Devflow (pi remains external per §10.1).
+
+### Tool-call rendering (approved 2026-05-17)
+
+**Approved by user 2026-05-17** — concise tool preview lines (grey `bash:`,
+`read:`, … + primary argument; no `>` prefix; no streaming JSON; fold redundant
+`Executing …`). Implement via build tasks 10–11.
+
+During a live `card advance` (building), `pi-render.sh` currently streams
+**raw `toolcall_delta` JSON** to stderr. Example **as seen today** (noisy):
+
+```text
+> bash: {"command": "find /Users/…/stories -name \"stories-000007.md\" …"}
+  Executing read...
+> read: {"path": "/Users/…/stories-000007/card.md"}
+  Executing read...
+> bash: {"command": "ls -la …/pi-render.sh …"}
+  Executing bash...
+```
+
+**Desired** (concise; tool-name prefix in **light grey**, same palette as
+existing `$GREY` / ADR-0011 boilerplate):
+
+```text
+bash: find /Users/…/stories -name "stories-000007.md" …
+read: /Users/…/stories-000007/card.md
+bash: ls -la …/pi-render.sh && head -20 …/pi-render.sh
+```
+
+Rules:
+
+| Today | Target |
+| ----- | ------ |
+| `> bash: {"command": "…"}` | `bash: …` (grey `bash:` only) |
+| `> read: {"path": "…"}` | `read: …` (grey `read:` only) |
+| Separate `Executing read…` after preview | Omit or fold into preview (one line per call) |
+| Streaming partial JSON on `toolcall_delta` | Buffer until `toolcall_end`; emit once |
+
+Implementation is **`pi-render.sh` only** (no Devflow core changes).
 
 ## Build Notes
 
@@ -412,6 +481,9 @@ None. Implementation matches the planned approach:
 - ADR and requirements drafts await approval per AGENTS.md
 
 ### Follow-ups
+
+- **Tool-call rendering (tasks 10–11, approved 2026-05-17):** see Notes §
+  Tool-call rendering; remaining UX gap after initial `pi-render.sh` delivery.
 
 **Awaiting user approval** before committing:
 1. `docs/adr/0015-pi-deliberation-streaming.md` (draft in `/tmp/ADR-0015-draft.md`)
