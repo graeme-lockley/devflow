@@ -50,7 +50,7 @@ _allowed_scope_hint() {
     hint="templates/stories/, ${hint}"
   fi
   if [ "${BUILDING_ALLOW_BOARD_INFRA:-0}" = 1 ]; then
-    hint="${board_rel}/board.json, ${board_rel}/scripts/, ${board_rel}/skills/, ${hint}"
+    hint="${board_rel}/board.json, ${board_rel}/scripts/, ${board_rel}/skills/, ${board_rel}/assets/, ${hint}"
   fi
   printf '%s' "$hint"
 }

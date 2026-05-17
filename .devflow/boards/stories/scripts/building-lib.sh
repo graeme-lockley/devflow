@@ -117,7 +117,7 @@ building_collect_allowed_doc_paths() {
 stories_board_infrastructure_in_scope() {
   local card_md="$1"
   grep -qiE \
-    'board\.json|phaseScripts|Stories board|/scripts/|/skills/|building/steps|refactor.*\.devflow/boards' \
+    'board\.json|phaseScripts|Stories board|/scripts/|/skills/|/assets/|building/steps|refactor.*\.devflow/boards' \
     "$card_md"
 }
 
@@ -140,6 +140,7 @@ building_apply_board_infra_scope() {
   fi
   if stories_templates_mirror_in_scope "$card_md"; then
     BUILDING_ALLOW_TEMPLATES_STORIES=1
+    BUILDING_BOARD_REL="${BUILDING_BOARD_REL:-$board_rel}"
   fi
 }
 
@@ -158,12 +159,18 @@ building_path_allowed_for_story() {
       "${BUILDING_BOARD_REL}/board.json") return 0 ;;
       "${BUILDING_BOARD_REL}/scripts/"*) return 0 ;;
       "${BUILDING_BOARD_REL}/skills/"*) return 0 ;;
+      "${BUILDING_BOARD_REL}/assets/"*) return 0 ;;
     esac
   fi
   if [ "${BUILDING_ALLOW_TEMPLATES_STORIES:-0}" = 1 ]; then
     case "$path" in
       templates/stories/*) return 0 ;;
     esac
+    if [ -n "${BUILDING_BOARD_REL:-}" ]; then
+      case "$path" in
+        "${BUILDING_BOARD_REL}/assets/"*) return 0 ;;
+      esac
+    fi
   fi
   local doc
   for doc in "${BUILDING_ALLOWED_DOC_PATHS[@]}"; do

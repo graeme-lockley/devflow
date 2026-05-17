@@ -1,6 +1,6 @@
 ---
 name: build-story
-version: 1.3.0
+version: 1.4.0
 description: >-
   Implements a story card during building — executes Build Tasks, writes code and
   tests, updates Build Notes. Use when exiting building or when Build Tasks
@@ -26,6 +26,16 @@ passing tests, one honest line in **Build Notes**. The harness build loop runs
 automated scenarios between rounds; you focus on tasks and notes.
 
 Shared rules: [_shared/harness.md](../_shared/harness.md).
+
+## Template / dogfood board scope
+
+When the card scopes `templates/stories/` sync, you may edit **both**:
+
+- `templates/stories/**` (portable template shipped via JSR)
+- `.devflow/boards/<board>/scripts/`, `skills/`, `assets/` (dogfood board)
+
+`building-007` allows these paths when the card mentions them. Mirror intentional
+changes into `templates/stories/` when the story requires it.
 
 ## Inputs
 
