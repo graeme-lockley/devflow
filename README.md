@@ -131,16 +131,16 @@ while providing access to built-in templates.
 **One-off command:**
 
 ```bash
-deno run --allow-read --allow-write --allow-run --allow-env \
-  jsr:@kestrel/devflow@0.1.0 board init stories preparing planning building verifying finishing done --template stories
+deno run --allow-read --allow-write --allow-run --allow-env --allow-net=jsr.io \
+  jsr:@kestrel/devflow@0.1.1 board init stories preparing planning building verifying finishing done --template stories
 ```
 
 **Install globally:**
 
 ```bash
-deno install --global --allow-read --allow-write --allow-run --allow-env \
+deno install --global --allow-read --allow-write --allow-run --allow-env --allow-net=jsr.io \
   --name devflow \
-  jsr:@kestrel/devflow@0.1.0
+  jsr:@kestrel/devflow@0.1.1
 
 devflow board init stories preparing planning building verifying finishing done --template stories
 ```
@@ -153,8 +153,8 @@ Create a `devflow` wrapper in your repository root:
 #!/usr/bin/env bash
 set -euo pipefail
 exec deno run \
-  --allow-read --allow-write --allow-run --allow-env \
-  jsr:@kestrel/devflow@0.1.0 "$@"
+  --allow-read --allow-write --allow-run --allow-env --allow-net=jsr.io \
+  jsr:@kestrel/devflow@0.1.1 "$@"
 ```
 
 Then `chmod +x devflow` and use `./devflow` as usual.
@@ -167,19 +167,21 @@ Devflow needs:
 - `--allow-write` — update card state and create `.devflow/` structure
 - `--allow-run` — invoke exit scripts and Git commands
 - `--allow-env` — pass environment variables to scripts
+- `--allow-net=jsr.io` — download built-in templates on first use (JSR installs
+  only ship TypeScript modules until cached)
 
 ### Version pinning
 
 **Exact version (recommended for reproducibility):**
 
 ```bash
-jsr:@kestrel/devflow@0.1.0
+jsr:@kestrel/devflow@0.1.1
 ```
 
 **Compatible updates (accept patch-level changes):**
 
 ```bash
-jsr:@kestrel/devflow@^0.1.0
+jsr:@kestrel/devflow@^0.1.1
 ```
 
 ### Consumer project requirements
@@ -210,8 +212,8 @@ cat > devflow << 'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 exec deno run \
-  --allow-read --allow-write --allow-run --allow-env \
-  jsr:@kestrel/devflow@0.1.0 "$@"
+  --allow-read --allow-write --allow-run --allow-env --allow-net=jsr.io \
+  jsr:@kestrel/devflow@0.1.1 "$@"
 EOF
 chmod +x devflow
 

@@ -1,4 +1,5 @@
 import type { PhaseScriptConfig } from "../domain/board.ts";
+import { ensureJsrBuiltinTemplateDir } from "../infra/jsr-templates.ts";
 import { devflowPackageRoot } from "../infra/package-root.ts";
 import { boardRoot, templatesRoot } from "../infra/paths.ts";
 
@@ -26,9 +27,17 @@ export async function resolveTemplateDir(
     return builtin;
   }
 
-  throw new Error(
-    `template "${templateName}" not found (checked ${templatesRoot()}/${templateName}/ and built-in templates/${templateName}/)`,
-  );
+  try {
+    return await ensureJsrBuiltinTemplateDir(
+      templateName,
+      import.meta.url,
+    );
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `template "${templateName}" not found (checked ${templatesRoot()}/${templateName}/, built-in templates/${templateName}/, and JSR cache: ${detail})`,
+    );
+  }
 }
 
 async function copyDirRecursive(src: string, dest: string): Promise<void> {

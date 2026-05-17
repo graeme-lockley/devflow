@@ -1,6 +1,6 @@
 {
   "name": "@kestrel/devflow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "exports": "./main.ts",
   "license": "MIT",
   "publish": {
@@ -21,7 +21,7 @@
     "devflow": "deno run --allow-read --allow-write --allow-run --allow-env main.ts",
     "lint": "deno lint --ignore=.devflow",
     "fmt:check": "deno fmt --check --ignore=.devflow",
-    "test": "deno test --allow-read --allow-write --allow-run --allow-env",
+    "test": "deno test --allow-read --allow-write --allow-run --allow-env --allow-net=jsr.io",
     "ci": "deno task lint && deno task fmt:check && deno task test"
   },
   "imports": {
