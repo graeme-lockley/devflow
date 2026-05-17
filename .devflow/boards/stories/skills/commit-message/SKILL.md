@@ -52,7 +52,8 @@ Shared rules: [_shared/harness.md](../_shared/harness.md) (commit section).
 
 ## Procedure
 
-1. Read `card.md` in `DEVFLOW_CARD_DIR` for the title and a one-line summary.
+1. Read `DEVFLOW_CARD_MD` (or `${DEVFLOW_CARD_DIR}/card.md`) for the title and a
+   one-line summary. Do not search for the card by id.
 2. From `DEVFLOW_REPO_ROOT`, inspect what will be committed:
    `git status --porcelain`, `git diff`, `git diff --cached`.
 3. Choose **type** and **scope** from the diff.
@@ -81,6 +82,7 @@ Wire advance command to phase scripts per requirements §11.
 
 | DO NOT | DO INSTEAD |
 | ------ | ---------- |
+| `find` / search for `card.md` by card id | Open `DEVFLOW_CARD_MD` directly |
 | Markdown fences or commentary on stdout | Raw message text only |
 | Run `git commit` or write files | Devflow commits |
 | Vague subject (`update stuff`) | Imperative what + why |

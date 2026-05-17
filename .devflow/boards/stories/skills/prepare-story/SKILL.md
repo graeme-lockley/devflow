@@ -86,6 +86,7 @@ templates under `templates/stories/`.
 | Write Impact Analysis, Test Scenarios, or Build Tasks | Leave for **plan-story** |
 | Check `[x]` on ACs or Spec References | Unchecked drafts only |
 | Paste implementation steps into Objectives | Outcomes the user can verify |
+| `find` / search for the card by id | Open `DEVFLOW_CARD_MD` directly |
 | Modify `state.json` or run `git commit` | Harness owns these |
 
 ## Before exiting

@@ -21,11 +21,15 @@ if [ -z "${DEVFLOW_MEDIUM_MODEL:-}" ]; then
   exit 1
 fi
 
-skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/finish-story"
-renderer="${DEVFLOW_BOARD_DIR}/scripts/lib/pi-render.sh"
+board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
+skill_dir="${board_dir}/skills/finish-story"
+renderer="${board_dir}/scripts/lib/pi-render.sh"
+# shellcheck source=lib/pi-prompt.sh
+source "${board_dir}/scripts/lib/pi-prompt.sh"
+prompt="$(pi_prompt_phase finish-story finish)"
 
 set -o pipefail
 pi --skill "$skill_dir" --model "${DEVFLOW_MEDIUM_MODEL}" --print --mode json \
-  "Using the skill finish-story, please finish the story ${card_id}." \
+  "$prompt" \
   | "$renderer"
 exit ${PIPESTATUS[0]}

@@ -7,7 +7,7 @@ card_id="${2:?card id required}"
 
 SCRIPT_ID="building/steps/01-pi"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
-card_md="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}/card.md"
+card_md="${DEVFLOW_CARD_MD:-${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}/card.md}"
 skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/build-story"
 run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
 board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
@@ -35,7 +35,9 @@ if [ -z "${DEVFLOW_MEDIUM_MODEL:-}" ]; then
   exit 1
 fi
 
-prompt="Using the skill build-story, implement ${card_id}."
+# shellcheck source=../../lib/pi-prompt.sh
+source "${lib_dir}/pi-prompt.sh"
+prompt="$(pi_prompt_phase build-story implement)"
 if [ "$round" -gt 1 ] && [ -f "${lib_dir}/building-loop-feedback.sh" ]; then
   # shellcheck source=../../lib/building-loop-feedback.sh
   source "${lib_dir}/building-loop-feedback.sh"
@@ -43,7 +45,7 @@ if [ "$round" -gt 1 ] && [ -f "${lib_dir}/building-loop-feedback.sh" ]; then
   if [ -n "$feedback" ]; then
     prompt="${prompt}
 
-Previous build loop round failed. Read card.md Build Notes, then fix these errors before new work:
+Previous build loop round failed. Read Build Notes in ${card_md}, then fix these errors before new work:
 ---
 ${feedback}
 ---"

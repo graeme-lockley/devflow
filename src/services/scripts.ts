@@ -45,6 +45,8 @@ export function buildScriptEnv(ctx: ScriptHopContext): Record<string, string> {
     DEVFLOW_BOARD_DIR: boardDirAbs,
     DEVFLOW_CARD_ID: ctx.cardId,
     DEVFLOW_CARD_DIR: cardDirAbs,
+    DEVFLOW_CARD_MD: `${cardDirAbs}/card.md`,
+    DEVFLOW_STATE_JSON: `${cardDirAbs}/state.json`,
     DEVFLOW_FROM_PHASE: ctx.fromPhase,
     DEVFLOW_TO_PHASE: ctx.toPhase,
     DEVFLOW_CURRENT_PHASE: ctx.fromPhase,

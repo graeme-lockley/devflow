@@ -15,11 +15,15 @@ if ! command -v pi >/dev/null 2>&1; then
   exit 1
 fi
 
-skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/plan-story"
-renderer="${DEVFLOW_BOARD_DIR}/scripts/lib/pi-render.sh"
+board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
+skill_dir="${board_dir}/skills/plan-story"
+renderer="${board_dir}/scripts/lib/pi-render.sh"
+# shellcheck source=lib/pi-prompt.sh
+source "${board_dir}/scripts/lib/pi-prompt.sh"
+prompt="$(pi_prompt_phase plan-story plan)"
 
 set -o pipefail
 pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print --mode json \
-  "Using the skill plan-story, please plan the story ${card_id}." \
+  "$prompt" \
   | "$renderer"
 exit ${PIPESTATUS[0]}

@@ -18,11 +18,16 @@ Read `state.json` for `title` and phase; never write it.
 
 ## Environment
 
-| Variable            | Use                          |
-| ------------------- | ---------------------------- |
-| `DEVFLOW_CARD_ID`   | Card identifier              |
-| `DEVFLOW_CARD_DIR`  | Absolute path to card folder |
-| `DEVFLOW_REPO_ROOT` | Git root (cwd for code/tests)|
+| Variable              | Use                                      |
+| --------------------- | ---------------------------------------- |
+| `DEVFLOW_CARD_ID`     | Card identifier (e.g. `stories-000007`)  |
+| `DEVFLOW_CARD_DIR`    | Absolute path to card folder             |
+| `DEVFLOW_CARD_MD`     | Absolute path to `card.md` — **read this first** |
+| `DEVFLOW_STATE_JSON`  | Absolute path to `state.json` (read-only)|
+| `DEVFLOW_REPO_ROOT`   | Git root (cwd for code/tests)            |
+
+**Do not search** for the card by name. Open `DEVFLOW_CARD_MD` directly; pi
+prompts and Devflow scripts pass the full path.
 
 Manual run: `./devflow card dir <card-id>` → card directory.
 

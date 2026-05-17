@@ -40,6 +40,24 @@ async function readScript(path: string): Promise<string> {
   return await Deno.readTextFile(path);
 }
 
+Deno.test("pi-prompt.sh exists in both trees", async () => {
+  assertEquals(await fileExists(`${LIVE_BOARD}/lib/pi-prompt.sh`), true);
+  assertEquals(await fileExists(`${TEMPLATE}/lib/pi-prompt.sh`), true);
+});
+
+Deno.test("pi entry scripts pass absolute card paths in prompts", async () => {
+  for (const script of PI_ENTRY_SCRIPTS) {
+    for (const base of [LIVE_BOARD, TEMPLATE]) {
+      const content = await readScript(`${base}/${script}`);
+      assertEquals(
+        content.includes("pi-prompt.sh") || content.includes("Card file:"),
+        true,
+        `${base}/${script} should use pi-prompt.sh or include Card file: in prompt`,
+      );
+    }
+  }
+});
+
 Deno.test("lint-fix.ts and building-loop-feedback.sh exist in both trees", async () => {
   for (const name of ["lib/lint-fix.ts", "lib/building-loop-feedback.sh"]) {
     assertEquals(await fileExists(`${LIVE_BOARD}/${name}`), true);
@@ -126,6 +144,28 @@ Deno.test("pi entry scripts use --mode json and pipe through pi-render.sh in bot
       true,
       `${templatePath} should use pipefail`,
     );
+  }
+});
+
+Deno.test("commit-message scripts that invoke pi pass absolute card paths", async () => {
+  const scripts = [
+    ...COMMIT_MESSAGE_SCRIPTS,
+    "preparing.commit-message",
+    "building.commit-message",
+    "finishing.commit-message",
+  ];
+  for (const script of scripts) {
+    for (const base of [LIVE_BOARD, TEMPLATE]) {
+      const path = `${base}/${script}`;
+      if (!(await fileExists(path))) continue;
+      const content = await readScript(path);
+      if (!content.includes("pi ") && !content.includes("pi-mono")) continue;
+      assertEquals(
+        content.includes("pi-prompt.sh") || content.includes("Card file:"),
+        true,
+        `${path} should use pi-prompt.sh or include card path in prompt`,
+      );
+    }
   }
 });
 

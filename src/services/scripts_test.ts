@@ -48,6 +48,27 @@ Deno.test("listExitScripts filters and sorts (req §9.3)", async () => {
   assertEquals(listed, ["planning-001-a", "planning-002-b"]);
 });
 
+Deno.test("buildScriptEnv includes absolute card file paths", async () => {
+  const dir = await Deno.makeTempDir();
+  const { buildScriptEnv } = await import("./scripts.ts");
+  const env = buildScriptEnv({
+    repoRoot: dir,
+    boardName: "stories",
+    cardId: "stories-000007",
+    fromPhase: "building",
+    toPhase: "verifying",
+    runDirAbs: `${dir}/run`,
+  });
+  assertEquals(
+    env.DEVFLOW_CARD_MD,
+    `${dir}/.devflow/boards/stories/cards/stories-000007/card.md`,
+  );
+  assertEquals(
+    env.DEVFLOW_STATE_JSON,
+    `${dir}/.devflow/boards/stories/cards/stories-000007/state.json`,
+  );
+});
+
 Deno.test("invokeScript honours env and cwd (req §9.9, §18)", async () => {
   const dir = await Deno.makeTempDir();
   const scriptsDir = `${dir}/${boardScriptsDir("stories")}`;

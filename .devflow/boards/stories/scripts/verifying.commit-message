@@ -29,6 +29,9 @@ if [ -z "${DEVFLOW_LIGHT_MODEL:-}" ]; then
   exit 1
 fi
 
-skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/commit-message"
+board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
+skill_dir="${board_dir}/skills/commit-message"
+# shellcheck source=lib/pi-prompt.sh
+source "${board_dir}/scripts/lib/pi-prompt.sh"
 exec pi --skill "$skill_dir" --model "${DEVFLOW_LIGHT_MODEL}" --print \
-  "Using the commit-message skill, write a Conventional Commits message for card ${card_id} transitioning from verifying to finishing. Output only the commit message on stdout."
+  "$(pi_prompt_commit verifying finishing)"
