@@ -327,7 +327,7 @@ devflow_cli="${DEVFLOW_CLI:?DEVFLOW_CLI not set}"
 ## 7. Templates
 
 Built-in templates ship inside the JSR-published Devflow package at
-`templates/<name>/`. After `deno install` or `deno run jsr:@devflow/devflow`,
+`templates/<name>/`. After `deno install` or `deno run jsr:@kestrel/devflow`,
 `import.meta.url` resolves to a local cache directory where
 `devflowPackageRoot()` can read `templates/` on disk.
 

@@ -1,5 +1,5 @@
 {
-  "name": "@devflow/devflow",
+  "name": "@kestrel/devflow",
   "version": "0.1.0",
   "exports": "./main.ts",
   "license": "MIT",

@@ -132,7 +132,7 @@ while providing access to built-in templates.
 
 ```bash
 deno run --allow-read --allow-write --allow-run --allow-env \
-  jsr:@devflow/devflow@0.1.0 board init stories preparing planning building verifying finishing done --template stories
+  jsr:@kestrel/devflow@0.1.0 board init stories preparing planning building verifying finishing done --template stories
 ```
 
 **Install globally:**
@@ -140,7 +140,7 @@ deno run --allow-read --allow-write --allow-run --allow-env \
 ```bash
 deno install --global --allow-read --allow-write --allow-run --allow-env \
   --name devflow \
-  jsr:@devflow/devflow@0.1.0
+  jsr:@kestrel/devflow@0.1.0
 
 devflow board init stories preparing planning building verifying finishing done --template stories
 ```
@@ -154,7 +154,7 @@ Create a `devflow` wrapper in your repository root:
 set -euo pipefail
 exec deno run \
   --allow-read --allow-write --allow-run --allow-env \
-  jsr:@devflow/devflow@0.1.0 "$@"
+  jsr:@kestrel/devflow@0.1.0 "$@"
 ```
 
 Then `chmod +x devflow` and use `./devflow` as usual.
@@ -173,13 +173,13 @@ Devflow needs:
 **Exact version (recommended for reproducibility):**
 
 ```bash
-jsr:@devflow/devflow@0.1.0
+jsr:@kestrel/devflow@0.1.0
 ```
 
 **Compatible updates (accept patch-level changes):**
 
 ```bash
-jsr:@devflow/devflow@^0.1.0
+jsr:@kestrel/devflow@^0.1.0
 ```
 
 ### Consumer project requirements
@@ -211,7 +211,7 @@ cat > devflow << 'EOF'
 set -euo pipefail
 exec deno run \
   --allow-read --allow-write --allow-run --allow-env \
-  jsr:@devflow/devflow@0.1.0 "$@"
+  jsr:@kestrel/devflow@0.1.0 "$@"
 EOF
 chmod +x devflow
 

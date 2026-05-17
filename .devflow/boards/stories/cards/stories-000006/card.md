@@ -187,7 +187,7 @@ _Specification and architecture pointers. Use paths and section anchors._
   card plans the packaging change but actual publish is an operator action.
   Tests rely on `deno publish --dry-run`, which does not require auth.
 - **Pinning vs floating versions.** README will recommend exact pins
-  (`jsr:@scope/devflow@x.y.z`) for reproducibility; `^x.y.z` only when the
+  (`jsr:@kestrel/devflow@x.y.z`) for reproducibility; `^x.y.z` only when the
   consumer accepts patch-level drift.
 - **Generic template drift.** `templates/stories/` will lag behind the dogfood
   board after this card unless we add a sync check; out of scope here, called
@@ -287,7 +287,7 @@ Rationale:
 #!/usr/bin/env bash
 exec deno run \
   --allow-read --allow-write --allow-run --allow-env \
-  jsr:@<scope>/devflow@<version> "$@"
+  jsr:@kestrel/devflow@<version> "$@"
 ```
 
 ### Discussion summary (strategy)
