@@ -18,11 +18,5 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Lint
-        run: deno lint --ignore=.devflow
-
-      - name: Format check
-        run: deno fmt --check --ignore=.devflow
-
-      - name: Test
+      - name: CI Lint and Test
         run: deno task test
