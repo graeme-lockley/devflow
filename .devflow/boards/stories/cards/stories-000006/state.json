@@ -2,16 +2,23 @@
   "id": "stories-000006",
   "board": "stories",
   "title": "Remote Runnable",
-  "phase": "preparing",
+  "phase": "planning",
   "previousPhase": null,
   "createdAt": "2026-05-17T07:10:00.597Z",
-  "updatedAt": "2026-05-17T07:10:00.597Z",
+  "updatedAt": "2026-05-17T08:55:13.515Z",
   "variables": {},
   "history": [
     {
       "type": "created",
       "at": "2026-05-17T07:10:00.597Z",
       "phase": "preparing"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-17T08:55:13.515Z",
+      "from": "preparing",
+      "to": "planning",
+      "mode": "normal"
     }
   ],
   "blocked": null
