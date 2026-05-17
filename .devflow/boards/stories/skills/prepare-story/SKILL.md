@@ -1,9 +1,10 @@
 ---
 name: prepare-story
-version: 1.4.0
+version: 1.5.0
 description: >-
-  Fill preparing-phase sections of a story card.md from StoryDetail and repo
-  context.
+  Fills preparing-phase sections of card.md from StoryDetail and repo context.
+  Use when exiting preparing, when StoryDetail is provided, or when card.md still
+  has preparing placeholders.
 outputs:
   - card.md with preparing sections complete per story.template.md
 allowed-tools:
@@ -18,14 +19,11 @@ forbids:
 
 # Prepare Story
 
-Populate the **preparing** sections of `card.md` for one story card.
+**Philosophy:** The card is the contract. Preparing captures **user intent** and
+**repo truth** — not the implementation plan. Leave planning and building
+placeholders untouched.
 
-**Template:** [story.template.md](../../assets/story.template.md) — keep every
-`##` heading and `<!-- phase-gate -->` comment.
-
-**Harness contract:** Devflow owns phase transitions, locks, history, exit-script
-gates, and commits. You only read context and write `card.md`. Do not run
-`git commit`, `devflow card advance`, or modify `state.json`.
+Shared rules: [_shared/harness.md](../_shared/harness.md).
 
 ## Inputs
 
@@ -33,16 +31,6 @@ gates, and commits. You only read context and write `card.md`. Do not run
 | --------------- | -------- | ------------------------------------ |
 | **Card ID**     | yes      | e.g. `stories-000001`                |
 | **StoryDetail** | yes      | Goal prose (prompt, ticket, or user) |
-
-## Environment
-
-| Variable            | Use                          |
-| ------------------- | ---------------------------- |
-| `DEVFLOW_CARD_ID`   | Card identifier              |
-| `DEVFLOW_CARD_DIR`  | Absolute path to card folder |
-| `DEVFLOW_REPO_ROOT` | Git root                     |
-
-Manual run: `./devflow card dir <card-id>` → card directory.
 
 ## Procedure
 
@@ -57,9 +45,7 @@ Manual run: `./devflow card dir <card-id>` → card directory.
    [story.template.md](../../assets/story.template.md). Fill preparing sections
    only. Preserve good user edits unless StoryDetail overrides. Leave
    `_To be completed in planning._` and `_To be completed in building._`
-   placeholders untouched.
-
-Read `state.json`; never modify it.
+   untouched.
 
 ## Sections
 
@@ -77,9 +63,41 @@ Read `state.json`; never modify it.
 All criteria and references stay unchecked at this phase. Prefer automated
 checks for code changes; do not duplicate planning detail.
 
+## Examples
+
+**Current State — thin (avoid):**
+
+```markdown
+The CLI needs work.
+```
+
+**Current State — good:**
+
+```markdown
+`./devflow card advance` exists in `src/cli/commands/card/advance.ts` but does
+not run exit scripts yet (`docs/devflow-requirements.md` §11). No board
+templates under `templates/stories/`.
+```
+
+## Anti-patterns
+
+| DO NOT | DO INSTEAD |
+| ------ | ---------- |
+| Write Impact Analysis, Test Scenarios, or Build Tasks | Leave for **plan-story** |
+| Check `[x]` on ACs or Spec References | Unchecked drafts only |
+| Paste implementation steps into Objectives | Outcomes the user can verify |
+| Modify `state.json` or run `git commit` | Harness owns these |
+
+## Before exiting
+
+- [ ] Title matches `state.json`
+- [ ] Current State cites real paths; Objectives are outcomes not tasks
+- [ ] Spec References and ACs are unchecked and trace to Objectives
+- [ ] Planning/building placeholders still present where required
+
 ## Out of scope
 
-- `state.json` (phase, history, variables) — owned by Devflow
-- Impact Analysis, Test Scenarios, Build Tasks, Spec Updates — owned by **plan-story**
-- Build Notes — owned by **build-story**
-- Implementation, tests, doc edits, commits, `git push`
+- `state.json` — owned by Devflow
+- Impact Analysis, Test Scenarios, Build Tasks, Spec Updates — **plan-story**
+- Build Notes — **build-story**
+- Implementation, tests, doc edits, commits

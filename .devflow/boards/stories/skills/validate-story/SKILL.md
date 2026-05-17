@@ -1,9 +1,10 @@
 ---
 name: validate-story
-version: 1.2.0
+version: 1.3.0
 description: >-
-  Verify a Devflow story card during verifying — run Test Scenarios, mark
-  Acceptance Criteria, record evidence and verification summary.
+  Verifies a story card during verifying — runs Test Scenarios, marks Acceptance
+  Criteria, records evidence and verification summary. Use when exiting
+  verifying or when scenarios lack pass/fail results.
 outputs:
   - Executed Test Scenarios with recorded results
   - Acceptance Criteria checkboxes updated to [x] or documented waivers
@@ -20,29 +21,17 @@ forbids:
 
 # Validate Story
 
-Run every **Test Scenario**, confirm each **Acceptance Criterion**, and record
-evidence in `card.md`.
+**Philosophy:** Evidence beats assertion. Run what the plan says, record
+**pass/fail**, check only ACs you can defend. Small in-scope fixes are allowed;
+large gaps mean send the card back to **building**.
 
-**Template:** [story.template.md](../../assets/story.template.md).
-
-**Harness contract:** Devflow owns phase transitions, locks, history, exit-script
-gates, and commits. You only run scenarios, edit `card.md`, and may make
-**small in-scope fixes** for failing tests. Larger gaps require the operator
-to send the card back to **building** with `devflow card advance`.
+Shared rules: [_shared/harness.md](../_shared/harness.md).
 
 ## Inputs
 
 | Input       | Required | Notes                 |
 | ----------- | -------- | --------------------- |
 | **Card ID** | yes      | e.g. `stories-000001` |
-
-## Environment
-
-| Variable            | Use                          |
-| ------------------- | ---------------------------- |
-| `DEVFLOW_CARD_ID`   | Card identifier              |
-| `DEVFLOW_CARD_DIR`  | Absolute path to card folder |
-| `DEVFLOW_REPO_ROOT` | Git root (cwd for tests)     |
 
 ## Procedure
 
@@ -63,8 +52,7 @@ to send the card back to **building** with `devflow card advance`.
 5. **Repository checks (when story affects layout or invariants)** —
    `deno task test`, `./devflow validate-card <card-id>`, `./devflow validate`.
    Failures → fix or exit 1.
-6. **Verification summary** — add this subsection under **`## Notes`** (never
-   under **Build Notes**):
+6. **Verification summary** — add under **`## Notes`** (never **Build Notes**):
 
 ```markdown
 ### Verification summary (YYYY-MM-DD)
@@ -74,11 +62,28 @@ to send the card back to **building** with `devflow card advance`.
 - Commands: deno task test (pass), devflow validate-card (pass)
 ```
 
+Do not proceed to exit until the summary exists in the right section.
+
+## Anti-patterns
+
+| DO NOT | DO INSTEAD |
+| ------ | ---------- |
+| Put `### Verification summary` under **Build Notes** | Under **`## Notes`** only |
+| Mark AC `[x]` without evidence | Run scenario or document waiver |
+| Large refactors or new features | Exit 1; operator returns to **building** |
+| Close Spec Updates / finalize README | **finish-story** |
+| Waive without operator approval | Leave `[ ]` and note gap |
+
+## Before exiting
+
+- [ ] Every Test Scenario row has `pass` or `fail` (and excerpt on fail)
+- [ ] Every satisfied AC is `[x]` or `_(waived: …)_` with approval
+- [ ] `### Verification summary (YYYY-MM-DD)` is under **`## Notes`**
+- [ ] `deno task test` / `validate-card` run when layout or invariants changed
+
 ## Out of scope
 
-- Spec Updates close-out — owned by **finish-story** (unless an AC explicitly
-  required docs during build and they were already updated)
-- README finalization — owned by **finish-story**
-- Marking Build Tasks — owned by **build-story**
-- Large refactors or new features — send the card back to **building**
-- `state.json`, commits, phase advance — owned by Devflow
+- Spec Updates close-out — **finish-story**
+- README finalization — **finish-story**
+- Marking Build Tasks — **build-story**
+- `state.json`, commits, phase advance — Devflow
