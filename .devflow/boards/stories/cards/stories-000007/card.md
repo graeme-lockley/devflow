@@ -106,25 +106,25 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] Given a TTY and default `info` logging, when I `./devflow card advance`
+1. [x] Given a TTY and default `info` logging, when I `./devflow card advance`
        through a phase that runs pi (e.g. preparing → planning with pi on PATH),
        I see **live** pi deliberation/output (thinking, tools, or equivalent
        progress) on the console-not only a start banner and a long silent wait.
-2. [ ] Given `--verbose`, pi visibility is at least as informative as in `info`
+2. [x] Given `--verbose`, pi visibility is at least as informative as in `info`
        (no regression vs objective 1).
-3. [ ] Given `--summary`, behaviour matches ADR-0011: no script/pi stream to
+3. [x] Given `--summary`, behaviour matches ADR-0011: no script/pi stream to
        console; transition still succeeds and output remains in `logs/` under the
        card.
-4. [ ] Given `DEVFLOW_SKIP_PI=1`, pi is not invoked and existing skip messages
+4. [x] Given `DEVFLOW_SKIP_PI=1`, pi is not invoked and existing skip messages
        still apply; `deno task test` / CI paths remain green.
-5. [ ] All stories-board pi entry scripts (preparing, planning, building loop,
+5. [x] All stories-board pi entry scripts (preparing, planning, building loop,
        verifying, finishing, and phase commit-message scripts where applicable)
        use the agreed invocation pattern; `templates/stories/` stays in sync.
-6. [ ] Operator documentation states how to get pi visibility under Devflow and
+6. [x] Operator documentation states how to get pi visibility under Devflow and
        any constraints (TTY, `DEVFLOW_SKIP_PI`, log level).
-7. [ ] `deno task test` passes; any new tests for script streaming or pi output
+7. [x] `deno task test` passes; any new tests for script streaming or pi output
        paths pass.
-8. [ ] Tool-call rendering: for `bash`, `read`, and other common pi tools, stderr
+8. [x] Tool-call rendering: for `bash`, `read`, and other common pi tools, stderr
        shows a **single** concise preview line per invocation - e.g. grey
        `bash:` followed by the shell command text, grey `read:` followed by the
        path - **not** `> bash: {"command": "..."}` or other raw `toolcall_delta`
@@ -310,9 +310,13 @@ Files in scope:
 
 ## Notes
 
-<!-- phase-gate: optional; ongoing across phases -->
-<!-- verifying: add ### Verification summary (YYYY-MM-DD) here - not under Build Notes -->
-<!-- finishing: add ### Finished (YYYY-MM-DD) here - sibling of Verification summary, not under Build Notes -->
+### Verification summary (2026-05-17)
+
+- Test scenarios: 12/13 pass, 1 skipped (scenario 6: jq degradation not testable when jq is present)
+- Acceptance criteria: 8/8 checked
+- Commands: `deno task test` (249 passed, 0 failed), `./devflow validate-card stories-000007` (pass), `./devflow validate` (pass)
+- Evidence: Advance logs show concise tool-call format (`bash: ...`, `read: ...`) with no raw JSON or `>` prefixes; pi-render.sh implements `silent=true` for summary mode; all 5 pi entry scripts use `--mode json` with pipefail; README.md documents pi visibility requirements
+
 
 _Decisions, questions, blockers, and planning-time design notes._
 
