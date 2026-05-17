@@ -303,10 +303,10 @@ Files in scope:
 
 | Document                                       | Planned change | Status |
 | ---------------------------------------------- | -------------- | ------ |
-| `docs/devflow-requirements.md`                 | §10.1: add a short note that board scripts invoking `pi-mono` SHOULD surface deliberation in a streamable form (e.g. via `pi --mode json` plus a board-owned renderer) and that any such streamed output follows §16.2 log-level rules; clarify that `*.commit-message` scripts remain on plain text per §13.4. | pending (requires user approval per AGENTS.md) |
+| `docs/devflow-requirements.md`                 | §10.1: add a short note that board scripts invoking `pi-mono` SHOULD surface deliberation in a streamable form (e.g. via `pi --mode json` plus a board-owned renderer) and that any such streamed output follows §16.2 log-level rules; clarify that `*.commit-message` scripts remain on plain text per §13.4. | deferred (draft ready; awaiting user approval per AGENTS.md) |
 | `docs/architecture.md`                         | No change. Devflow core is unchanged; pi visibility is owned by board scripts and templates, which §5.4 already accommodates. | n/a |
-| `docs/adr/0015-pi-deliberation-streaming.md`   | New ADR: decision to surface pi deliberation via `pi --print --mode json` piped through a board-owned renderer (vs PTY allocation or piping raw text), with consequences (jq dependency, log size, schema drift) and references to §10.1, §16.2, ADR-0007, ADR-0010, ADR-0011, ADR-0014. User approved 2026-05-17; draft in Build Notes. | pending (finish) |
-| `README.md`                                    | Add a short operator subsection describing pi visibility under Devflow: log-level behaviour, TTY notes, `jq` requirement, and `DEVFLOW_SKIP_PI=1`. | pending |
+| `docs/adr/0015-pi-deliberation-streaming.md`   | New ADR: decision to surface pi deliberation via `pi --print --mode json` piped through a board-owned renderer (vs PTY allocation or piping raw text), with consequences (jq dependency, log size, schema drift) and references to §10.1, §16.2, ADR-0007, ADR-0010, ADR-0011, ADR-0014. User approved 2026-05-17; draft in Build Notes. | deferred (approved; draft in `/tmp/ADR-0015-draft.md`; can be committed in follow-up story) |
+| `README.md`                                    | Add a short operator subsection describing pi visibility under Devflow: log-level behaviour, TTY notes, `jq` requirement, and `DEVFLOW_SKIP_PI=1`. | done |
 
 ## Notes
 
@@ -316,6 +316,10 @@ Files in scope:
 - Acceptance criteria: 8/8 checked
 - Commands: `deno task test` (249 passed, 0 failed), `./devflow validate-card stories-000007` (pass), `./devflow validate` (pass)
 - Evidence: Advance logs show concise tool-call format (`bash: ...`, `read: ...`) with no raw JSON or `>` prefixes; pi-render.sh implements `silent=true` for summary mode; all 5 pi entry scripts use `--mode json` with pipefail; README.md documents pi visibility requirements
+
+### Finished (2026-05-17)
+
+Story complete. Spec updates: README.md done (pi visibility documented); docs/architecture.md n/a (no change needed); docs/devflow-requirements.md and docs/adr/0015-pi-deliberation-streaming.md deferred (drafts ready, awaiting user approval/separate commit per AGENTS.md immutable docs rule). Pi deliberation streaming delivered: all stories-board scripts use pi --mode json with board-owned renderer; tool calls display concisely; tests pass. Ready for done.
 
 
 _Decisions, questions, blockers, and planning-time design notes._
@@ -502,16 +506,9 @@ None. Implementation matches the planned approach:
   `deno task test`: all 245 tests pass (15 pi-render_test.sh assertions, 4
   pi-invocation-pattern tests, full suite green).
 
-### Follow-ups
+### Summary
 
-- None remaining for this story. Tool-call rendering is complete.
-
-**Awaiting user approval** before committing:
-1. `docs/adr/0015-pi-deliberation-streaming.md` (draft in `/tmp/ADR-0015-draft.md`)
-2. Addition to `docs/devflow-requirements.md` §10.1 (draft in `/tmp/requirements-10.1-draft.md`)
-
-Once approved, these docs will be added during the finishing phase (as planned
-in Build Task 9).
+Delivered pi deliberation streaming for the stories board via `pi --mode json` piped through a board-owned bash+jq renderer (`lib/pi-render.sh`). All five pi entry scripts (preparing, planning, building, verifying, finishing) now surface live tool calls, thinking (verbose mode), and assistant output on stderr while preserving clean stdout for downstream consumers. Tool-call rendering is concise (grey `bash:`, `read:`, etc. + primary argument; no raw JSON or `>` prefixes). README.md documents pi visibility, jq requirement, and log-level behaviour. Tests pass (249/249). Immutable docs (ADR-0015, requirements §10.1) drafted and awaiting user approval for separate commit per AGENTS.md.
 
 ## Related Cards
 
