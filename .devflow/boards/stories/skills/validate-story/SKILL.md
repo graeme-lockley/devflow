@@ -1,10 +1,10 @@
 ---
 name: validate-story
-version: 1.3.0
+version: 1.4.0
 description: >-
   Verifies a story card during verifying — runs Test Scenarios, marks Acceptance
-  Criteria, records evidence and verification summary. Use when exiting
-  verifying or when scenarios lack pass/fail results.
+  Criteria, records evidence and verification summary under ## Notes only. Use
+  when exiting verifying or when scenarios lack pass/fail results.
 outputs:
   - Executed Test Scenarios with recorded results
   - Acceptance Criteria checkboxes updated to [x] or documented waivers
@@ -26,6 +26,21 @@ forbids:
 large gaps mean send the card back to **building**.
 
 Shared rules: [_shared/harness.md](../_shared/harness.md).
+
+## Read this first — `card.md` section map
+
+Open `DEVFLOW_CARD_MD` and locate headings in this order:
+
+| `##` section            | Your work in verifying phase                                      |
+| ----------------------- | ----------------------------------------------------------------- |
+| **Test Scenarios**      | Record `pass` / `fail` on each row                                  |
+| **Acceptance Criteria** | Mark satisfied items `[x]` (or waived with approval)              |
+| **Notes**               | Add **`### Verification summary (YYYY-MM-DD)`** here only           |
+| **Build Notes**         | Read-only for context — **never** add Verification summary here   |
+
+`### Verification summary` is a **sibling of planning bullets** under `## Notes`,
+and must appear **above** the `## Build Notes` heading — not at EOF, not inside
+Build Notes.
 
 ## Inputs
 
@@ -52,7 +67,7 @@ Shared rules: [_shared/harness.md](../_shared/harness.md).
 5. **Repository checks (when story affects layout or invariants)** —
    `deno task test`, `./devflow validate-card <card-id>`, `./devflow validate`.
    Failures → fix or exit 1.
-6. **Verification summary** — add under **`## Notes`** (never **Build Notes**):
+6. **Verification summary** — insert under **`## Notes`** (see [placement](#verification-summary-placement)):
 
 ```markdown
 ### Verification summary (YYYY-MM-DD)
@@ -62,12 +77,48 @@ Shared rules: [_shared/harness.md](../_shared/harness.md).
 - Commands: deno task test (pass), devflow validate-card (pass)
 ```
 
-Do not proceed to exit until the summary exists in the right section.
+7. **Self-check** — re-read `card.md` from the top: confirm
+   `### Verification summary` appears only between `## Notes` and
+   `## Build Notes`. If it is under Build Notes or after Build Notes, move it
+   before exiting.
+
+Do not proceed until the summary is in the right section (`verifying-003` will
+fail the transition otherwise).
+
+### Verification summary placement
+
+1. Find the line `## Notes` in `DEVFLOW_CARD_MD`.
+2. Find the line `## Build Notes` (comes later in the file).
+3. Insert the new `### Verification summary` subsection **after** the last
+   content that belongs under Notes and **before** `## Build Notes`.
+4. Typical placement: after planning bullets / open questions, as the last
+   subsection under Notes — **not** appended after the long Build Notes block.
+
+**Wrong (exit gate fails):**
+
+```markdown
+## Build Notes
+...
+### Verification summary (2026-05-17)
+```
+
+**Right:**
+
+```markdown
+## Notes
+...
+### Verification summary (2026-05-17)
+- Test scenarios: …
+
+## Build Notes
+...
+```
 
 ## Anti-patterns
 
 | DO NOT | DO INSTEAD |
 | ------ | ---------- |
+| Append summary at **end of file** after Build Notes | Insert under **Notes**, before `## Build Notes` |
 | Put `### Verification summary` under **Build Notes** | Under **`## Notes`** only |
 | Mark AC `[x]` without evidence | Run scenario or document waiver |
 | Large refactors or new features | Exit 1; operator returns to **building** |
@@ -78,7 +129,8 @@ Do not proceed to exit until the summary exists in the right section.
 
 - [ ] Every Test Scenario row has `pass` or `fail` (and excerpt on fail)
 - [ ] Every satisfied AC is `[x]` or `_(waived: …)_` with approval
-- [ ] `### Verification summary (YYYY-MM-DD)` is under **`## Notes`**
+- [ ] `### Verification summary (YYYY-MM-DD)` is under **`## Notes`**, above **`## Build Notes`**
+- [ ] Build Notes section contains **no** `### Verification summary` heading
 - [ ] `deno task test` / `validate-card` run when layout or invariants changed
 
 ## Out of scope
