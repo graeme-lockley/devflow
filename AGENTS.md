@@ -72,5 +72,5 @@ Only create commits when explicitly requested.
 - **Architecture:** [`docs/architecture.md`](docs/architecture.md)
 - **Decisions:** [`docs/adr/README.md`](docs/adr/README.md)
 - **CLI entry:** [`main.ts`](main.ts), implementation under [`src/`](src/)
-- **Run tests:** `deno test`
+- **Run tests:** `deno task test`
 - **Run CLI:** `./devflow`

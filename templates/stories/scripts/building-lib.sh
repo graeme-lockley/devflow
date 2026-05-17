@@ -175,14 +175,6 @@ building_foreach_porcelain_path() {
   done < <(git -C "$repo_root" status --porcelain)
 }
 
-# Match deno.json "test" / "ci" task permissions.
-BUILDING_DENO_TEST_FLAGS=(
-  --allow-read
-  --allow-write
-  --allow-run
-  --allow-env
-)
-
 building_section_body() {
   local card_md="$1"
   local heading="$2"
@@ -268,31 +260,37 @@ building_collect_scenario_commands() {
     [[ "$line" =~ \|[[:space:]]*automated[[:space:]]*\| ]] || continue
     while IFS= read -r cmd; do
       [ -n "$cmd" ] && _scenario_cmds_add "$cmd"
-    done < <(printf '%s\n' "$line" | grep -oE '`deno test[^`]*`' | tr -d '`')
+    done < <(printf '%s\n' "$line" | grep -oE '`deno task test[^`]*|`deno test[^`]*`' | tr -d '`')
     while IFS= read -r path; do
       [ -n "$path" ] || continue
-      deno_cmd="deno test ${path}"
+      deno_cmd="deno task test ${path}"
       _scenario_cmds_add "$deno_cmd"
     done < <(printf '%s\n' "$line" | grep -oE '`src/[^`]+\.ts`' | tr -d '`')
   done <<< "$scenarios"
 }
 
-# Run one `deno test …` scenario with repo test permissions.
-building_run_deno_test_cmd() {
+# Run one `deno task test …` scenario (deno.json "test" task supplies permissions).
+# Legacy card.md commands starting with `deno test` are normalized the same way.
+building_run_test_cmd() {
   local cmd="$1"
-  if [[ "$cmd" != deno\ test* ]]; then
-    echo "building: expected command to start with 'deno test': ${cmd}" >&2
+  local rest=""
+  if [[ "$cmd" == deno\ task\ test* ]]; then
+    if [[ "$cmd" == deno\ task\ test\ * ]]; then
+      rest="${cmd#deno task test }"
+    fi
+  elif [[ "$cmd" == deno\ test* ]]; then
+    if [[ "$cmd" == deno\ test\ * ]]; then
+      rest="${cmd#deno test }"
+    fi
+  else
+    echo "building: expected command to start with 'deno task test': ${cmd}" >&2
     return 1
   fi
-  local rest=""
-  if [[ "$cmd" == deno\ test\ * ]]; then
-    rest="${cmd#deno test }"
-  fi
   if [ -z "$rest" ]; then
-    deno test "${BUILDING_DENO_TEST_FLAGS[@]}"
+    deno task test
   else
     # shellcheck disable=SC2086
-    deno test "${BUILDING_DENO_TEST_FLAGS[@]}" $rest
+    deno task test $rest
   fi
 }
 
@@ -306,7 +304,7 @@ building_run_scenario_tests() {
   building_collect_scenario_commands "$card_md"
 
   if [ "${#BUILDING_SCENARIO_COMMANDS[@]}" -eq 0 ]; then
-    echo "building: no automated Test Scenarios with deno test commands found" >&2
+    echo "building: no automated Test Scenarios with deno task test commands found" >&2
     return 1
   fi
 
@@ -334,13 +332,13 @@ building_run_scenario_tests() {
     if [ -n "$log_file" ]; then
       {
         echo "--- scenario: ${cmd} ---"
-        building_run_deno_test_cmd "$cmd"
+        building_run_test_cmd "$cmd"
       } >>"$log_file" 2>&1 || {
         BUILDING_SCENARIO_FAILURE_CMD="$cmd"
         echo "--- scenario failed: ${cmd} ---" >>"$log_file"
         return 1
       }
-    elif ! building_run_deno_test_cmd "$cmd"; then
+    elif ! building_run_test_cmd "$cmd"; then
       BUILDING_SCENARIO_FAILURE_CMD="$cmd"
       return 1
     fi

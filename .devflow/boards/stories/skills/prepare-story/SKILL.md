@@ -1,140 +1,85 @@
 ---
 name: prepare-story
-version: 1.2.0
+version: 1.4.0
 description: >-
-  Prepares a Devflow story card in the preparing phase using the canonical story
-  template: description, objectives, draft acceptance criteria, and spec references.
-  Use when a new card needs content or when advancing out of preparing.
+  Fill preparing-phase sections of a story card.md from StoryDetail and repo
+  context.
 outputs:
-  - Updated card.md with preparing-phase sections per story template
+  - card.md with preparing sections complete per story.template.md
 allowed-tools:
   - read
   - write
   - edit
   - bash
 forbids:
+  - git commit
   - git push
 ---
 
-# Prepare a Story
+# Prepare Story
 
-Populates **preparing** content for a story card from a short description and
-full repository context (`README.md`, `docs/`, `src/`). Uses the canonical
-[story template](../../assets/story.template.md).
+Populate the **preparing** sections of `card.md` for one story card.
 
-This skill does **not** produce Impact Analysis, Build Tasks, or
-implementation—use **plan-story**, **build-story**, **validate-story**, and
-**finish-story** for later phases.
+**Template:** [story.template.md](../../assets/story.template.md) — keep every
+`##` heading and `<!-- phase-gate -->` comment.
 
-## When this skill runs
-
-| Trigger           | Context                                           |
-| ----------------- | ------------------------------------------------- |
-| Manual / agent    | New card or card in `preparing` needs `card.md`   |
-| Board exit script | Leaving **preparing** → **planning** (when wired) |
-
-Phases: `preparing` → `planning` → `building` → `verifying` → `finishing` →
-`done`.
-
-## Canonical template
-
-**[`.devflow/boards/stories/assets/story.template.md`](../../assets/story.template.md)**
-
-Populate only sections whose gates allow **preparing** or **exit preparing**.
-Leave later-phase sections in place with template placeholders where the skill
-does not have enough input yet.
+**Harness contract:** Devflow owns phase transitions, locks, history, exit-script
+gates, and commits. You only read context and write `card.md`. Do not run
+`git commit`, `devflow card advance`, or modify `state.json`.
 
 ## Inputs
 
-- **Card ID** (required): e.g. `stories-000001`
-- **StoryDetail** (required): What the story should achieve (prose from user or
-  ticket)
+| Input           | Required | Notes                                |
+| --------------- | -------- | ------------------------------------ |
+| **Card ID**     | yes      | e.g. `stories-000001`                |
+| **StoryDetail** | yes      | Goal prose (prompt, ticket, or user) |
+
+## Environment
+
+| Variable            | Use                          |
+| ------------------- | ---------------------------- |
+| `DEVFLOW_CARD_ID`   | Card identifier              |
+| `DEVFLOW_CARD_DIR`  | Absolute path to card folder |
+| `DEVFLOW_REPO_ROOT` | Git root                     |
+
+Manual run: `./devflow card dir <card-id>` → card directory.
 
 ## Procedure
 
-### 1. Locate the card
+1. **Resolve** — `state.json` and `card.md` must exist; read `title` from
+   `state.json`.
+2. **Context** — `README.md`; skim `docs/devflow-requirements.md` and
+   `docs/architecture.md`; search `src/` for modules, commands, and tests
+   related to StoryDetail.
+3. **Idempotent** — If preparing content already satisfies the
+   [Sections](#sections) table, make no edits and exit **0**.
+4. **Write `card.md`** — Start from
+   [story.template.md](../../assets/story.template.md). Fill preparing sections
+   only. Preserve good user edits unless StoryDetail overrides. Leave
+   `_To be completed in planning._` and `_To be completed in building._`
+   placeholders untouched.
 
-```bash
-./devflow card dir <card-id>
-```
+Read `state.json`; never modify it.
 
-- Directory must exist; else exit 1.
-- `state.json` must exist; else exit 1.
-- Read `title` from `state.json` and any existing `card.md`.
+## Sections
 
-### 2. Gather context
+| Section                 | Content                                                            |
+| ----------------------- | ------------------------------------------------------------------ |
+| `# {title}`             | Matches `state.json` `title`                                       |
+| Lead paragraph          | User story: "As a … I want … so that …"                            |
+| **Current State**       | Factual as-is; cite paths (`src/…`, `docs/…`); ≥40 chars            |
+| **Objectives**          | 3–10 numbered outcomes; ≥40 chars                                  |
+| **Spec References**     | ≥1 unchecked item `- [ ] <path> — <section>`                       |
+| **Acceptance Criteria** | 3–10 lines `N. [ ]`, testable, traced to objectives                |
+| **Related Cards**       | Links or `_None._`                                                 |
+| **Notes**               | Open questions, assumptions                                        |
 
-- Read `README.md`, skim `docs/devflow-requirements.md` and
-  `docs/architecture.md` for areas related to StoryDetail.
-- Search `src/` for relevant commands, modules, and tests.
-- Read existing `card.md` if present—preserve user edits unless StoryDetail
-  overrides. If preparing sections already meet the quality bar, make **no
-  changes** and exit 0 (`preparing-003` allows an idempotent exit when the
-  working tree is clean).
+All criteria and references stay unchecked at this phase. Prefer automated
+checks for code changes; do not duplicate planning detail.
 
-### 3. Populate preparing sections
+## Out of scope
 
-Substitute or write content following the template structure:
-
-| Section                 | Content                                                              |
-| ----------------------- | -------------------------------------------------------------------- |
-| `{title}`               | From `state.json` `title`                                            |
-| `{description}`         | Beneficiary perspective: “As a … I want … so that …”                 |
-| `{current_state}`       | Factual as-is behaviour with file paths                              |
-| `{objectives}`          | Numbered list of outcomes (3–5)                                      |
-| `{acceptance_criteria}` | Numbered `[ ]` items, measurable; reference tests/docs at high level |
-| **Spec References**     | Draft bullets with best-guess doc paths/sections                     |
-| **Related Cards**       | Links or `_None._`                                                   |
-| **Notes**               | Open questions from analysis                                         |
-
-**Leave for later skills** (keep template headings and placeholder guidance):
-
-- Impact Analysis → _To be completed in planning._
-- Test Scenarios → table header only or one stub row
-- Build Tasks → _To be completed in planning._
-- Spec Updates → table with `pending` / `none` as appropriate
-- Build Notes → _To be completed in building._
-- Attachments → template placeholder
-
-### 4. Acceptance criteria rules
-
-Generate 3–10 criteria that:
-
-- Trace to objectives
-- Include `deno test` when code changes are expected
-- Mention `README.md` / `docs/` only when contracts change—details go in **Spec
-  Updates** at planning time
-- Stay `[ ]` unchecked
-
-### 5. Write card.md
-
-Write the full file so all template **headings** exist (mechanical scripts and
-later skills depend on structure). Do not omit sections.
-
-### 6. Validation
-
-- Title line matches `state.json`
-- Preparing sections have real content (no lorem ipsum)
-- Acceptance criteria are testable
-- Spec References has at least one bullet or explicit N/A in Notes
-- Exit 0 on success
-
-## Quality gate (exit preparing)
-
-- [ ] Card ID valid; `card.md` and `state.json` exist
-- [ ] All template section headings present per
-      [story.template.md](../../assets/story.template.md)
-- [ ] Objectives and acceptance criteria align
-- [ ] No merge conflict markers in `card.md`
-- [ ] Planning-phase sections not falsely marked complete
-
-## pi invocation
-
-```bash
-pi --skill .devflow/boards/stories/skills/prepare-story \
-  --model "${DEVFLOW_HEAVY_MODEL}" --print \
-  "Using the skill prepare-story, please prepare the story <card-id>."
-```
-
-`preparing-002-do-create-story` requires `pi` on `PATH` (exit 1 if missing). Set
-`DEVFLOW_SKIP_PI=1` only for CI or local testing without pi.
+- `state.json` (phase, history, variables) — owned by Devflow
+- Impact Analysis, Test Scenarios, Build Tasks, Spec Updates — owned by **plan-story**
+- Build Notes — owned by **build-story**
+- Implementation, tests, doc edits, commits, `git push`

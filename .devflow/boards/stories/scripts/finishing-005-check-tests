@@ -37,20 +37,20 @@ if git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 if [ "$needs_check" -eq 0 ]; then
-  echo "finishing-005: no doc or source changes; skipping deno test and validate-card" >&2
+  echo "finishing-005: no doc or source changes; skipping deno task test and validate-card" >&2
   exit 0
 fi
 
 cd "$repo_root"
 
-echo "finishing-005: running deno test" >&2
-if ! deno test --allow-read --allow-write --allow-run --allow-env >"$log_file" 2>&1; then
+echo "finishing-005: running deno task test" >&2
+if ! deno task test >"$log_file" 2>&1; then
   if [ "${DEVFLOW_LOG_LEVEL:-info}" = "verbose" ]; then
     tail -n 80 "$log_file" >&2
   else
     tail -n 30 "$log_file" >&2
   fi
-  fail "deno test failed (see ${log_file})"
+  fail "deno task test failed (see ${log_file})"
 fi
 
 if [ ! -x "$devflow_bin" ]; then

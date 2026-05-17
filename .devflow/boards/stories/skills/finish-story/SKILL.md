@@ -1,12 +1,12 @@
 ---
 name: finish-story
-version: 1.1.1
+version: 1.2.0
 description: >-
-  Completes the finishing phase of a Devflow story card by finalizing Spec Updates,
-  README changes, Build Notes, and release readiness. Use when advancing out of
-  finishing to done or when closing a verified story.
+  Complete the finishing phase of a story card — close Spec Updates, finalize
+  Build Notes, add Finished marker.
 outputs:
   - Completed Spec Updates table and finalized Build Notes
+  - "### Finished subsection under Notes"
   - Repository docs and README aligned with delivered behaviour
 allowed-tools:
   - read
@@ -14,183 +14,85 @@ allowed-tools:
   - edit
   - bash
 forbids:
+  - git commit
   - git push
 ---
 
-# Finish a Story
+# Finish Story
 
-Executes **finishing** for a story card: close documentation loops, finalize
-**Build Notes**, and confirm the repository matches the delivered work described
-in [story.template.md](../../assets/story.template.md).
+Close documentation loops, finalize **Build Notes**, and add the **Finished**
+marker so the card can move to `done`.
 
-Verification is already done—this skill does **not** re-run the full test suite
-unless a doc edit could affect behaviour or a Spec Update row requires it.
+**Template:** [story.template.md](../../assets/story.template.md).
 
-## When this skill runs
-
-| Trigger           | Context                                               |
-| ----------------- | ----------------------------------------------------- |
-| Board exit script | Leaving **finishing** → **done**                      |
-| Manual            | User requests story closure for a card in `finishing` |
-
-## Canonical template
-
-**[`.devflow/boards/stories/assets/story.template.md`](../../assets/story.template.md)**
-
-Satisfy gates marked **finishing** or **exit finishing**.
-
-## `card.md` section map (do not mix)
-
-The [story template](../../assets/story.template.md) fixes **top-level `##`
-headings and order**. Subsections belong only under the parent shown:
-
-| `##` section     | Phase gates (template)                | What belongs here                                                                                                   |
-| ---------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **Notes**        | optional; verify + finish subsections | Planning decisions, blockers, **`### Verification summary`** (from validate-story), **`### Finished`** (this skill) |
-| **Build Notes**  | started building; complete finishing  | As-built implementation log, file lists, deviations—**not** `### Finished`                                          |
-| **Spec Updates** | planned planning; completed finishing | Table only; close statuses here                                                                                     |
-
-**Critical:** `### Finished (YYYY-MM-DD)` must be added under **`## Notes`**, as
-a sibling of `### Verification summary`—typically immediately after the
-verification summary bullets and **before** any older planning-decision
-subsections, or at the end of **`## Notes`** but still **above**
-`## Build Notes`.
-
-Never place `### Finished` under **`## Build Notes`**. The exit script
-`finishing-003-check-finishing-quality` reads only the **Notes** section body.
-
-## Environment
-
-On finishing → done: `DEVFLOW_FROM_PHASE=finishing`, `DEVFLOW_TO_PHASE=done`.
+**Harness contract:** Devflow owns phase transitions, locks, history, exit-script
+gates, and commits. Verification has already passed. You only edit `card.md`,
+`README.md`, and (with explicit approval) immutable docs. Do not re-run the
+full test suite unless your edits could affect behaviour.
 
 ## Inputs
 
-- **Card ID** (required): e.g. `stories-000001`
+| Input       | Required | Notes                 |
+| ----------- | -------- | --------------------- |
+| **Card ID** | yes      | e.g. `stories-000001` |
 
-## Preconditions
+## Environment
 
-1. `state.json` → `phase` is `finishing`.
-2. All **Acceptance Criteria** are `[x]` (or waived with inline reason).
-3. **Test Scenarios** were executed in **validate-story** (see Verification
-   summary in **Notes**).
+| Variable            | Use                          |
+| ------------------- | ---------------------------- |
+| `DEVFLOW_CARD_ID`   | Card identifier              |
+| `DEVFLOW_CARD_DIR`  | Absolute path to card folder |
+| `DEVFLOW_REPO_ROOT` | Git root                     |
 
-If verifying is incomplete, exit 1.
+## card.md section map (do not mix)
+
+| `##` section     | Belongs here                                                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Notes**        | Planning decisions, blockers, **`### Verification summary`** (from validate-story), **`### Finished`** (this skill)           |
+| **Build Notes**  | As-built implementation log, file lists, deviations — **never** `### Finished` or `### Verification summary`                  |
+| **Spec Updates** | Table only; close statuses here                                                                                               |
+
+`### Finished (YYYY-MM-DD)` is a **sibling of `### Verification summary`** under
+`## Notes` — typically immediately after it, always above `## Build Notes`.
 
 ## Procedure
 
-### 1. Reconcile delivered work with the card
+1. **Reconcile** — read `card.md`, **Build Notes**, and the **Verification
+   summary**; run `git status` / `git diff` from `DEVFLOW_REPO_ROOT` to see
+   what will ship.
+2. **Close Spec Updates** — for each row:
 
-1. Read `card.md`, **Build Notes**, and **Verification summary** in **Notes**.
-2. `git diff` / `git status` from `DEVFLOW_REPO_ROOT`—understand what will ship
-   in the transition commit.
-3. Confirm **Build Tasks** remain all `[x]`.
+| Planned                    | Action                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| `none` / N/A               | Set status `n/a`                                                                      |
+| `pending`, doc edit clear  | Apply the change; set status `done`; add a one-line pointer to **Build Notes**        |
+| Pending but blocked        | Set status `deferred` with reason in **Notes**, or `blocked` if user approval missing |
 
-### 2. Complete Spec Updates
-
-For each row in **Spec Updates**:
-
-| Planned                    | Action                                                                                                                                                         |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `none` / N/A               | Set status `n/a`                                                                                                                                               |
-| `pending`                  | Apply the documented change, or mark `deferred` with reason in **Notes** (mention the document path or e.g. `requirements` for `docs/devflow-requirements.md`) |
-| Doc requires user approval | Do not edit; set status `blocked` and exit 1 unless approval is in **Notes**                                                                                   |
-
-**Immutable docs** (`docs/devflow-requirements.md`, `docs/architecture.md`,
-`docs/adr/*`):
-
-- Edit only when **Spec Updates** planned a change **and** user approval is
-  recorded.
-- Otherwise set status `n/a` and explain in **Notes** that behaviour matches
-  existing spec.
-
-**Allowed without special approval:** `README.md` when part of the agreed story.
-
-After each edit:
-
-- Set **Status** to `done` (or `n/a`).
-- Add a one-line pointer in **Build Notes** (file + section).
-
-### 3. Finalize Build Notes
-
-Ensure **Build Notes** includes:
-
-- Summary of shipped behaviour
-- List of key files changed
-- Deviations from Impact Analysis (if any)
-- Known follow-ups deferred to future cards (link in **Related Cards**)
-
-### 4. README and operator docs
-
-Update `README.md` when:
-
-- CLI commands, flags, or output contracts changed
-- New commands or synonyms were added
-- Setup or test instructions changed
-
-Keep table style consistent with existing README CLI section.
-
-### 5. Card hygiene
-
-- Remove stale `_placeholder_` or `_TBD_` text from any section (including
-  `_To be completed in building._` under **Build Notes**).
-- **Attachments**: list evidence files under `files/` with one-line
-  descriptions.
-- Add **`### Finished`** only under **`## Notes`** (not Build Notes):
+3. **Immutable docs** — `docs/devflow-requirements.md`,
+   `docs/architecture.md`, `docs/adr/*` change **only** when **Spec Updates**
+   planned the change and user approval is recorded; otherwise set status
+   `n/a` with a one-line note that behaviour matches existing spec.
+4. **README** — update when CLI commands, flags, output contracts, or setup
+   instructions changed; match existing table style.
+5. **Finalize Build Notes** — summary of shipped behaviour, key files changed,
+   deviations from Impact Analysis, and deferred follow-ups (link in
+   **Related Cards**). Remove `_To be completed in building._` if still
+   present.
+6. **Add Finished marker** under `## Notes`:
 
 ```markdown
-## Notes
-
-### Verification summary (YYYY-MM-DD)
-
-…existing verification content from validate-story…
-
 ### Finished (YYYY-MM-DD)
 
 Story complete. Spec updates: <summary>. Ready for done.
 ```
 
-Do **not** append `### Finished` after `### As-built summary` or
-`### Spec Updates status` in **Build Notes**—those are the wrong section.
+7. **Sanity** — run `deno task test` and `./devflow validate-card <card-id>` only
+   when this hop touched docs or `src/`.
 
-### 6. Final checks
+## Out of scope
 
-```bash
-deno test
-./devflow validate-card <card-id>
-```
-
-Run only when Spec Updates touched docs or README; skip if purely cosmetic and
-verification summary is recent.
-
-Exit 0 when the card is archivable and docs match the repo.
-
-## Quality gate (exit finishing)
-
-Enforced by `finishing-003`, `finishing-004`, and `finishing-005` when this hop
-changed docs (see [`scripts/README.md`](../scripts/README.md): no duplicate
-gates from verifying or building).
-
-- [ ] Every Spec Updates row has status `done`, `n/a`, or justified `deferred`
-      in Notes
-- [ ] Build Notes finalized (as-built + doc pointers)
-- [ ] `### Finished` subsection in Notes
-- [ ] README updated if user-facing CLI changed
-- [ ] Immutable spec docs respected (AGENTS.md)
-- [ ] Card.md sections match [story.template.md](../../assets/story.template.md)
-      headings
-- [ ] `deno test` passes only when this finishing hop changed docs or `src/`
-      (`finishing-005`)
-
-## pi-mono invocation
-
-```bash
-pi-mono run --skill .devflow/boards/stories/skills/finish-story \
-  --board stories --card <card-id>
-```
-
-Non-zero exit fails the transition.
-
-## After this skill
-
-The board transition creates the **finishing → done** commit. The card remains
-in the repo as a historical record; do not delete `card.md`.
+- Re-running full verification (already done in **validate-story**)
+- Adding `### Finished` under **Build Notes** (wrong section — exit gate reads
+  only the **Notes** body)
+- New product features or refactors
+- `state.json`, commits, phase advance — owned by Devflow

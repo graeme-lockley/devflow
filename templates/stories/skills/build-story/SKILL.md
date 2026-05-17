@@ -1,10 +1,9 @@
 ---
 name: build-story
-version: 1.0.0
+version: 1.1.0
 description: >-
-  Implements a Devflow story card during the building phase by executing Build Tasks,
-  updating Build Notes, and producing code and tests. Use when advancing out of
-  building or when implementation work is requested for a card in building phase.
+  Implement a Devflow story card during building — execute Build Tasks, write
+  code and tests, update Build Notes.
 outputs:
   - Production code and tests per Build Tasks
   - Updated card.md Build Tasks checkboxes and Build Notes
@@ -14,154 +13,79 @@ allowed-tools:
   - edit
   - bash
 forbids:
+  - git commit
   - git push
 ---
 
-# Build a Story
+# Build Story
 
-Executes **building** for a story card: implement the plan in `card.md`, check
-off **Build Tasks**, and maintain **Build Notes**. Follow the canonical
-[story template](../../assets/story.template.md).
+Implement the plan in `card.md`: write code, write tests, check off **Build
+Tasks**, and maintain **Build Notes**.
 
-The agent writes and modifies production code and tests. It does **not** advance
-the card phase or create git commits—Devflow transition scripts commit after
-exit scripts succeed.
+**Template:** [story.template.md](../../assets/story.template.md).
 
-## When this skill runs
-
-| Trigger           | Context                                               |
-| ----------------- | ----------------------------------------------------- |
-| Board exit script | Leaving **building** → **verifying**                  |
-| Manual            | User requests implementation for a card in `building` |
-
-## Canonical template
-
-**[`.devflow/boards/stories/assets/story.template.md`](../../assets/story.template.md)**
-
-Satisfy gates marked **building** or **exit building**. Planning sections must
-already be complete.
-
-## Environment
-
-Same `DEVFLOW_*` variables as other transition skills (§18). On the building →
-verifying hop, `DEVFLOW_FROM_PHASE=building` and `DEVFLOW_TO_PHASE=verifying`.
-
-```bash
-./devflow card dir <card-id>
-cd "$(git rev-parse --show-toplevel)"   # repo root for deno test / devflow
-```
+**Harness contract:** Devflow owns phase transitions, locks, history,
+exit-script gates, commits, and the build loop (`deno fmt`, `deno task ci`,
+automated **Test Scenarios** run between rounds). You only read the card, write
+code/tests, and update `card.md`.
 
 ## Inputs
 
-- **Card ID** (required): e.g. `stories-000001`
+| Input       | Required | Notes                 |
+| ----------- | -------- | --------------------- |
+| **Card ID** | yes      | e.g. `stories-000001` |
 
-## Preconditions
+## Environment
 
-1. `state.json` → `phase` is `building`.
-2. `card.md` has complete **planning** sections: Spec References, Acceptance
-   Criteria, Impact Analysis, Test Scenarios, Build Tasks, Spec Updates
-   (planned).
-3. **Build Tasks** lists at least one unchecked item.
-
-If planning is incomplete, stop with exit 1 and run **plan-story** first.
+| Variable            | Use                            |
+| ------------------- | ------------------------------ |
+| `DEVFLOW_CARD_ID`   | Card identifier                |
+| `DEVFLOW_CARD_DIR`  | Absolute path to card folder   |
+| `DEVFLOW_REPO_ROOT` | Git root (cwd for code, tests) |
 
 ## Procedure
 
-### 1. Re-read the plan
+1. **Re-read the plan** — `card.md`: Spec References, Impact Analysis, Test
+   Scenarios, Build Tasks. Open every doc, file, and test cited.
+2. **Implement in task order** — for each `[ ]` Build Task:
+   1. Match existing naming, types, error handling, and module boundaries
+      (`docs/architecture.md`).
+   2. Prefer extending existing functions over parallel implementations.
+   3. Add or update tests as listed in **Test Scenarios**.
+   4. Mark the task `[x]` and append a one-line entry to **Build Notes** with
+      file paths and any deviation from Impact Analysis.
+3. **CLI output (when relevant)** — diagnostics → stderr, ANSI only on TTY (req
+   §16.2); machine-parseable stdout has no ANSI (req §16.4); read ADR-0011
+   before changing log helpers.
+4. **Tests pass** — run `deno task test` from repo root; do not mark a
+   test-related task `[x]` until it passes.
+5. **Stop when** all Build Tasks are `[x]` and **Build Notes** describe the
+   as-built work. Leave **Acceptance Criteria** unchecked.
 
-1. Read `card.md` and [story.template.md](../../assets/story.template.md).
-2. Read every document in **Spec References** that applies.
-3. Read files listed in **Impact Analysis** → Scope.
-4. Open related test files (`*_test.ts`) for patterns to follow.
+If blocked, document in **Notes** and stop; the operator decides next steps.
 
-### 2. Implement in task order
+## Build Notes
 
-For each **Build Task** in order:
+Required content by exit:
 
-1. Implement the step in `src/` (or docs only if the task explicitly says so).
-2. Match existing naming, types, error handling, and module boundaries
-   (`docs/architecture.md`).
-3. Prefer extending existing functions over new parallel implementations.
-4. Mark the task `[x]` in `card.md` immediately when done.
-5. Append to **Build Notes**: what changed, file paths, and any deviation from
-   Impact Analysis. Remove the `_To be completed in building._` placeholder line
-   once real notes exist.
+- Summary of shipped behaviour
+- Key files changed
+- Deviations from Impact Analysis (if any)
+- Follow-ups deferred to later cards (link via **Related Cards**)
 
-### 3. Tests
+Remove `_To be completed in building._` once real notes exist.
 
-- Add or update `deno test` coverage as specified in **Test Scenarios**
-  (automated rows).
-- Run `deno test` from repository root before marking test-related build tasks
-  complete.
-- If a test fails, fix implementation or update **Notes** with a blocker—do not
-  mark tasks complete falsely.
+## Immutable docs
 
-### 4. CLI and output contracts
+Default: defer edits to `docs/devflow-requirements.md`, `docs/architecture.md`,
+and `docs/adr/*` to **finish-story**. Update `README.md` only when CLI surface
+changes and an AC explicitly asks for it; otherwise leave docs to finishing.
 
-When touching CLI output:
+## Out of scope
 
-- Human-oriented diagnostics → stderr, ANSI only when TTY (req §16.2,
-  `src/services/console.ts`).
-- Machine-parseable commands → stdout without ANSI (req §16.4).
-- Read ADR-0011 and requirements §16 before changing log helpers.
-
-### 5. Spec and README changes during build
-
-- **Default:** defer edits to `docs/devflow-requirements.md`,
-  `docs/architecture.md`, and ADRs to **finish-story** unless the user has
-  approved spec changes.
-- If an AC requires doc updates and user approval exists, make minimal aligned
-  edits and set **Spec Updates** status to `done` for those rows.
-- Update `README.md` when CLI surface or usage visible to users changes.
-
-### 6. Do not check acceptance criteria yet
-
-Leave **Acceptance Criteria** as `[ ]`—**validate-story** verifies and checks
-them.
-
-### 7. Notes and blockers
-
-- Record surprises, debt, and follow-ups in **Notes**.
-- If blocked, document in **Notes**; do not advance phase. User may
-  `devflow card block`.
-
-### 8. Validation before exit
-
-| Check       | Requirement                                                |
-| ----------- | ---------------------------------------------------------- |
-| Build Tasks | All `[x]`                                                  |
-| Build Notes | Summarizes as-built work                                   |
-| `deno test` | Passes (full suite unless Impact Analysis scopes a subset) |
-| Code        | Matches objectives and Impact Analysis                     |
-| Scope       | No drive-by refactors unrelated to the story               |
-
-Exit 0 only when implementation is ready for verification.
-
-## Quality gate (exit building)
-
-- [ ] Every Build Task is `[x]`, or left `[ ]` only when blocked on user/spec
-      approval (immutable docs) and documented in **Build Notes**
-- [ ] Build Notes describe what was built and any deviations
-- [ ] `deno test` passes
-- [ ] No unrelated files changed
-- [ ] Acceptance criteria still unchecked (verification owns them)
-- [ ] Spec Updates statuses are `pending` or `done`—not left blank
-- [ ] Immutable spec docs unchanged without explicit user approval
-
-## pi invocation
-
-Invoked by `building/steps/01-pi.sh` inside the **building** loop (`board.json`
-`phaseScripts.building.loop`) when leaving **building**:
-
-```bash
-pi --skill .devflow/boards/stories/skills/build-story \
-  --model "${DEVFLOW_MEDIUM_MODEL}" --print \
-  "Using the skill build-story, implement <card-id>."
-```
-
-Set `DEVFLOW_SKIP_PI=1` to skip pi (runs quality gates only). Each loop round
-runs `deno fmt` (same scope as `fmt:check`), then `deno task ci`, then automated
-**Test Scenarios** from the card (with the same `deno test` permissions as
-`deno.json`). `maxRounds` is set in `board.json`
-(`phaseScripts.building.loop.maxRounds`, default 5). Non-zero exit fails the
-transition.
+- Marking Acceptance Criteria `[x]` — owned by **validate-story**
+- Spec Updates close-out — owned by **finish-story**
+- Drive-by refactors unrelated to the story
+- Running the build loop yourself (`deno fmt`, `deno task ci`, automated
+  scenarios) — the harness loop runs these between rounds
+- `state.json`, commits, phase advance — owned by Devflow

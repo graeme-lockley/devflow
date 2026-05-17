@@ -1,22 +1,33 @@
+<!-- story.template.md — canonical card.md for the stories board.
+     Keep every ## heading and <!-- phase-gate --> comment. # title must match state.json (read-only).
+     Skills: prepare-story | plan-story | build-story | validate-story | finish-story
+     Placeholder: _To be completed in <phase>._ — leave until that phase's skill runs; scripts grep these strings.
+-->
+
 # {title}
+
+<!-- phase-gate: complete by exit preparing -->
 
 {description}
 
 ## Current State
 
 <!-- phase-gate: complete by exit preparing -->
+<!-- preparing: factual as-is; cite repo paths (src/, docs/) -->
 
 {current_state}
 
 ## Objectives
 
 <!-- phase-gate: complete by exit preparing -->
+<!-- preparing: numbered list, 3–10 outcomes -->
 
 {objectives}
 
 ## Spec References
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning -->
+<!-- preparing: ≥1 line `- [ ] \`path\` — section`; planning: mark verified items `[x]` -->
 
 _Specification and architecture pointers. Use paths and section anchors._
 
@@ -27,6 +38,7 @@ _Specification and architecture pointers. Use paths and section anchors._
 ## Acceptance Criteria
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
+<!-- preparing: numbered checklist `1. [ ] …` (3–10); verifying: all `[x]` -->
 
 {acceptance_criteria}
 
@@ -36,27 +48,26 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 ### Scope
 
-_Modules, commands, files, and user-visible behaviour affected._
+_To be completed in planning._
 
 ### Risks and constraints
 
-_Breaking changes, TTY vs machine output, locks, performance, dependencies._
+_To be completed in planning._
 
 ## Test Scenarios
 
 <!-- phase-gate: complete by exit planning | executed by exit verifying -->
 
-| # | Type      | Scenario                | Expected             |
-| - | --------- | ----------------------- | -------------------- |
-| 1 | automated | _e.g. deno test …_      | _pass_               |
-| 2 | manual    | _Given … When … Then …_ | _observable outcome_ |
+| # | Type      | Scenario           | Expected             |
+| - | --------- | ------------------ | -------------------- |
+
+_To be completed in planning._
 
 ## Build Tasks
 
 <!-- phase-gate: complete by exit planning | all [x] by exit building -->
 
-1. [ ] _Ordered implementation step_
-2. [ ] _…_
+1. [ ] _To be completed in planning._
 
 ## Spec Updates
 
@@ -81,7 +92,7 @@ _Decisions, questions, blockers, and planning-time design notes._
 <!-- phase-gate: started by exit building | complete by exit finishing -->
 <!-- as-built implementation only; do not put ### Finished or ### Verification summary here -->
 
-_As-built log: what was implemented, deviations from plan, follow-ups._
+_To be completed in building._
 
 ## Related Cards
 
