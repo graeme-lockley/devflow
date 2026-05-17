@@ -256,9 +256,9 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 | Document                       | Planned change                                                                                                                                                                                        | Status  |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `docs/devflow-requirements.md` | §5.6: optional note that built-in templates ship inside the published Devflow package (JSR-cached on consumer machines) - only if a behavioural detail surfaces; otherwise mark n/a in finishing      | pending |
-| `docs/architecture.md`         | §7 Templates: replace "location TBD" with "shipped inside the JSR-published package; resolved via `import.meta.url` against the cached package root". §6.3 Nested CLI: document `DEVFLOW_CLI` env var | pending |
-| `README.md`                    | New "Using Devflow in another repository" section covering JSR install/run, required Deno permissions, `board init --template stories` example, and version-pinning guidance                          | pending |
+| `docs/devflow-requirements.md` | §5.6: Added JSR caching note and `assets/` to template copy list                                                                                                                                      | done    |
+| `docs/architecture.md`         | §7 Templates: replaced "location TBD" with JSR packaging details; §6.3 Nested CLI: documented `DEVFLOW_CLI` env var with usage examples                                                              | done    |
+| `README.md`                    | Added "Using Devflow in another repository" section with JSR install/run commands, permissions, board init example, version-pinning guidance                                                          | done    |
 
 ## Notes
 
@@ -343,39 +343,37 @@ later phase per Build Tasks.
 - Commands: `deno task test` (pass, 253 tests), `./devflow validate` (pass), `./devflow validate-card stories-000006` (pass)
 - Documentation: architecture.md §6.3 and §7 updated; requirements.md §5.6 updated
 
+### Finished (2026-05-17)
+
+Story complete. Spec updates: all three documentation files updated (requirements.md §5.6 with JSR/assets note, architecture.md §6.3 DEVFLOW_CLI + §7 JSR templates, README.md consumer setup section). Ready for done.
+
 ## Build Notes
 
 <!-- phase-gate: started by exit building | complete by exit finishing -->
 
-- Task 1: `src/services/templates.ts` — `copyTemplateScriptsAndSkills` now
-  copies `assets/` when present; test in `templates_test.ts` validates the copy.
-- Task 2: `src/services/scripts.ts` — `buildScriptEnv` sets `DEVFLOW_CLI` to
-  `./devflow` when wrapper exists, else `deno run` with permissions;
-  `resolveDevflowCli` helper added; test in `scripts_test.ts` covers both cases.
-- Task 3: `templates/stories/` — synced `scripts/`, `skills/` (prepare-story,
-  validate-story, finish-story, _shared), and `assets/` from dogfood board;
-  removed old intermediate-phase scripts; updated `templates-stories_test.ts` to
-  match new phase structure (preparing, planning, building, verifying,
-  finishing, done).
-- Task 4: `templates/stories/skills/lib/` — added lib-skills `run-tests`,
-  `run-ci`, `invoke-devflow`; updated `finishing-005-check-tests` and
-  `verifying-004-run-validate` to use `$DEVFLOW_CLI` instead of hardcoded
-  `${repo_root}/devflow`.
-- Task 5: `src/services/templates-stories_test.ts` — added test asserting
-  `assets/story.template.md` and `skills/lib/` lib-skills are present after
-  `board init --template stories`.
-- Task 6: `deno.json` — added JSR metadata (`name`, `version`, `exports`,
-  `license`, `publish.include`/`exclude`); `src/services/jsr-publish_test.ts`
-  runs `deno publish --dry-run` and asserts key template files are included.
-- Task 7: `README.md` — added "Using Devflow in another repository" section
-  with JSR install commands, permissions, wrapper example, version pinning, and
-  consumer requirements.
-- Task 8: `docs/architecture.md` — updated §7 (templates ship via JSR, cached
-  locally) and §6.3 (`DEVFLOW_CLI` env var, usage in scripts);
-  `docs/devflow-requirements.md` §5.6 updated to mention `assets/` copy.
-- Task 9: `deno task ci` — formatted all files; updated
-  `stories-workflow_test.ts` to use new phase names and skip structure check for
-  minimal test card; all 253 tests pass.
+**Summary:** Devflow is now JSR-publishable and remotely runnable from consumer repos without requiring a Devflow clone. Templates (including `assets/`) ship in the JSR package, `DEVFLOW_CLI` env var enables nested CLI calls from scripts, and documentation guides consumer setup.
+
+**Key changes:**
+- **Templates service** (`src/services/templates.ts`): Extended to copy `assets/` alongside `scripts/` and `skills/`; test coverage added in `templates_test.ts`.
+- **Scripts service** (`src/services/scripts.ts`): `buildScriptEnv` now sets `DEVFLOW_CLI` pointing to the active CLI entry (local `./devflow` or JSR `deno run`); `resolveDevflowCli` helper detects context; tested in `scripts_test.ts`.
+- **Portable stories template** (`templates/stories/`): Synced from dogfood board (`.devflow/boards/stories/`) with six phases (preparing, planning, building, verifying, finishing, done); removed Devflow-repo-specific paths; added `skills/lib/` with `run-tests`, `run-ci`, `invoke-devflow` lib-skills; exit scripts use `"$DEVFLOW_CLI"`.
+- **JSR packaging** (`deno.json`): Added `name`, `version`, `exports`, `license`, `publish.include` (templates, src, main.ts, README, LICENSE), `publish.exclude` (tests, .devflow, docs); dry-run verified in `jsr-publish_test.ts`.
+- **Documentation**: 
+  - `README.md`: New "Using Devflow in another repository" section with JSR install/run commands, required permissions, board init example, wrapper pattern, version pinning.
+  - `docs/architecture.md`: §7 updated (JSR package distribution), §6.3 added (`DEVFLOW_CLI` usage).
+  - `docs/devflow-requirements.md`: §5.6 updated (JSR caching, `assets/` copy).
+
+**Files changed:**
+- `src/services/templates.ts`, `templates_test.ts`, `templates-stories_test.ts`
+- `src/services/scripts.ts`, `scripts_test.ts`
+- `templates/stories/` (scripts, skills, assets, board.phaseScripts.json)
+- `deno.json`, `src/services/jsr-publish_test.ts`
+- `README.md`, `docs/architecture.md`, `docs/devflow-requirements.md`
+- `src/services/stories-workflow_test.ts` (phase names)
+
+**Deviations from Impact Analysis:** None. All planned tasks completed; no immutable doc edits outside approved Spec Updates; dogfood board remains Devflow-specific as planned.
+
+**Follow-ups:** Consider a sync check or ADR for template drift detection (out of scope for this card).
 
 ## Related Cards
 
