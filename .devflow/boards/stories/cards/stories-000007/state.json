@@ -1,0 +1,18 @@
+{
+  "id": "stories-000007",
+  "board": "stories",
+  "title": "Have pi show its workings when running devflow",
+  "phase": "preparing",
+  "previousPhase": null,
+  "createdAt": "2026-05-17T07:16:30.223Z",
+  "updatedAt": "2026-05-17T07:16:30.223Z",
+  "variables": {},
+  "history": [
+    {
+      "type": "created",
+      "at": "2026-05-17T07:16:30.223Z",
+      "phase": "preparing"
+    }
+  ],
+  "blocked": null
+}
