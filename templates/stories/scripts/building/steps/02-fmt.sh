@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Loop step 02: Format repository sources after pi edits (matches deno task fmt:check scope).
+# Loop step 02: Format sources and apply mechanical lint fixes after pi edits.
 set -euo pipefail
 board="${1:?board name required}"
 card_id="${2:?card id required}"
@@ -8,19 +8,36 @@ card_id="${2:?card id required}"
 SCRIPT_ID="building/steps/02-fmt"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
 run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
+board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
 round="${DEVFLOW_SCRIPT_ROUND:-1}"
 max="${DEVFLOW_LOOP_MAX:-1}"
+log_file="${run_dir}/fmt-round-${round}.log"
 
 log_info() {
   [ "${DEVFLOW_LOG_LEVEL:-info}" = "summary" ] && return 0
   printf '\033[90m%s (round %s/%s): %s\033[0m\n' "$SCRIPT_ID" "$round" "$max" "$*" >&2
 }
 
-log_info "running deno fmt"
+: >"$log_file"
 cd "$repo_root"
-if ! deno fmt --ignore=.devflow >"${run_dir}/fmt-round-${round}.log" 2>&1; then
-  log_info "deno fmt failed (see ${run_dir}/fmt-round-${round}.log)"
+
+log_info "running deno fmt"
+if ! deno fmt --ignore=.devflow >>"$log_file" 2>&1; then
+  log_info "deno fmt failed (see ${log_file})"
   exit 1
 fi
 log_info "deno fmt completed"
+
+lint_fix="${board_dir}/scripts/lib/lint-fix.ts"
+if [ -f "$lint_fix" ]; then
+  log_info "running lint-fix (unused imports)"
+  {
+    echo "--- lint-fix ---"
+    deno run --allow-read --allow-write --allow-run "$lint_fix" || true
+  } >>"$log_file" 2>&1
+  log_info "lint-fix completed (see ${log_file})"
+else
+  log_info "lint-fix.ts not found, skipping"
+fi
+
 exit 0

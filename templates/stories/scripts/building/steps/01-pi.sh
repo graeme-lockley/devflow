@@ -9,8 +9,11 @@ SCRIPT_ID="building/steps/01-pi"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
 card_md="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}/card.md"
 skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/build-story"
+run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
+board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
 round="${DEVFLOW_SCRIPT_ROUND:-1}"
 max="${DEVFLOW_LOOP_MAX:-1}"
+lib_dir="${board_dir}/scripts/lib"
 
 log_info() {
   [ "${DEVFLOW_LOG_LEVEL:-info}" = "summary" ] && return 0
@@ -32,7 +35,28 @@ if [ -z "${DEVFLOW_MEDIUM_MODEL:-}" ]; then
   exit 1
 fi
 
+prompt="Using the skill build-story, implement ${card_id}."
+if [ "$round" -gt 1 ] && [ -f "${lib_dir}/building-loop-feedback.sh" ]; then
+  # shellcheck source=../../lib/building-loop-feedback.sh
+  source "${lib_dir}/building-loop-feedback.sh"
+  feedback="$(building_loop_feedback "$run_dir" "$round")"
+  if [ -n "$feedback" ]; then
+    prompt="${prompt}
+
+Previous build loop round failed. Read card.md Build Notes, then fix these errors before new work:
+---
+${feedback}
+---"
+    log_info "including prior-round gate output in pi prompt"
+  fi
+fi
+
 log_info "invoking pi (build-story) with ${DEVFLOW_MEDIUM_MODEL}"
 cd "$repo_root"
-exec pi --skill "$skill_dir" --model "${DEVFLOW_MEDIUM_MODEL}" --print \
-  "Using the skill build-story, implement ${card_id}."
+
+renderer="${board_dir}/scripts/lib/pi-render.sh"
+set -o pipefail
+pi --skill "$skill_dir" --model "${DEVFLOW_MEDIUM_MODEL}" --print --mode json \
+  "$prompt" \
+  | "$renderer"
+exit ${PIPESTATUS[0]}

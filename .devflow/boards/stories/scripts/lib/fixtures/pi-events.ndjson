@@ -1,0 +1,12 @@
+{"type":"message_update","assistantMessageEvent":{"type":"thinking_delta","contentIndex":0,"delta":"I need to run the bash command","partial":{"role":"assistant","content":[{"type":"thinking","thinking":"I need to run the bash command","index":0}]}}}
+{"type":"message_update","assistantMessageEvent":{"type":"thinking_end","contentIndex":0,"content":"I need to run the bash command"}}
+{"type":"message_update","assistantMessageEvent":{"type":"toolcall_start","contentIndex":1,"partial":{"role":"assistant","content":[{"type":"thinking","thinking":"I need to run the bash command"},{"type":"toolCall","id":"toolu_test_001","name":"bash","arguments":{},"index":1}]}}}
+{"type":"message_update","assistantMessageEvent":{"type":"toolcall_delta","contentIndex":1,"delta":"{\"command\": \"echo hello\"}"}}
+{"type":"message_update","assistantMessageEvent":{"type":"toolcall_end","contentIndex":1,"toolCall":{"type":"toolCall","id":"toolu_test_001","name":"bash","arguments":{"command":"echo hello"}}}}
+{"type":"message_end","message":{"role":"assistant","content":[{"type":"thinking","thinking":"I need to run the bash command"},{"type":"toolCall","id":"toolu_test_001","name":"bash","arguments":{"command":"echo hello"}}],"stopReason":"toolUse"}}
+{"type":"tool_execution_start","toolCallId":"toolu_test_001","toolName":"bash","args":{"command":"echo hello"}}
+{"type":"tool_execution_end","toolCallId":"toolu_test_001","toolName":"bash","result":{"content":[{"type":"text","text":"hello\n"}]},"isError":false}
+{"type":"message_start","message":{"role":"toolResult","toolCallId":"toolu_test_001","toolName":"bash","content":[{"type":"text","text":"hello\n"}],"isError":false}}
+{"type":"message_update","assistantMessageEvent":{"type":"text_delta","contentIndex":0,"delta":"Done."}}
+{"type":"message_end","message":{"role":"assistant","content":[{"type":"text","text":"Done."}],"api":"anthropic-messages","usage":{"input":100,"output":50,"totalTokens":150},"stopReason":"endTurn"}}
+{"type":"agent_end"}

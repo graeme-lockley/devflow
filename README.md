@@ -213,6 +213,29 @@ The CLI and tests use these flags (see [`devflow`](./devflow) and
 | `--allow-run`   | Execute board scripts and `git` subprocesses          |
 | `--allow-env`   | Set `DEVFLOW_*` for scripts; read `DEVFLOW_LOG_LEVEL` |
 
+### Pi visibility under Devflow
+
+When running Devflow transitions that invoke **pi** for story skills (prepare,
+plan, build, verify, finish), the stories board scripts surface pi's
+deliberation, tool use, and progress on the console:
+
+- **`info` / `verbose` log level (default):** Live human-readable stream of pi's
+  thinking (verbose only), tool calls, and output appears on stderr during the
+  transition. This visibility is provided by `scripts/lib/pi-render.sh`, which
+  parses `pi --mode json` events.
+- **`--summary`:** No script or pi output is streamed to the console (only
+  phase-level messages and errors). The full transcript is still captured in the
+  card's `logs/` directory.
+- **`DEVFLOW_SKIP_PI=1`:** Pi is not invoked; existing skip messages still apply
+  (useful for CI or when pi is not available).
+
+The renderer requires **jq** to parse JSON events. If jq is missing at runtime,
+the renderer emits a single grey warning and falls back to pass-through mode
+(raw events are still logged, but not transformed into human-readable output).
+
+**Commit-message scripts** continue to use plain text mode (`--mode text`)
+rather than JSON, as their stdout must remain clean for use as commit messages.
+
 ## Development
 
 Commit messages follow

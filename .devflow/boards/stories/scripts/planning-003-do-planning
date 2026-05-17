@@ -16,5 +16,10 @@ if ! command -v pi >/dev/null 2>&1; then
 fi
 
 skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/plan-story"
-exec pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print \
-  "Using the skill plan-story, please plan the story ${card_id}."
+renderer="${DEVFLOW_BOARD_DIR}/scripts/lib/pi-render.sh"
+
+set -o pipefail
+pi --skill "$skill_dir" --model "${DEVFLOW_HEAVY_MODEL}" --print --mode json \
+  "Using the skill plan-story, please plan the story ${card_id}." \
+  | "$renderer"
+exit ${PIPESTATUS[0]}

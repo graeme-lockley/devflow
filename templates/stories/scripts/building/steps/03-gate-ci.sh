@@ -18,9 +18,17 @@ log_info() {
 
 log_info "running deno task ci"
 cd "$repo_root"
-if ! deno task ci >"${run_dir}/ci-round-${round}.log" 2>&1; then
-  log_info "deno task ci failed (see ${run_dir}/ci-round-${round}.log)"
+ci_log="${run_dir}/ci-round-${round}.log"
+if ! deno task ci >"$ci_log" 2>&1; then
+  log_info "deno task ci failed (see ${ci_log})"
+  {
+    echo "step: ${SCRIPT_ID}"
+    echo "round: ${round}/${max}"
+    echo "--- tail ---"
+    tail -n 60 "$ci_log"
+  } >"${run_dir}/loop-failure-summary.txt"
   exit 1
 fi
+rm -f "${run_dir}/loop-failure-summary.txt"
 log_info "deno task ci passed"
 exit 0

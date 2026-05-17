@@ -51,9 +51,9 @@ Canonical layout: [../assets/story.template.md](../assets/story.template.md).
 | Spec References, Acceptance Criteria (draft)                         | `planning-002`, `planning-004`                                   |
 | Impact Analysis, Test Scenarios, Build Tasks, Spec Updates (planned) | `planning-004`                                                   |
 | Build Tasks `[x]`, Build Notes (substance), AC still `[ ]`           | `building-003` (exit, after loop)                                |
-| `deno fmt` after pi edits                                            | `building/steps/02-fmt` (loop)                                   |
+| `deno fmt` + mechanical unused-import fix after pi edits             | `building/steps/02-fmt` (loop; `lib/lint-fix.ts`)                |
 | `deno task ci` + automated Test Scenarios (retries)                  | `building/steps/03-gate-ci`, `04-gate-scenarios` (loop)          |
-| pi **build-story**                                                   | `building/steps/01-pi` (loop)                                    |
+| pi **build-story** (prior-round gate logs in prompt when round > 1)  | `building/steps/01-pi` (loop)                                    |
 | Spec Updates vs git; repo change scope                               | `building-005`, `building-007` (exit, after loop)                |
 | `### Verification summary` under **Notes**                           | `verifying-003`                                                  |
 | Acceptance Criteria `[x]`                                            | `verifying-003`                                                  |

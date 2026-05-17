@@ -26,7 +26,14 @@ cd "$repo_root"
 gate_log="${run_dir}/scenarios-round-${round}.log"
 if ! building_run_scenario_tests "$card_md" "$gate_log"; then
   log_info "Test Scenarios failed (see ${gate_log})"
+  {
+    echo "step: ${SCRIPT_ID}"
+    echo "round: ${round}/${max}"
+    echo "--- tail ---"
+    tail -n 60 "$gate_log"
+  } >"${run_dir}/loop-failure-summary.txt"
   exit 1
 fi
+rm -f "${run_dir}/loop-failure-summary.txt"
 log_info "Test Scenarios passed"
 exit 0
