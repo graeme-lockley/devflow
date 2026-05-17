@@ -14,6 +14,13 @@ function templateManifestPrefix(templateName: string): string {
   return `/templates/${templateName}/`;
 }
 
+async function isTemplateCacheComplete(cacheDir: string): Promise<boolean> {
+  return (
+    (await isDirectory(`${cacheDir}/scripts`)) &&
+    (await isDirectory(`${cacheDir}/skills`))
+  );
+}
+
 function shouldChmodScript(relativePath: string): boolean {
   if (!relativePath.startsWith("scripts/")) return false;
   const base = relativePath.split("/").pop() ?? "";
@@ -55,8 +62,13 @@ export async function ensureJsrBuiltinTemplateDir(
   }
 
   const cacheDir = `${jsrTemplateCacheRoot(pkg)}/templates/${templateName}`;
-  if (await isDirectory(cacheDir)) {
+  if (
+    await isDirectory(cacheDir) && await isTemplateCacheComplete(cacheDir)
+  ) {
     return cacheDir;
+  }
+  if (await isDirectory(cacheDir)) {
+    await Deno.remove(cacheDir, { recursive: true });
   }
 
   const metaUrl = `${jsrRegistryBase(pkg)}_meta.json`;
@@ -95,6 +107,13 @@ export async function ensureJsrBuiltinTemplateDir(
     if (shouldChmodScript(relative)) {
       await Deno.chmod(dest, 0o755);
     }
+  }
+
+  if (!(await isTemplateCacheComplete(cacheDir))) {
+    await Deno.remove(cacheDir, { recursive: true });
+    throw new Error(
+      `template "${templateName}" download incomplete (missing scripts/ or skills/)`,
+    );
   }
 
   return cacheDir;
