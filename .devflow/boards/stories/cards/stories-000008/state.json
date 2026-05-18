@@ -2,16 +2,23 @@
   "id": "stories-000008",
   "board": "stories",
   "title": "Revisit the looping solution",
-  "phase": "preparing",
+  "phase": "planning",
   "previousPhase": null,
   "createdAt": "2026-05-18T03:52:59.855Z",
-  "updatedAt": "2026-05-18T03:52:59.855Z",
+  "updatedAt": "2026-05-18T04:53:06.159Z",
   "variables": {},
   "history": [
     {
       "type": "created",
       "at": "2026-05-18T03:52:59.855Z",
       "phase": "preparing"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-18T04:53:06.159Z",
+      "from": "preparing",
+      "to": "planning",
+      "mode": "normal"
     }
   ],
   "blocked": null

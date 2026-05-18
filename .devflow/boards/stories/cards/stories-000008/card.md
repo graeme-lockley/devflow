@@ -1,4 +1,4 @@
-# Script flow driver (`NEXT_SCRIPT`)
+# Revisit the looping solution
 
 As a board author and Devflow operator, I want **script flow control** via the
 card variable `NEXT_SCRIPT` implemented in the core CLI, so that phases can run
