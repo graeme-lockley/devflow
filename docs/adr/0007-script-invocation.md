@@ -47,6 +47,8 @@ Do **not** impose Devflow-level script timeouts
 - Requirements [§9.4](../devflow-requirements.md#94-script-arguments),
   [§9.9](../devflow-requirements.md#99-script-execution-environment)
 - [`architecture.md` §5.4](../architecture.md#54-script-service-srcservicesscriptsts)
-- [ADR-0014](./0014-script-composition-and-loops.md) — child scripts invoked by
-  parent with same env + `DEVFLOW_SCRIPT_PARENT`, `DEVFLOW_SCRIPT_ROUND`,
+- [ADR-0015](./0015-script-flow-control.md) — script flow driver (root exit
+  scripts)
+- [ADR-0014](./0014-script-composition-and-loops.md) — legacy loop child scripts
+  (deprecated): `DEVFLOW_SCRIPT_PARENT`, `DEVFLOW_SCRIPT_ROUND`,
   `DEVFLOW_LOOP_MAX`

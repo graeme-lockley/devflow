@@ -172,8 +172,8 @@ This story is a **specification and core-product change**: it requires updating
 | 4 | automated | `deno test src/services/scripts_test.ts` - child invocation inherits `DEVFLOW_*` and parent `DEVFLOW_SCRIPT_PARENT`                       | Child sees card dir and run dir; exit code propagated.                                   |
 | 5 | automated | `deno test src/commands/stories-workflow_test.ts` with `DEVFLOW_SKIP_PI=1` - stories board building hop uses new layout                   | Advance building→verifying succeeds on fixture card with stub implementation.            |
 | 6 | automated | `deno test` full suite                                                                                                                    | All tests pass; no regressions in planning/preparing linear scripts.                     |
-| 7 | manual    | Given stories-000003 (or fixture card) in building, when I `./devflow card advance ... verifying` with verbose logging                      | Log shows `round 1/N`, step script names, then exit scripts; commit on success.          |
-| 8 | manual    | Given a board with only flat `planning-001`... scripts and no loop config, when I advance planning→building                                 | Behaviour unchanged from pre-story baseline.                                             |
+| 7 | manual    | Given stories-000003 (or fixture card) in building, when I `./devflow card advance ... verifying` with verbose logging                    | Log shows `round 1/N`, step script names, then exit scripts; commit on success.          |
+| 8 | manual    | Given a board with only flat `planning-001`... scripts and no loop config, when I advance planning→building                               | Behaviour unchanged from pre-story baseline.                                             |
 
 ## Build Tasks
 
@@ -208,15 +208,15 @@ This story is a **specification and core-product change**: it requires updating
 
 <!-- phase-gate: planned by exit planning | completed by exit finishing -->
 
-| Document                                           | Planned change                                                                                                                                | Status   |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `docs/devflow-requirements.md`                     | §9 Script Model (helpers, hierarchical children, loop blocks, env); §11.4 transition algorithm; §18 env vars; board config; §9.8 retry scope. | done     |
-| `docs/architecture.md`                             | Script discovery, child invocation, transition loop orchestration, validate-board.                                                            | done     |
-| `docs/adr/0014-script-composition-and-loops.md`    | **New** - decisions for loops, root/child scripts, logging, backward compatibility.                                                           | done     |
-| `docs/adr/README.md`                               | Index row for ADR-0014.                                                                                                                       | done     |
-| `docs/adr/0007-script-invocation.md`               | Add note: child scripts invoked by parent with same env + `DEVFLOW_SCRIPT_PARENT`.                                                            | done     |
-| `docs/adr/0008-transition-runner-orchestration.md` | Add loop block orchestration to Decision / References.                                                                                        | done     |
-| `README.md`                                        | Document authoring hierarchical scripts and optional loop config on boards.                                                                   | done     |
+| Document                                           | Planned change                                                                                                                                | Status |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `docs/devflow-requirements.md`                     | §9 Script Model (helpers, hierarchical children, loop blocks, env); §11.4 transition algorithm; §18 env vars; board config; §9.8 retry scope. | done   |
+| `docs/architecture.md`                             | Script discovery, child invocation, transition loop orchestration, validate-board.                                                            | done   |
+| `docs/adr/0014-script-composition-and-loops.md`    | **New** - decisions for loops, root/child scripts, logging, backward compatibility.                                                           | done   |
+| `docs/adr/README.md`                               | Index row for ADR-0014.                                                                                                                       | done   |
+| `docs/adr/0007-script-invocation.md`               | Add note: child scripts invoked by parent with same env + `DEVFLOW_SCRIPT_PARENT`.                                                            | done   |
+| `docs/adr/0008-transition-runner-orchestration.md` | Add loop block orchestration to Decision / References.                                                                                        | done   |
+| `README.md`                                        | Document authoring hierarchical scripts and optional loop config on boards.                                                                   | done   |
 
 ## Notes
 
@@ -279,9 +279,9 @@ This story is a **specification and core-product change**: it requires updating
 - ✓ Scenario 5: `stories-workflow_test.ts` with `DEVFLOW_SKIP_PI=1` - advances
   unplanned→planning→planned (1 test passes)
 - ✓ Scenario 6: Full test suite - 206 tests pass, no regressions
-- ✓ Scenario 7: Manual verification of stories-000003
-  building→verifying logs - clear round boundaries ("round 1/5"),
-  entry/exit/step script execution visible in `output.log` and `run.json`
+- ✓ Scenario 7: Manual verification of stories-000003 building→verifying logs -
+  clear round boundaries ("round 1/5"), entry/exit/step script execution visible
+  in `output.log` and `run.json`
 - ✓ Scenario 8: Manual verification of backward compatibility - planning phase
   uses flat scripts (planning-001 through planning-005) with no loop config,
   runs in lexical order
@@ -296,13 +296,14 @@ This story is a **specification and core-product change**: it requires updating
   round 3) and exhaustion (always-fail exhausts maxRounds)
 - AC4 ✓: Logs show round headers ("round N/M: starting", "round N/M: step
   path"), `run.json` records each script as "loop[round]:stepPath"
-- AC5 ✓: Stories building phase uses loop config in `board.json`,
-  entry (`building-001-check-entry`), loop steps
-  (`building/steps/01-pi.sh`, `02-gate-ci.sh`, `03-gate-scenarios.sh`), exit
-  scripts (building-003, 005, 007), and `building.commit-message`
+- AC5 ✓: Stories building phase uses loop config in `board.json`, entry
+  (`building-001-check-entry`), loop steps (`building/steps/01-pi.sh`,
+  `02-gate-ci.sh`, `03-gate-scenarios.sh`), exit scripts (building-003, 005,
+  007), and `building.commit-message`
 - AC6 ✓: 206 tests pass including script-name parsing, loop driver unit tests,
   multi-round integration tests
-- AC7 ✓: `./devflow validate-card stories-000003` pass, `./devflow validate-board
+- AC7 ✓: `./devflow validate-card stories-000003` pass,
+  `./devflow validate-board
   stories` pass, `./devflow validate` pass
 - AC8 ✓: ADR-0014 exists at `docs/adr/0014-script-composition-and-loops.md`,
   indexed in README; ADR-0007 and ADR-0008 cross-reference ADR-0014 in
@@ -340,7 +341,12 @@ detected. Story ready to advance to finishing phase.
 
 ### Finished (2026-05-16)
 
-Story complete. All Spec Updates applied and verified: requirements §9, §11.4, §18 extended with script composition and loop blocks; architecture updated for transition orchestration; ADR-0014 created and cross-linked; README documented loop configuration for board authors. All documentation changes committed in verifying phase (commit 44aa343). Repository clean, all tests pass, ready for done.
+Story complete. All Spec Updates applied and verified: requirements §9, §11.4,
+§18 extended with script composition and loop blocks; architecture updated for
+transition orchestration; ADR-0014 created and cross-linked; README documented
+loop configuration for board authors. All documentation changes committed in
+verifying phase (commit 44aa343). Repository clean, all tests pass, ready for
+done.
 
 ## Build Notes
 
@@ -488,7 +494,7 @@ Story complete. All Spec Updates applied and verified: requirements §9, §11.4,
   - Flat vs hierarchical layout explanation
   - Loop block configuration example in `board.json`
   - Loop semantics: entry scripts, loop retry behavior, exit scripts, env vars
-**Task 12: CI and validation passed** (2026-05-16)
+    **Task 12: CI and validation passed** (2026-05-16)
 
 - Fixed lint errors:
   - `invokeChildScript`: removed `async` keyword (function returns Promise but
@@ -496,8 +502,7 @@ Story complete. All Spec Updates applied and verified: requirements §9, §11.4,
   - `runLoopBlock`: prefixed unused `hop` parameter with `_` to satisfy
     no-unused-vars rule.
 - Ran `deno fmt` to fix formatting issues in updated files (9 files formatted:
-  requirements, architecture, ADR-0014, board.ts, transition.ts, card.md
-  files).
+  requirements, architecture, ADR-0014, board.ts, transition.ts, card.md files).
 - **CI passed**: All tests pass (lint, format check, full test suite).
 - **Validation passed**: `./devflow validate` exits 0 (repository, all boards,
   all cards valid).
@@ -517,14 +522,13 @@ Story complete. All Spec Updates applied and verified: requirements §9, §11.4,
 
 **Build summary (2026-05-16):**
 
-✓ All 12 Build Tasks complete
-✓ Spec changes: requirements (§9, §11.4, §18), architecture, ADR-0014
-✓ Core implementation: board.ts (loop config), script-names.ts (patterns),
-  scripts.ts (child invocation), transition.ts (loop orchestration)
-✓ Test coverage: 206 tests pass including loop retry, loop exhaustion, child env
-✓ Stories board: loop config in board.json, step scripts in building/steps/
-✓ Documentation: README updated with Board script composition section
-✓ CI and validation: all checks pass, no regressions
+✓ All 12 Build Tasks complete ✓ Spec changes: requirements (§9, §11.4, §18),
+architecture, ADR-0014 ✓ Core implementation: board.ts (loop config),
+script-names.ts (patterns), scripts.ts (child invocation), transition.ts (loop
+orchestration) ✓ Test coverage: 206 tests pass including loop retry, loop
+exhaustion, child env ✓ Stories board: loop config in board.json, step scripts
+in building/steps/ ✓ Documentation: README updated with Board script composition
+section ✓ CI and validation: all checks pass, no regressions
 
 Ready for verifying phase (Acceptance Criteria validation).
 

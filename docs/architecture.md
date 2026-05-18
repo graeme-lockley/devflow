@@ -180,30 +180,41 @@ Implements [§11.4](./devflow-requirements.md#114-transition-algorithm):
 ```text
 for each single-phase hop:
   pre-validate --skip tokens against scripts on all hops (when skip non-empty)
-  run exit scripts (scripts service) including loop orchestration if configured
-    — omit scripts whose <phase>-<sequence> prefix is in skip for this hop
-    — record { skipped: true } in run.json; logSkipped at info/verbose
+  pre-validate NEXT_SCRIPT on card when set (first hop from phase)
+  run exit scripts (scripts service):
+    — if phaseScripts[phase].loop: legacy loop orchestration (§9.12)
+    — else: script flow driver (§9.11): NEXT_SCRIPT jumps + lexical advance
+    — omit or visit-without-run scripts in skip set for this hop
+    — record { skipped: true } and { nextScript } in run.json as applicable
   run commit-message script (scripts service) — M6
   append actionSkipped events, then phaseChanged (domain)
   git commit hop (git service) — M6
 ```
 
 `RunAdvanceOptions.skip` is passed to `runHopExitScripts`, which computes the
-set of script names to omit for the hop's `from` phase, rejects loop-step and
-commit-message targets, and substitutes a synthetic success record for each
+set of script names to omit for the hop's `from` phase, rejects legacy loop-step
+and commit-message targets, and substitutes a synthetic success record for each
 skipped script without invoking it.
 
-**Loop orchestration**
-([§9.11](./devflow-requirements.md#911-phase-loop-blocks),
+**Script flow driver**
+([§9.11](./devflow-requirements.md#911-script-flow-control-next_script),
+[ADR-0015](./adr/0015-script-flow-control.md)):
+
+- Used when the phase has **no** `board.phaseScripts[phase].loop` configuration.
+- Runs root exit scripts via `NEXT_SCRIPT` jumps and lexical successors
+  (§9.11.2).
+- Reads/clears card variable `NEXT_SCRIPT`; records `nextScript` on run records.
+- Enforces `board.maxScriptExecutionsPerHop` (default 100) per hop.
+- Non-zero script exit fails the hop immediately.
+
+**Legacy loop orchestration** (deprecated;
+[§9.12](./devflow-requirements.md#912-legacy-phase-loop-blocks-deprecated),
 [ADR-0014](./adr/0014-script-composition-and-loops.md)):
 
-- Reads `board.phaseScripts[phase].loop` configuration if present.
-- Runs entry scripts (root exit scripts lexically before loop steps).
-- Runs loop block: iterate `loop.steps` up to `maxRounds`, restarting from first
-  step on any failure.
-- Runs exit scripts (root exit scripts lexically after loop steps).
-- Logs round boundaries at info level; records rounds in `run.json`.
-- On loop exhaustion, returns structured error with round and failing step.
+- Used when `board.phaseScripts[phase].loop` is present.
+- Runs entry scripts, loop block (`loop.steps`, `maxRounds`), exit scripts.
+- Logs round boundaries; records `loop[round]:step` in `run.json`.
+- Scheduled for removal when legacy loop support is deleted from the product.
 
 Owns **orchestration** only. Does not embed script-matching regex (delegates to
 `scripts.ts`).
@@ -215,10 +226,13 @@ Owns **orchestration** only. Does not embed script-matching regex (delegates to
   and subdirectories are not auto-discovered.
 - Invoke with `Deno.Command` or direct execution per
   [ADR-0007](./adr/0007-script-invocation.md).
-- **Child script invocation** (loop steps or parent-invoked):
-  [ADR-0014](./adr/0014-script-composition-and-loops.md) adds
-  `invokeChildScript` that sets `DEVFLOW_SCRIPT_PARENT`, `DEVFLOW_SCRIPT_ROUND`,
-  `DEVFLOW_LOOP_MAX` environment variables.
+- **Child script invocation** (legacy loop steps or parent-invoked from script
+  code): [ADR-0014](./adr/0014-script-composition-and-loops.md)
+  `invokeChildScript` sets `DEVFLOW_SCRIPT_PARENT`, `DEVFLOW_SCRIPT_ROUND`,
+  `DEVFLOW_LOOP_MAX` (deprecated with loop removal).
+- **Prefix resolution** for `NEXT_SCRIPT` and `--skip`:
+  `resolveExitScriptPrefix(prefix, scriptNames)` → exactly one root script name
+  ([ADR-0015](./adr/0015-script-flow-control.md)).
 - Stream stdout/stderr to console per log level; always write full transcript to
   `logs/` ([§15](./devflow-requirements.md#15-logs),
   [§16.2](./devflow-requirements.md#162-console-output)).
@@ -246,8 +260,10 @@ Owns **orchestration** only. Does not embed script-matching regex (delegates to
 - Load and validate `board.json` / `state.json`.
 - **Board config validation**
   ([§5.4](./devflow-requirements.md#54-board-configuration-file)): includes
-  optional `phaseScripts.<phase>.loop` schema check (steps array, maxRounds ≥ 1)
-  per [ADR-0014](./adr/0014-script-composition-and-loops.md).
+  optional `maxScriptExecutionsPerHop` (integer ≥ 1) per
+  [ADR-0015](./adr/0015-script-flow-control.md); optional legacy
+  `phaseScripts.<phase>.loop` per
+  [ADR-0014](./adr/0014-script-composition-and-loops.md).
 - Atomic write via infra ([ADR-0005](./adr/0005-atomic-json-writes.md)).
 - **Single writer** for `state.json` — only Devflow commands mutate it
   ([§6.5](./devflow-requirements.md#65-ownership-of-card-files)).
@@ -257,8 +273,9 @@ Owns **orchestration** only. Does not embed script-matching regex (delegates to
 - Pure functions mirroring
   [§17](./devflow-requirements.md#17-validation-requirements).
 - `validate` command aggregates board + card checks without modifying files.
-- **Board validation** includes `phaseScripts` schema check: loop steps must
-  reference existing executable files under `scripts/`; `maxRounds` must be ≥ 1.
+- **Board validation** includes `maxScriptExecutionsPerHop` when present; legacy
+  `phaseScripts.loop` steps must reference existing executable files;
+  `maxRounds` ≥ 1.
 
 ### 5.9 Console output (`src/services/console.ts`)
 

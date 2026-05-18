@@ -1,0 +1,18 @@
+{
+  "id": "stories-000008",
+  "board": "stories",
+  "title": "Revisit the looping solution",
+  "phase": "preparing",
+  "previousPhase": null,
+  "createdAt": "2026-05-18T03:52:59.855Z",
+  "updatedAt": "2026-05-18T03:52:59.855Z",
+  "variables": {},
+  "history": [
+    {
+      "type": "created",
+      "at": "2026-05-18T03:52:59.855Z",
+      "phase": "preparing"
+    }
+  ],
+  "blocked": null
+}

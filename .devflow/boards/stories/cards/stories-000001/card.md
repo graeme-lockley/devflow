@@ -55,6 +55,7 @@ _Specification and architecture pointers. Use paths and section anchors._
       in `services/console.ts` to keep ANSI policy in one place.
 - [x] `docs/adr/` — N/A. No new architectural decision; reuses ADR-0011
       console/TTY rules already encoded in `services/console.ts`.
+
 ## Acceptance Criteria
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->

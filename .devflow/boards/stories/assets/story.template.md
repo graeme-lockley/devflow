@@ -1,7 +1,9 @@
 <!-- story.template.md — canonical card.md for the stories board.
      Keep every ## heading and <!-- phase-gate --> comment. # title must match state.json (read-only).
-     Skills: prepare-story | plan-story | build-story | validate-story | finish-story
-     Placeholder: _To be completed in <phase>._ — leave until that phase's skill runs; scripts grep these strings.
+
+    Skills: prepare-story | plan-story | build-story | validate-story | finish-story
+    Placeholder: _To be completed in <phase>._ — leave until that phase's skill runs; scripts grep these strings.
+
 -->
 
 # {title}
@@ -58,8 +60,8 @@ _To be completed in planning._
 
 <!-- phase-gate: complete by exit planning | executed by exit verifying -->
 
-| # | Type      | Scenario           | Expected             |
-| - | --------- | ------------------ | -------------------- |
+| # | Type | Scenario | Expected |
+| - | ---- | -------- | -------- |
 
 _To be completed in planning._
 

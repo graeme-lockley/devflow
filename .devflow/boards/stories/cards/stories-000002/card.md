@@ -62,6 +62,7 @@ _Specification and architecture pointers. Use paths and section anchors._
 - [x] `docs/adr/` — no existing ADR governs CLI flag naming or description
       input; no new ADR required (this is an additive CLI change, not a
       hard-to-reverse architectural decision).
+
 ## Acceptance Criteria
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
@@ -189,12 +190,12 @@ _Specification and architecture pointers. Use paths and section anchors._
 
 <!-- phase-gate: planned by exit planning | completed by exit finishing -->
 
-| Document                         | Planned change                                                                                                                                                        | Status                                                                                                            |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `docs/devflow-requirements.md`   | Extend §6.2 to describe optional `--description` / `--description-file` inputs and their validation rules. **Requires user approval** (AGENTS.md immutable doc rule). | deferred (no user approval; follow-up — see Notes)                                                                |
-| `docs/architecture.md`           | None. CLI surface only; no module boundary or dependency direction changes.                                                                                           | n/a                                                                                                               |
-| `docs/adr/`                      | None. Additive CLI flag; no new architectural decision.                                                                                                               | n/a                                                                                                               |
-| `README.md`                      | Document `--description` and `--description-file` under the `card create` usage section; include one inline and one file example.                                     | done (README.md lines 90–91)                                                                                      |
+| Document                       | Planned change                                                                                                                                                        | Status                                             |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `docs/devflow-requirements.md` | Extend §6.2 to describe optional `--description` / `--description-file` inputs and their validation rules. **Requires user approval** (AGENTS.md immutable doc rule). | deferred (no user approval; follow-up — see Notes) |
+| `docs/architecture.md`         | None. CLI surface only; no module boundary or dependency direction changes.                                                                                           | n/a                                                |
+| `docs/adr/`                    | None. Additive CLI flag; no new architectural decision.                                                                                                               | n/a                                                |
+| `README.md`                    | Document `--description` and `--description-file` under the `card create` usage section; include one inline and one file example.                                     | done (README.md lines 90–91)                       |
 
 ## Notes
 
@@ -225,9 +226,9 @@ _Specification and architecture pointers. Use paths and section anchors._
 ### Finished (2026-05-16)
 
 Story complete. Spec updates: README done; requirements §6.2 deferred (no user
-approval, tracked as follow-up); architecture/ADR n/a. No code or doc
-changes in this finishing hop beyond Spec Updates table reconciliation and
-Notes; verification summary from 2026-05-16 stands. Ready for done.
+approval, tracked as follow-up); architecture/ADR n/a. No code or doc changes in
+this finishing hop beyond Spec Updates table reconciliation and Notes;
+verification summary from 2026-05-16 stands. Ready for done.
 
 Planning decisions:
 

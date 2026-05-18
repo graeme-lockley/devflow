@@ -229,62 +229,43 @@ chmod +x devflow
 
 ## Board script composition
 
-Boards may use **hierarchical script layout** and **phase loop blocks** to
-compose multi-step validation workflows:
-
 ### Flat layout (default)
 
-Scripts directly in `.devflow/boards/<board>/scripts/` matching
-`<phase>-NNN-<name>` are run in lexical order on phase exit.
+Root exit scripts in `.devflow/boards/<board>/scripts/` matching
+`<phase>-NNN-<name>` run on phase exit via the **script flow driver** (lexical
+order with optional `NEXT_SCRIPT` jumps). See
+[§9.11](./docs/devflow-requirements.md#911-script-flow-control-next_script) and
+[ADR-0015](./docs/adr/0015-script-flow-control.md).
 
-### Hierarchical layout
+### Script flow control (`NEXT_SCRIPT`)
 
-Organize scripts into:
+Scripts may set card variable `NEXT_SCRIPT` to a `<phase>-<sequence>` prefix
+(same form as `--skip`) on **exit 0** to jump to another root exit script in the
+same phase. If unset after a script succeeds, the harness runs the next script
+in lexical order. Non-zero exit fails the transition immediately.
 
-- **Root scripts** (auto-discovered): `scripts/<phase>-NNN-<name>` (executable
-  files directly in `scripts/`)
-- **Child scripts** (parent-invoked): `scripts/<phase>/steps/01-name.sh`,
-  `scripts/<phase>/lib/common.sh`
-- **Helpers** (sourced): non-executable libraries in subdirectories
+Example (building retry after a failed gate):
 
-### Loop blocks
-
-Boards may configure **retry loops** for phases in `board.json`:
-
-```json
-{
-  "phaseScripts": {
-    "building": {
-      "loop": {
-        "steps": [
-          "building/steps/01-pi.sh",
-          "building/steps/02-fmt.sh",
-          "building/steps/03-gate-ci.sh",
-          "building/steps/04-gate-scenarios.sh"
-        ],
-        "maxRounds": 5
-      }
-    }
-  }
-}
+```bash
+devflow variable set "$card_id" NEXT_SCRIPT "building-002" --ignore-lock
+exit 0
 ```
 
-**Semantics:**
+Boards may configure `maxScriptExecutionsPerHop` in `board.json` (default `100`)
+as a safeguard against runaway jumps.
 
-- Root scripts **lexically before** first loop step run first (entry scripts).
-- Loop steps run sequentially; any failure **restarts from first step** (new
-  round).
-- After `maxRounds` with failure, the transition fails (phase unchanged).
-- Root scripts **lexically after** last loop step run after loop completes (exit
-  scripts).
-- Loop steps receive `DEVFLOW_SCRIPT_ROUND` (1-indexed), `DEVFLOW_LOOP_MAX`,
-  `DEVFLOW_SCRIPT_PARENT` environment variables.
+### Hierarchical layout (helpers)
 
-Phases without loop config use flat lexical discovery (backward compatible).
+Non-exit helpers may live in subdirectories (`scripts/lib/`, and so on) and are
+sourced by root scripts; they are not auto-discovered.
 
-See [§9.11](./docs/devflow-requirements.md#911-phase-loop-blocks) and
-[ADR-0014](./docs/adr/0014-script-composition-and-loops.md) for full
-specification.
+### Legacy loop blocks (deprecated)
+
+Older boards may still use `phaseScripts.<phase>.loop` in `board.json` and child
+scripts under `scripts/<phase>/steps/`. That model is **deprecated**; new boards
+should use `NEXT_SCRIPT` instead. See
+[§9.12](./docs/devflow-requirements.md#912-legacy-phase-loop-blocks-deprecated)
+and [ADR-0014](./docs/adr/0014-script-composition-and-loops.md).
 
 ## This repository
 
