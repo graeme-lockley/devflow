@@ -4,7 +4,8 @@ import { ensureJsrBuiltinTemplateDir } from "./jsr-templates.ts";
 Deno.test("ensureJsrBuiltinTemplateDir downloads stories from JSR", async () => {
   const dir = await ensureJsrBuiltinTemplateDir(
     "stories",
-    "https://jsr.io/@kestrel/devflow/0.1.2/src/services/templates.ts",
+    // Use latest published JSR version (deno.json may be ahead until publish).
+    "https://jsr.io/@kestrel/devflow/0.1.1/src/services/templates.ts",
   );
   assertEquals(
     (await Deno.stat(`${dir}/scripts/preparing-002-do-create-story`)).isFile,
