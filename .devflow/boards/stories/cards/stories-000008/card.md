@@ -116,10 +116,12 @@ only._
 **Out of scope:** stories board script migration (000009), legacy loop removal
 (000010), template `board.phaseScripts.json`, ADR/requirements edits.
 
-### Risks
+### Risks and constraints
 
-- Dual paths (driver vs loop) until 000010 — regression tests for both required.
-- Variable clear on failed validation must not run (operator resume).
+- Dual paths (driver vs loop) coexist until 000010 — regression tests for both are mandatory; legacy `runLoopBlock` behaviour must not change.
+- Variable clear on failed validation must not run, so operator-resume after a failed transition starts from the same `NEXT_SCRIPT`.
+- `NEXT_SCRIPT` read/clear happens under the transition lock; race-free reads required.
+- Execution must not touch immutable specs/ADRs (AGENTS.md); all edits land in `src/` and tests only.
 
 ## Test Scenarios
 
@@ -178,3 +180,27 @@ only._
   removes legacy implementation from the product.
 - Self-jump and backward jump are allowed; scripts own retry limits (e.g.
   `BUILD_ROUND` in 000009).
+- Driver consumes `NEXT_SCRIPT` once per successful script; preflight (req §11.4
+  step 9c) runs before the first hop, then per-hop entry re-validates per
+  §9.11.5.
+
+## Build Notes
+
+<!-- phase-gate: started by exit building | complete by exit finishing -->
+
+_To be completed in building._
+
+## Related Cards
+
+<!-- phase-gate: complete or explicit none by exit preparing -->
+
+- `stories-000009` — migrates the stories board building phase off legacy loop
+  config onto the new script flow driver.
+- `stories-000010` — removes legacy `runLoopBlock` and `phaseScripts.<phase>.loop`
+  support from the product.
+
+## Attachments
+
+<!-- phase-gate: optional preparing–building | evidence by exit verifying when cited in ACs -->
+
+_None._
