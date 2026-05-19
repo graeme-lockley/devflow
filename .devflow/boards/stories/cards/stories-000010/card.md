@@ -1,6 +1,6 @@
-# Remove legacy phase loop mechanism
+# Remove former looping mechanism
 
-As a Devflow maintainer, I want **legacy loop block** implementation and
+As a Devflow maintainer, I want the **legacy loop block** implementation and
 documentation removed from the product, so that only the **script flow driver**
 (§9.11, ADR-0015) remains and the codebase matches the migrated stories board
 (stories-000009).
@@ -144,3 +144,27 @@ _This story **updates** specs to reflect removal. Anchors after edit:_
 - Validate-board should **reject** unknown `phaseScripts` keys if the schema is
   removed entirely (preferred) or ignore with warning — decide in planning and
   document in requirements.
+
+## Build Notes
+
+<!-- phase-gate: started by exit building | complete by exit finishing -->
+<!-- as-built implementation only; do not put ### Finished or ### Verification summary here -->
+
+_To be completed in building._
+
+## Related Cards
+
+<!-- phase-gate: complete or explicit none by exit preparing -->
+
+- **Depends on:** `stories-000008` — script flow driver (`NEXT_SCRIPT`,
+  ADR-0015) that replaces loop orchestration.
+- **Depends on:** `stories-000009` — stories board migrated off
+  `phaseScripts.loop` config.
+- **History (closed):** `stories-000003`, `stories-000005`, `stories-000007` —
+  earlier loop-block work; do not edit.
+
+## Attachments
+
+<!-- phase-gate: optional preparing–building | evidence by exit verifying when cited in ACs -->
+
+_Screenshots, logs, or files under `files/`._
