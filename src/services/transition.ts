@@ -1,6 +1,6 @@
 import type { BoardConfig } from "../domain/board.ts";
 import type { CardState } from "../domain/card.ts";
-import { saveCardState } from "../domain/card.ts";
+import { loadCardState, saveCardState } from "../domain/card.ts";
 import { enumerateHops, isAtTarget } from "../domain/phases.ts";
 import {
   actionSkippedEvent,
@@ -35,7 +35,11 @@ import {
 } from "./scripts.ts";
 import { commit, stageAll } from "./git.ts";
 import { boardScriptsDir } from "../infra/paths.ts";
-import { partitionLoopRootScripts } from "../domain/script-names.ts";
+import {
+  partitionLoopRootScripts,
+  resolveExitScriptPrefix,
+  sortExitScriptNames,
+} from "../domain/script-names.ts";
 
 export interface RunAdvanceOptions {
   repoRoot: string;
@@ -129,6 +133,280 @@ export interface RunHopScriptsFailure {
   ok: false;
   failure: HopFailure;
   state: CardState;
+}
+
+interface FlowDriverResult {
+  ok: true;
+  records: RunScriptRecord[];
+  state: CardState;
+}
+
+interface FlowDriverFailure {
+  ok: false;
+  failure: HopFailure;
+  state: CardState;
+}
+
+/**
+ * Runs the script flow driver for a hop (req §9.11.2).
+ * Supports lexical progression with optional jumps via NEXT_SCRIPT.
+ */
+async function runScriptFlowDriver(
+  repoRoot: string,
+  board: BoardConfig,
+  state: CardState,
+  hop: { from: string; to: string },
+  run: TransitionRunContext,
+  scriptNames: string[],
+  env: Record<string, string>,
+  skip: string[] = [],
+): Promise<FlowDriverResult | FlowDriverFailure> {
+  const scriptsDir = `${repoRoot}/${boardScriptsDir(board.name)}`;
+  const records: RunScriptRecord[] = [];
+  const streamScriptOutput = getLogLevel() === "info" ||
+    getLogLevel() === "verbose";
+  const sortedScripts = sortExitScriptNames(scriptNames);
+  const limit = board.maxScriptExecutionsPerHop ?? 100;
+  const skipSet = new Set<string>();
+
+  // Build skip set for this hop
+  for (const skipToken of skip) {
+    if (skipToken.startsWith(`${hop.from}-`)) {
+      for (const scriptName of sortedScripts) {
+        if (scriptName.startsWith(skipToken)) {
+          skipSet.add(scriptName);
+        }
+      }
+    }
+  }
+
+  let executions = 0;
+  let current: string | null = null;
+  let nextState = state;
+
+  // Hop entry: choose starting script (§9.11.2)
+  const nextScriptVar = nextState.variables.NEXT_SCRIPT;
+  if (nextScriptVar) {
+    // Validate and resolve NEXT_SCRIPT at hop entry
+    const resolved = resolveExitScriptPrefix(nextScriptVar, sortedScripts);
+    if (!resolved.ok) {
+      await writeRunJson(run, "failed", records);
+      return {
+        ok: false,
+        failure: {
+          script: `NEXT_SCRIPT validation at hop entry: ${resolved.error}`,
+          exitCode: 1,
+          logPath: `${run.runDirRel}/output.log`,
+          run,
+        },
+        state: nextState,
+      };
+    }
+
+    // Check phase matches hop.from
+    const phase = nextScriptVar.split("-")[0];
+    if (phase !== hop.from) {
+      await writeRunJson(run, "failed", records);
+      return {
+        ok: false,
+        failure: {
+          script:
+            `NEXT_SCRIPT phase "${phase}" does not match hop from phase "${hop.from}"`,
+          exitCode: 1,
+          logPath: `${run.runDirRel}/output.log`,
+          run,
+        },
+        state: nextState,
+      };
+    }
+
+    // Check not commit-message script
+    const commitMsg = commitMessageScriptName(hop.from);
+    if (resolved.name === commitMsg) {
+      await writeRunJson(run, "failed", records);
+      return {
+        ok: false,
+        failure: {
+          script:
+            `NEXT_SCRIPT cannot target commit-message script "${commitMsg}"`,
+          exitCode: 1,
+          logPath: `${run.runDirRel}/output.log`,
+          run,
+        },
+        state: nextState,
+      };
+    }
+
+    current = resolved.name;
+    // Clear NEXT_SCRIPT
+    const { NEXT_SCRIPT: _, ...restVars } = nextState.variables;
+    nextState = { ...nextState, variables: restVars };
+    await saveCardState(repoRoot, board.name, nextState);
+  } else {
+    // Start at first lexical script
+    if (sortedScripts.length === 0) {
+      // No scripts to run
+      return { ok: true, records, state: nextState };
+    }
+    current = sortedScripts[0];
+  }
+
+  // Execute step (§9.11.2)
+  while (current !== null) {
+    // Check execution cap
+    if (executions >= limit) {
+      await writeRunJson(run, "failed", records);
+      return {
+        ok: false,
+        failure: {
+          script:
+            `exceeded maxScriptExecutionsPerHop (${limit}) after ${executions} executions, last script: ${current}`,
+          exitCode: 1,
+          logPath: `${run.runDirRel}/output.log`,
+          run,
+        },
+        state: nextState,
+      };
+    }
+    executions++;
+
+    // Check if skipped
+    if (skipSet.has(current)) {
+      logSkipped(current, "--skip");
+      records.push({ name: current, exitCode: 0, skipped: true });
+      // Find lexical successor
+      const idx = sortedScripts.indexOf(current);
+      current = idx >= 0 && idx + 1 < sortedScripts.length
+        ? sortedScripts[idx + 1]
+        : null;
+      continue;
+    }
+
+    // Execute script
+    inFlightHop!.script = current;
+    const scriptPath = `${scriptsDir}/${current}`;
+    if (streamScriptOutput) {
+      logInfo(`running ${current}`);
+    }
+    const result = await invokeScript(
+      scriptPath,
+      board.name,
+      nextState.id,
+      env,
+      repoRoot,
+      { streamOutput: streamScriptOutput },
+    );
+
+    // Record execution
+    const record: RunScriptRecord = {
+      name: current,
+      exitCode: result.exitCode,
+    };
+    await appendScriptOutput(run, current, result.stdout, result.stderr, {
+      alreadyStreamed: streamScriptOutput,
+    });
+
+    if (result.exitCode !== 0) {
+      // Script failed, stop immediately
+      // Reload state to get any variables set before failure
+      const failedState = await loadCardState(
+        repoRoot,
+        board.name,
+        nextState.id,
+      );
+      records.push(record);
+      await writeRunJson(run, "failed", records);
+      return {
+        ok: false,
+        failure: {
+          script: current,
+          exitCode: result.exitCode,
+          logPath: `${run.runDirRel}/output.log`,
+          run,
+        },
+        state: failedState,
+      };
+    }
+
+    // Script succeeded, check NEXT_SCRIPT
+    // Reload state to get fresh variables
+    nextState = await loadCardState(repoRoot, board.name, nextState.id);
+    const nextScriptAfter = nextState.variables.NEXT_SCRIPT;
+
+    if (nextScriptAfter) {
+      // Validate NEXT_SCRIPT
+      const resolved = resolveExitScriptPrefix(nextScriptAfter, sortedScripts);
+      if (!resolved.ok) {
+        records.push(record);
+        await writeRunJson(run, "failed", records);
+        return {
+          ok: false,
+          failure: {
+            script:
+              `NEXT_SCRIPT validation after ${current}: ${resolved.error}`,
+            exitCode: 1,
+            logPath: `${run.runDirRel}/output.log`,
+            run,
+          },
+          state: nextState,
+        };
+      }
+
+      // Check phase matches hop.from
+      const phase = nextScriptAfter.split("-")[0];
+      if (phase !== hop.from) {
+        records.push(record);
+        await writeRunJson(run, "failed", records);
+        return {
+          ok: false,
+          failure: {
+            script:
+              `NEXT_SCRIPT phase "${phase}" does not match hop from phase "${hop.from}"`,
+            exitCode: 1,
+            logPath: `${run.runDirRel}/output.log`,
+            run,
+          },
+          state: nextState,
+        };
+      }
+
+      // Check not commit-message script
+      const commitMsg = commitMessageScriptName(hop.from);
+      if (resolved.name === commitMsg) {
+        records.push(record);
+        await writeRunJson(run, "failed", records);
+        return {
+          ok: false,
+          failure: {
+            script:
+              `NEXT_SCRIPT cannot target commit-message script "${commitMsg}"`,
+            exitCode: 1,
+            logPath: `${run.runDirRel}/output.log`,
+            run,
+          },
+          state: nextState,
+        };
+      }
+
+      // Clear NEXT_SCRIPT and record jump
+      const { NEXT_SCRIPT: _, ...restVars } = nextState.variables;
+      nextState = { ...nextState, variables: restVars };
+      await saveCardState(repoRoot, board.name, nextState);
+
+      record.nextScript = nextScriptAfter;
+      records.push(record);
+      current = resolved.name;
+    } else {
+      // No jump, advance lexically
+      records.push(record);
+      const idx = sortedScripts.indexOf(current);
+      current = idx >= 0 && idx + 1 < sortedScripts.length
+        ? sortedScripts[idx + 1]
+        : null;
+    }
+  }
+
+  return { ok: true, records, state: nextState };
 }
 
 interface LoopBlockResult {
@@ -339,47 +617,21 @@ export async function runHopExitScripts(
     const loopConfig = board.phaseScripts?.[hop.from]?.loop;
 
     if (!loopConfig) {
-      // No loop: run all scripts in lexical order (backward compatible)
-      for (const name of scriptNames) {
-        // Check if this script should be skipped (req stories-000005)
-        if (skipForThisHop.has(name)) {
-          logSkipped(name, "--skip");
-          records.push({ name, exitCode: 0, skipped: true });
-          continue;
-        }
-
-        inFlightHop.script = name;
-        const scriptPath = `${scriptsDir}/${name}`;
-        if (streamScriptOutput) {
-          logInfo(`running ${name}`);
-        }
-        const result = await invokeScript(
-          scriptPath,
-          board.name,
-          state.id,
-          env,
-          repoRoot,
-          { streamOutput: streamScriptOutput },
-        );
-        records.push({ name, exitCode: result.exitCode });
-        await appendScriptOutput(run, name, result.stdout, result.stderr, {
-          alreadyStreamed: streamScriptOutput,
-        });
-
-        if (result.exitCode !== 0) {
-          await writeRunJson(run, "failed", records);
-          return {
-            ok: false,
-            failure: {
-              script: name,
-              exitCode: result.exitCode,
-              logPath: `${run.runDirRel}/output.log`,
-              run,
-            },
-            state,
-          };
-        }
+      // Use script flow driver (req §9.11)
+      const driverResult = await runScriptFlowDriver(
+        repoRoot,
+        board,
+        state,
+        hop,
+        run,
+        scriptNames,
+        env,
+        skip,
+      );
+      if (!driverResult.ok) {
+        return driverResult;
       }
+      return { ok: true, run, records: driverResult.records };
     } else {
       // Loop configuration present: entry → loop → exit (req §9.11.3)
       const { entry: entryScripts, exit: exitScripts } =
@@ -611,7 +863,7 @@ async function runSingleHopNormal(
 
   await writeCommitMessageTxt(run, commitMessage);
 
-  const at = utcNow();
+  const at = startedAt;
   let nextState = {
     ...state,
     phase: hop.to,
@@ -702,6 +954,41 @@ export async function runAdvance(
       if (!matched) {
         throw new Error(
           `--skip token "${skipToken}" does not match any script in this advance`,
+        );
+      }
+    }
+  }
+
+  // Preflight: validate NEXT_SCRIPT if set on first hop (req §11.4 step 9c, §9.11.5)
+  if (hops.length > 0) {
+    const nextScriptVar = state.variables.NEXT_SCRIPT;
+    if (nextScriptVar) {
+      const firstHop = hops[0];
+      const scripts = await listExitScripts(
+        repoRoot,
+        board.name,
+        firstHop.from,
+      );
+      const resolved = resolveExitScriptPrefix(nextScriptVar, scripts);
+      if (!resolved.ok) {
+        throw new Error(
+          `NEXT_SCRIPT preflight validation failed: ${resolved.error}`,
+        );
+      }
+
+      // Check phase matches first hop.from
+      const phase = nextScriptVar.split("-")[0];
+      if (phase !== firstHop.from) {
+        throw new Error(
+          `NEXT_SCRIPT phase "${phase}" does not match first hop from phase "${firstHop.from}"`,
+        );
+      }
+
+      // Check not commit-message script
+      const commitMsg = commitMessageScriptName(firstHop.from);
+      if (resolved.name === commitMsg) {
+        throw new Error(
+          `NEXT_SCRIPT cannot target commit-message script "${commitMsg}"`,
         );
       }
     }

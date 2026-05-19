@@ -70,6 +70,44 @@ export function partitionLoopRootScripts(
   return { entry, exit };
 }
 
+/** Resolves a prefix to exactly one root exit script name (req §9.11.4).
+ * Returns the matched script name on success, or an error message on failure.
+ */
+export function resolveExitScriptPrefix(
+  prefix: string,
+  scriptNames: string[],
+): { ok: true; name: string } | { ok: false; error: string } {
+  // Validate prefix form: <phase>-<sequence> where phase is [a-z][a-z0-9]* and sequence is \d{3}
+  const prefixPattern = /^[a-z][a-z0-9]*-[0-9]{3}$/;
+  if (!prefixPattern.test(prefix)) {
+    return {
+      ok: false,
+      error:
+        `NEXT_SCRIPT prefix "${prefix}" does not match <phase>-<sequence> form`,
+    };
+  }
+
+  const matches = scriptNames.filter((name) => name.startsWith(prefix));
+
+  if (matches.length === 0) {
+    return {
+      ok: false,
+      error: `NEXT_SCRIPT prefix "${prefix}" does not match any exit script`,
+    };
+  }
+
+  if (matches.length > 1) {
+    return {
+      ok: false,
+      error: `NEXT_SCRIPT prefix "${prefix}" matches multiple scripts: ${
+        matches.join(", ")
+      }`,
+    };
+  }
+
+  return { ok: true, name: matches[0] };
+}
+
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

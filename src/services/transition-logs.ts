@@ -5,6 +5,7 @@ export interface RunScriptRecord {
   name: string;
   exitCode: number;
   skipped?: boolean;
+  nextScript?: string;
 }
 
 export interface RunMetadata {

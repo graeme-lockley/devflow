@@ -20,6 +20,7 @@ export interface BoardConfig {
   createdAt: string;
   updatedAt: string;
   phaseScripts?: Record<string, PhaseScriptConfig>;
+  maxScriptExecutionsPerHop?: number;
 }
 
 export interface CreateBoardConfigOptions {
@@ -137,6 +138,20 @@ export function parseBoardConfig(raw: unknown, boardName: string): BoardConfig {
     throw new Error(`board "${boardName}": "updatedAt" must be a string`);
   }
 
+  let maxScriptExecutionsPerHop: number | undefined;
+  if ("maxScriptExecutionsPerHop" in o) {
+    if (
+      typeof o.maxScriptExecutionsPerHop !== "number" ||
+      !Number.isInteger(o.maxScriptExecutionsPerHop) ||
+      o.maxScriptExecutionsPerHop < 1
+    ) {
+      throw new Error(
+        `board "${boardName}": "maxScriptExecutionsPerHop" must be an integer >= 1`,
+      );
+    }
+    maxScriptExecutionsPerHop = o.maxScriptExecutionsPerHop;
+  }
+
   let phaseScripts: Record<string, PhaseScriptConfig> | undefined;
   if ("phaseScripts" in o) {
     if (
@@ -211,6 +226,9 @@ export function parseBoardConfig(raw: unknown, boardName: string): BoardConfig {
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
     ...(phaseScripts ? { phaseScripts } : {}),
+    ...(maxScriptExecutionsPerHop !== undefined
+      ? { maxScriptExecutionsPerHop }
+      : {}),
   };
 }
 

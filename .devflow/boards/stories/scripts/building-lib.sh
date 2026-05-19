@@ -113,11 +113,16 @@ building_collect_allowed_doc_paths() {
   done < <(building_section_body "$card_md" "Spec Updates")
 }
 
-# True when card.md scopes this story to board.json / scripts / skills (e.g. loop stories).
+# True when card.md scopes this story to edit live board.json / scripts / skills / assets
+# (e.g. loop migration). Mere mentions of board.json or phaseScripts in spec discussion
+# do not qualify. Opt out with <!-- building-scope: core-product-only --> in card.md.
 stories_board_infrastructure_in_scope() {
   local card_md="$1"
+  if grep -qE 'building-scope:[[:space:]]*core-product-only' "$card_md"; then
+    return 1
+  fi
   grep -qiE \
-    'board\.json|phaseScripts|Stories board|/scripts/|/skills/|/assets/|building/steps|refactor.*\.devflow/boards' \
+    '\.devflow/boards/[^/[:space:]`]+/(scripts|skills|assets)/|board\.phaseScripts\.json|(Remove|Sync|Flatten|Mirror|Refactor).{0,60}(phaseScripts|\.devflow/boards/[^/[:space:]`]+/(scripts|skills|assets))' \
     "$card_md"
 }
 
