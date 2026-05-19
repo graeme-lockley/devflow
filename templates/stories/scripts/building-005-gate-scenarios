@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
-# Loop step 04: Run Test Scenarios from card.md
+# Flat script 005: Run Test Scenarios from card.md gate with retry logic
 set -euo pipefail
 board="${1:?board name required}"
 card_id="${2:?card id required}"
 : "$board" "$card_id"
 
-SCRIPT_ID="building/steps/04-gate-scenarios"
+SCRIPT_ID="building-005-gate-scenarios"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
 run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
 card_md="${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}/card.md"
-round="${DEVFLOW_SCRIPT_ROUND:-1}"
-max="${DEVFLOW_LOOP_MAX:-1}"
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
+script_dir="${board_dir}/scripts"
 
-# shellcheck source=../../building-lib.sh
+# shellcheck source=building-lib.sh
 source "${script_dir}/building-lib.sh"
+
+# Get current round from board variable (default 1 if not set)
+round=$(devflow variable get --board "$board" --card "$card_id" BUILD_ROUND 2>/dev/null || echo "1")
+max=5
 
 log_info() {
   [ "${DEVFLOW_LOG_LEVEL:-info}" = "summary" ] && return 0
@@ -32,8 +35,20 @@ if ! building_run_scenario_tests "$card_md" "$gate_log"; then
     echo "--- tail ---"
     tail -n 60 "$gate_log"
   } >"${run_dir}/loop-failure-summary.txt"
-  exit 1
+  
+  # Retry logic: if round < max, jump back to building-002 and increment round
+  if [ "$round" -lt "$max" ]; then
+    next_round=$((round + 1))
+    devflow variable set --board "$board" --card "$card_id" BUILD_ROUND "$next_round"
+    devflow variable set --board "$board" --card "$card_id" NEXT_SCRIPT "building-002"
+    log_info "retry: round ${next_round}/${max}, jumping to building-002"
+    exit 0
+  else
+    log_info "max rounds reached (${max}), failing"
+    exit 1
+  fi
 fi
+
 rm -f "${run_dir}/loop-failure-summary.txt"
 log_info "Test Scenarios passed"
 exit 0

@@ -38,7 +38,7 @@ Deno.test("initBoard with template copies scripts and skills", async () => {
   await Deno.stat(skillPath);
 });
 
-Deno.test("initBoard with template applies building loop config", async () => {
+Deno.test("initBoard with template copies building scripts", async () => {
   const dir = await Deno.makeTempDir();
   await initBoard(
     "stories",
@@ -48,22 +48,24 @@ Deno.test("initBoard with template applies building loop config", async () => {
   );
 
   const board = await loadBoardConfig(dir, "stories");
-  assertEquals(board.phaseScripts?.building?.loop?.maxRounds, 5);
-  assertEquals(
-    board.phaseScripts?.building?.loop?.steps,
-    [
-      "building/steps/01-pi.sh",
-      "building/steps/02-fmt.sh",
-      "building/steps/03-gate-ci.sh",
-      "building/steps/04-gate-scenarios.sh",
-    ],
-  );
+  // No loop config in the new flat layout
+  assertEquals(board.phaseScripts, undefined);
 
+  // Verify flat building scripts exist
   await Deno.stat(
     `${dir}/${boardScriptsDir("stories")}/building-001-check-entry`,
   );
   await Deno.stat(
-    `${dir}/${boardScriptsDir("stories")}/building/steps/01-pi.sh`,
+    `${dir}/${boardScriptsDir("stories")}/building-002-pi`,
+  );
+  await Deno.stat(
+    `${dir}/${boardScriptsDir("stories")}/building-003-fmt`,
+  );
+  await Deno.stat(
+    `${dir}/${boardScriptsDir("stories")}/building-004-gate-ci`,
+  );
+  await Deno.stat(
+    `${dir}/${boardScriptsDir("stories")}/building-005-gate-scenarios`,
   );
   await Deno.stat(`${dir}/${boardSkillsDir("stories")}/build-story/SKILL.md`);
 });

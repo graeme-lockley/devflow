@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# Loop step 02: Format sources and apply mechanical lint fixes after pi edits.
+# Flat script 003: Format sources and apply mechanical lint fixes after pi edits.
 set -euo pipefail
 board="${1:?board name required}"
 card_id="${2:?card id required}"
 : "$board" "$card_id"
 
-SCRIPT_ID="building/steps/02-fmt"
+SCRIPT_ID="building-003-fmt"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
 run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
 board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
-round="${DEVFLOW_SCRIPT_ROUND:-1}"
-max="${DEVFLOW_LOOP_MAX:-1}"
+
+# Get current round from board variable (default 1 if not set)
+round=$(devflow variable get --board "$board" --card "$card_id" BUILD_ROUND 2>/dev/null || echo "1")
+max=5
 log_file="${run_dir}/fmt-round-${round}.log"
 
 log_info() {

@@ -6,7 +6,7 @@ const TEMPLATE = "templates/stories/scripts";
 const PI_ENTRY_SCRIPTS = [
   "preparing-002-do-create-story",
   "planning-003-do-planning",
-  "building/steps/01-pi.sh",
+  "building-002-pi",
   "verifying-002-do-validate",
   "finishing-002-do-finish",
 ];

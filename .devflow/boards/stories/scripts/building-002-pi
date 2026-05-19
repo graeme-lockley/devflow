@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-# Loop step 01: Run pi build-story or skip if DEVFLOW_SKIP_PI=1
+# Flat script 002: Run pi build-story or skip if DEVFLOW_SKIP_PI=1
 set -euo pipefail
 board="${1:?board name required}"
 card_id="${2:?card id required}"
 : "$board" "$card_id"
 
-SCRIPT_ID="building/steps/01-pi"
+SCRIPT_ID="building-002-pi"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
 card_md="${DEVFLOW_CARD_MD:-${DEVFLOW_CARD_DIR:?DEVFLOW_CARD_DIR not set}/card.md}"
 skill_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}/skills/build-story"
 run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
 board_dir="${DEVFLOW_BOARD_DIR:?DEVFLOW_BOARD_DIR not set}"
-round="${DEVFLOW_SCRIPT_ROUND:-1}"
-max="${DEVFLOW_LOOP_MAX:-1}"
 lib_dir="${board_dir}/scripts/lib"
+
+# Get current round from board variable (default 1 if not set)
+round=$(devflow variable get --board "$board" --card "$card_id" BUILD_ROUND 2>/dev/null || echo "1")
+max=5
 
 log_info() {
   [ "${DEVFLOW_LOG_LEVEL:-info}" = "summary" ] && return 0
@@ -35,11 +37,11 @@ if [ -z "${DEVFLOW_MEDIUM_MODEL:-}" ]; then
   exit 1
 fi
 
-# shellcheck source=../../lib/pi-prompt.sh
+# shellcheck source=lib/pi-prompt.sh
 source "${lib_dir}/pi-prompt.sh"
 prompt="$(pi_prompt_phase build-story implement)"
 if [ "$round" -gt 1 ] && [ -f "${lib_dir}/building-loop-feedback.sh" ]; then
-  # shellcheck source=../../lib/building-loop-feedback.sh
+  # shellcheck source=lib/building-loop-feedback.sh
   source "${lib_dir}/building-loop-feedback.sh"
   feedback="$(building_loop_feedback "$run_dir" "$round")"
   if [ -n "$feedback" ]; then

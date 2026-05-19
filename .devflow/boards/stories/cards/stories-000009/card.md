@@ -153,15 +153,15 @@ Stories board only; no CLI/product code changes. Files touched:
 
 <!-- phase-gate: complete by exit planning | all [x] by exit building -->
 
-1. [ ] Remove `phaseScripts` from stories `board.json`.
-2. [ ] Create flat `building-002` … `005` from step scripts; renumber 006–008.
-3. [ ] Implement `BUILD_ROUND` + `NEXT_SCRIPT` retry in gate scripts.
-4. [ ] Update `building-loop-feedback.sh` / pi prompt for round variable.
-5. [ ] Delete `scripts/building/steps/`; update `scripts/README.md`.
-6. [ ] Sync `templates/stories/` (scripts, remove `board.phaseScripts.json`
+1. [x] Remove `phaseScripts` from stories `board.json`.
+2. [x] Create flat `building-002` … `005` from step scripts; renumber 006–008.
+3. [x] Implement `BUILD_ROUND` + `NEXT_SCRIPT` retry in gate scripts.
+4. [x] Update `building-loop-feedback.sh` / pi prompt for round variable.
+5. [x] Delete `scripts/building/steps/`; update `scripts/README.md`.
+6. [x] Sync `templates/stories/` (scripts, remove `board.phaseScripts.json`
        loop).
-7. [ ] Update `build-story` skill references.
-8. [ ] Run `deno task test` (#1–#3).
+7. [x] Update `build-story` skill references.
+8. [x] Run `deno task test` (#1–#3).
 
 ## Spec Updates
 
@@ -196,7 +196,58 @@ Stories board only; no CLI/product code changes. Files touched:
 
 <!-- phase-gate: started by exit building | complete by exit finishing -->
 
-_To be completed in building._
+### Summary
+
+Migrated stories board from `board.json` loop configuration to flat root exit
+scripts with `NEXT_SCRIPT`-driven retries. The building phase now uses 8
+lexically-ordered scripts (002–008) instead of 4 loop steps + 3 exit bands.
+Retry logic moved from harness to gate scripts using `BUILD_ROUND` board
+variable (max 5 rounds). All templates synced.
+
+### Key files changed
+
+- **Task 1**: `.devflow/boards/stories/board.json` — removed `phaseScripts` key
+  entirely.
+- **Task 2**: Created flat scripts `building-002-pi`, `building-003-fmt`,
+  `building-004-gate-ci`, `building-005-gate-scenarios` from
+  `building/steps/01-04`. Renumbered existing exit scripts: `building-003` →
+  `006` (check-building-quality), `building-005` → `007`
+  (check-spec-updates), `building-007` → `008` (check-git-scope).
+- **Task 3**: Gate scripts `building-004-gate-ci` and
+  `building-005-gate-scenarios` now set `NEXT_SCRIPT=building-002` and
+  increment `BUILD_ROUND` on failure (up to 5 rounds), exit 0 to trigger retry.
+- **Task 4**: `building-002-pi` reads `BUILD_ROUND` via `devflow variable get`
+  and passes to `building_loop_feedback` for prior-round gate logs.
+  `building-loop-feedback.sh` unchanged (already generic).
+- **Task 5**: Deleted `scripts/building/steps/` directory. Updated
+  `scripts/README.md` "Building phase layout" section to document flat script
+  layout with retry mechanism; updated script number references throughout.
+- **Task 6**: Deleted `templates/stories/board.phaseScripts.json`. Copied new
+  flat scripts 002–005, renumbered 006–008, deleted `building/steps/`, synced
+  `README.md` and `building-001-check-entry` (BUILD_ROUND reset).
+- **Task 7**: Updated `.devflow/boards/stories/skills/build-story/SKILL.md`
+  reference from `building-007` to `building-008` (git-scope check); synced to
+  `templates/stories/skills/build-story/SKILL.md`.
+- **Task 8**: Updated test files `src/services/pi-invocation-pattern_test.ts`
+  (changed `building/steps/01-pi.sh` to `building-002-pi` in
+  `PI_ENTRY_SCRIPTS`) and `src/services/templates_test.ts` (removed loop config
+  assertions, verified flat building scripts 002–005). All 271 tests pass.
+
+### Deviations from Impact Analysis
+
+None. Implementation matched the planned migration exactly.
+
+### Round variable mechanics
+
+- `building-001-check-entry` resets `BUILD_ROUND=1` on clean tree entry (hop
+  start).
+- Gate scripts 004/005 read current `BUILD_ROUND`, increment on failure, set
+  `NEXT_SCRIPT=building-002`, and exit 0 if `round < 5`; else fail.
+- `building-002-pi` reads `BUILD_ROUND` and includes prior-round feedback when
+  `round > 1`.
+- Driver resolves `NEXT_SCRIPT=building-002` to full script name
+  `building-002-pi` lexically.
+- `BUILD_ROUND_MAX=5` is hardcoded in gate scripts (no board variable for max).
 
 ## Related Cards
 

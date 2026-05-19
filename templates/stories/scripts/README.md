@@ -31,24 +31,25 @@ exit scripts.
 Building phase uses **flat root exit scripts** (no loop config) with retry via
 `NEXT_SCRIPT` and `BUILD_ROUND` board variables:
 
-| Script                                 | Role                                                   |
-| -------------------------------------- | ------------------------------------------------------ |
-| `building-001-check-entry`             | Entry checks; resets `BUILD_ROUND=1` on clean tree     |
-| `building-002-pi`                      | pi build-story (includes prior-round feedback)         |
-| `building-003-fmt`                     | `deno fmt` + mechanical lint-fix (unused imports)      |
-| `building-004-gate-ci`                 | `deno task ci`; on fail, retries from 002 if round < 5 |
-| `building-005-gate-scenarios`          | Test Scenarios; on fail, retries from 002 if round < 5 |
-| `building-006-check-building-quality`  | Build Notes, AC, Build Tasks gate                      |
-| `building-007-check-spec-updates`      | Spec Updates vs git                                    |
-| `building-008-check-git-scope`         | Repo change scope                                      |
+| Script                                | Role                                                   |
+| ------------------------------------- | ------------------------------------------------------ |
+| `building-001-check-entry`            | Entry checks; resets `BUILD_ROUND=1` on clean tree     |
+| `building-002-pi`                     | pi build-story (includes prior-round feedback)         |
+| `building-003-fmt`                    | `deno fmt` + mechanical lint-fix (unused imports)      |
+| `building-004-gate-ci`                | `deno task ci`; on fail, retries from 002 if round < 5 |
+| `building-005-gate-scenarios`         | Test Scenarios; on fail, retries from 002 if round < 5 |
+| `building-006-check-building-quality` | Build Notes, AC, Build Tasks gate                      |
+| `building-007-check-spec-updates`     | Spec Updates vs git                                    |
+| `building-008-check-git-scope`        | Repo change scope                                      |
 
-**Retry mechanism:** Gate scripts 004 and 005 set `NEXT_SCRIPT=building-002`
-and increment `BUILD_ROUND` on failure (max 5 rounds). Script 002 includes
+**Retry mechanism:** Gate scripts 004 and 005 set `NEXT_SCRIPT=building-002` and
+increment `BUILD_ROUND` on failure (max 5 rounds). Script 002 includes
 prior-round gate logs in the pi prompt when `BUILD_ROUND > 1`.
 
-**Round tracking:** `BUILD_ROUND` is a board variable (via `devflow variable
-get/set`), reset to 1 by `building-001` on clean-tree entry. The driver
-resolves `NEXT_SCRIPT=building-002` to the full script name
+**Round tracking:** `BUILD_ROUND` is a board variable (via
+`devflow variable
+get/set`), reset to 1 by `building-001` on clean-tree entry.
+The driver resolves `NEXT_SCRIPT=building-002` to the full script name
 `building-002-pi`.
 
 ## Template sections vs exit scripts

@@ -34,7 +34,7 @@ When the card scopes `templates/stories/` sync, you may edit **both**:
 - `templates/stories/**` (portable template shipped via JSR)
 - `.devflow/boards/<board>/scripts/`, `skills/`, `assets/` (dogfood board)
 
-`building-007` allows these paths when the card mentions them. Mirror
+`building-008` allows these paths when the card mentions them. Mirror
 intentional changes into `templates/stories/` when the story requires it.
 
 ## Inputs

@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# Loop step 03: Run deno task ci
+# Flat script 004: Run deno task ci gate with retry logic
 set -euo pipefail
 board="${1:?board name required}"
 card_id="${2:?card id required}"
 : "$board" "$card_id"
 
-SCRIPT_ID="building/steps/03-gate-ci"
+SCRIPT_ID="building-004-gate-ci"
 repo_root="${DEVFLOW_REPO_ROOT:?DEVFLOW_REPO_ROOT not set}"
 run_dir="${DEVFLOW_RUN_DIR:?DEVFLOW_RUN_DIR not set}"
-round="${DEVFLOW_SCRIPT_ROUND:-1}"
-max="${DEVFLOW_LOOP_MAX:-1}"
+
+# Get current round from board variable (default 1 if not set)
+round=$(devflow variable get --board "$board" --card "$card_id" BUILD_ROUND 2>/dev/null || echo "1")
+max=5
 
 log_info() {
   [ "${DEVFLOW_LOG_LEVEL:-info}" = "summary" ] && return 0
@@ -27,8 +29,20 @@ if ! deno task ci >"$ci_log" 2>&1; then
     echo "--- tail ---"
     tail -n 60 "$ci_log"
   } >"${run_dir}/loop-failure-summary.txt"
-  exit 1
+  
+  # Retry logic: if round < max, jump back to building-002 and increment round
+  if [ "$round" -lt "$max" ]; then
+    next_round=$((round + 1))
+    devflow variable set --board "$board" --card "$card_id" BUILD_ROUND "$next_round"
+    devflow variable set --board "$board" --card "$card_id" NEXT_SCRIPT "building-002"
+    log_info "retry: round ${next_round}/${max}, jumping to building-002"
+    exit 0
+  else
+    log_info "max rounds reached (${max}), failing"
+    exit 1
+  fi
 fi
+
 rm -f "${run_dir}/loop-failure-summary.txt"
 log_info "deno task ci passed"
 exit 0

@@ -22,8 +22,10 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 1
 fi
 
+# Reset BUILD_ROUND at hop start (clean tree entry)
 porcelain=$(git -C "$repo_root" status --porcelain)
 if [ -z "$porcelain" ]; then
+  devflow variable set --board "$board" --card "$card_id" BUILD_ROUND 1 2>/dev/null || true
   exit 0
 fi
 
