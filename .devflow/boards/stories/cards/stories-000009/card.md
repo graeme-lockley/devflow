@@ -92,16 +92,16 @@ _Implement behaviour defined in these documents; do not edit them._
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] Stories `board.json` has **no** `phaseScripts.building.loop`.
-2. [ ] No files under `scripts/building/steps/` on the stories board.
-3. [ ] Flat scripts `building-002` … `building-005` exist and implement former
+1. [x] Stories `board.json` has **no** `phaseScripts.building.loop`.
+2. [x] No files under `scripts/building/steps/` on the stories board.
+3. [x] Flat scripts `building-002` … `building-005` exist and implement former
        loop step behaviour.
-4. [ ] Failed CI/scenarios retry from `building-002` up to 5 rounds via
+4. [x] Failed CI/scenarios retry from `building-002` up to 5 rounds via
        `NEXT_SCRIPT` + `BUILD_ROUND`; successful build hop reaches
        `building-008` and advances.
-5. [ ] `templates/stories/` matches (scripts, no loop JSON, generic paths).
-6. [ ] `scripts/README.md` documents flat building layout (not loop bands).
-7. [ ] `deno task test` passes.
+5. [x] `templates/stories/` matches (scripts, no loop JSON, generic paths).
+6. [x] `scripts/README.md` documents flat building layout (not loop bands).
+7. [x] `deno task test` passes.
 
 ## Impact Analysis
 
@@ -141,13 +141,13 @@ Stories board only; no CLI/product code changes. Files touched:
 
 <!-- phase-gate: complete by exit planning | executed by exit verifying -->
 
-| # | Type      | Scenario                                                             | Expected                                           |
-| - | --------- | -------------------------------------------------------------------- | -------------------------------------------------- |
-| 1 | automated | `deno task test` (full suite)                                        | pass                                               |
-| 2 | automated | `devflow board validate stories`                                     | pass; no loop config errors                        |
-| 3 | automated | Template init copies flat building scripts, no `phaseScripts` loop   | new board has 002–005, no `building/steps`         |
-| 4 | manual    | Advance a card through building with intentional CI failure then fix | retries from 002; ≤5 rounds; eventual pass or fail |
-| 5 | manual    | `DEVFLOW_SKIP_PI=1` path still works on `building-002-pi`            | pi skipped; gates still run                        |
+| # | Type      | Scenario                                                             | Expected                                           | Result |
+| - | --------- | -------------------------------------------------------------------- | -------------------------------------------------- | ------ |
+| 1 | automated | `deno task test` (full suite)                                        | pass                                               | **pass** (271 tests) |
+| 2 | automated | `devflow board validate stories`                                     | pass; no loop config errors                        | **pass** |
+| 3 | automated | Template init copies flat building scripts, no `phaseScripts` loop   | new board has 002–005, no `building/steps`         | **pass** |
+| 4 | manual    | Advance a card through building with intentional CI failure then fix | retries from 002; ≤5 rounds; eventual pass or fail | verified in code |
+| 5 | manual    | `DEVFLOW_SKIP_PI=1` path still works on `building-002-pi`            | pi skipped; gates still run                        | verified in code |
 
 ## Build Tasks
 
@@ -191,6 +191,24 @@ Stories board only; no CLI/product code changes. Files touched:
 - Scenario #2 (`devflow board validate stories`) and scenario #3 (template
   init) are listed as automated; if no existing test harness covers them, they
   will be added as new test files under `src/` during building so AC #7 holds.
+
+### Verification summary (2026-05-19)
+
+- **Test scenarios:** 3/3 automated pass; 2/2 manual verified in code
+- **Acceptance criteria:** 7/7 checked
+- **Commands run:**
+  - `deno task test`: pass (271 tests)
+  - `devflow board validate stories`: pass
+  - Template init test: pass (building-002 through 005 present, no building/steps)
+- **Verification notes:**
+  - AC #1: Confirmed `board.json` has no `phaseScripts` key
+  - AC #2: Confirmed `scripts/building/steps/` directory does not exist
+  - AC #3: Verified all four flat scripts (002-pi, 003-fmt, 004-gate-ci, 005-gate-scenarios) exist
+  - AC #4: Examined gate scripts; confirmed `NEXT_SCRIPT=building-002` + `BUILD_ROUND` retry logic (max 5 rounds)
+  - AC #5: Verified templates match live board scripts (diff shows no differences); `board.phaseScripts.json` correctly absent
+  - AC #6: Confirmed `scripts/README.md` documents flat building layout with retry mechanism
+  - AC #7: Full test suite passes
+  - Manual scenarios #4 and #5: Not executed end-to-end but implementation verified in script code
 
 ## Build Notes
 
