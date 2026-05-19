@@ -1,4 +1,4 @@
-# Migrate stories board to `NEXT_SCRIPT`
+# Migrate stories and template to new mechanism
 
 As a stories board author, I want the **building** phase refactored to **flat
 root exit scripts** and **`NEXT_SCRIPT`-driven retries**, so that the stories
@@ -82,11 +82,11 @@ after migration.
 
 _Implement behaviour defined in these documents; do not edit them._
 
-- [x] [`docs/devflow-requirements.md`](../../../../../../docs/devflow-requirements.md)
+- [ ] [`docs/devflow-requirements.md`](../../../../../../docs/devflow-requirements.md)
       — §9.11 (driver), §9.3 (root script naming), §7 (`NEXT_SCRIPT`,
       `BUILD_ROUND` convention).
-- [x] [`docs/adr/0015-script-flow-control.md`](../../../../../../docs/adr/0015-script-flow-control.md).
-- [x] [`README.md`](../../../../../README.md) — script flow author guide.
+- [ ] [`docs/adr/0015-script-flow-control.md`](../../../../../../docs/adr/0015-script-flow-control.md).
+- [ ] [`README.md`](../../../../../README.md) — script flow author guide.
 
 ## Acceptance Criteria
 
@@ -161,7 +161,29 @@ _Implement behaviour defined in these documents; do not edit them._
 
 ## Notes
 
+<!-- phase-gate: optional; ongoing across phases -->
+
 - **000010** removes legacy loop code from the CLI; this story only stops using
   it on the stories board.
 - Sequence renumber (`003`→`006`, etc.) is intentional; update any card or doc
   references to old numbers in the same story.
+
+## Build Notes
+
+<!-- phase-gate: started by exit building | complete by exit finishing -->
+
+_To be completed in building._
+
+## Related Cards
+
+<!-- phase-gate: complete or explicit none by exit preparing -->
+
+- **stories-000008** — script flow driver in CLI (dependency; must be complete).
+- **stories-000010** — removes legacy loop product code from the CLI
+  (follow-on; out of scope here).
+
+## Attachments
+
+<!-- phase-gate: optional preparing–building | evidence by exit verifying when cited in ACs -->
+
+_Screenshots, logs, or files under `files/`._
