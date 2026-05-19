@@ -2,10 +2,10 @@
   "id": "stories-000009",
   "board": "stories",
   "title": "Migrate stories and template to new mechanism",
-  "phase": "finishing",
+  "phase": "done",
   "previousPhase": null,
   "createdAt": "2026-05-18T04:09:39.576Z",
-  "updatedAt": "2026-05-19T03:56:23.895Z",
+  "updatedAt": "2026-05-19T04:00:06.677Z",
   "variables": {},
   "history": [
     {
@@ -39,6 +39,13 @@
       "at": "2026-05-19T03:56:23.895Z",
       "from": "verifying",
       "to": "finishing",
+      "mode": "normal"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-19T04:00:06.677Z",
+      "from": "finishing",
+      "to": "done",
       "mode": "normal"
     }
   ],

@@ -210,6 +210,10 @@ Stories board only; no CLI/product code changes. Files touched:
   - AC #7: Full test suite passes
   - Manual scenarios #4 and #5: Not executed end-to-end but implementation verified in script code
 
+### Finished (2026-05-19)
+
+Story complete. Spec updates: all n/a (board migration only, no doc changes required). Ready for done.
+
 ## Build Notes
 
 <!-- phase-gate: started by exit building | complete by exit finishing -->
