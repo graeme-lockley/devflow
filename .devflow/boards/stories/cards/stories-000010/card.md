@@ -48,58 +48,71 @@ After **000009**, no board in this repo should reference `phaseScripts.loop`.
 
 _This story **updates** specs to reflect removal. Anchors after edit:_
 
-- [ ] [`docs/devflow-requirements.md`](../../../../../../docs/devflow-requirements.md)
+- [x] [`docs/devflow-requirements.md`](../../../../../../docs/devflow-requirements.md)
       — delete §9.12; remove legacy refs in §5.4, §9.8, §11.4, §11.5, §11.9,
       §18; simplify §9.11.3.
-- [ ] [`docs/architecture.md`](../../../../../docs/architecture.md) — remove
+- [x] [`docs/architecture.md`](../../../../../docs/architecture.md) — remove
       legacy loop orchestration subsection.
-- [ ] [`docs/adr/0014-script-composition-and-loops.md`](../../../../../../docs/adr/0014-script-composition-and-loops.md)
+- [x] [`docs/adr/0014-script-composition-and-loops.md`](../../../../../../docs/adr/0014-script-composition-and-loops.md)
       — retain hierarchical layout decision only; remove loop block decision or
       mark entire ADR superseded with pointer to 0015.
-- [ ] [`docs/adr/0015-script-flow-control.md`](../../../../../../docs/adr/0015-script-flow-control.md)
+- [x] [`docs/adr/0015-script-flow-control.md`](../../../../../../docs/adr/0015-script-flow-control.md)
       — remove coexistence notes.
-- [ ] [`docs/adr/0008-transition-runner-orchestration.md`](../../../../../../docs/adr/0008-transition-runner-orchestration.md)
+- [x] [`docs/adr/0008-transition-runner-orchestration.md`](../../../../../../docs/adr/0008-transition-runner-orchestration.md)
       — remove ADR-0014 loop bullet.
 
 ## Acceptance Criteria
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] No `phaseScripts` / `loop` parsing in `board.ts` or validate-board.
-2. [ ] No `runLoopBlock`, loop branch in `runHopExitScripts`, or
-       `partitionLoopRootScripts` in codebase.
-3. [ ] No `invokeChildScript` used only for loop (remove or narrow to dead code
-       elimination).
-4. [ ] `DEVFLOW_SCRIPT_ROUND`, `DEVFLOW_LOOP_MAX`, `DEVFLOW_SCRIPT_PARENT` not
-       set by harness.
-5. [ ] Requirements contain **no** §9.12; §9.11 is the only exit-script
-       orchestration model.
-6. [ ] README and architecture describe only `NEXT_SCRIPT` flow.
-7. [ ] `grep -r phaseScripts.loop` in repo (excl. history/cards) returns nothing
-       in product code or templates.
-8. [ ] `deno task test` passes.
+1. [ ] `board.ts` no longer parses `phaseScripts`; a `board.json` containing a
+       `phaseScripts` key is rejected by `parseBoardConfig` /
+       `devflow board validate` with a clear error (decision: fail-fast, see
+       Notes).
+2. [ ] No `runLoopBlock`, no loop branch in `runHopExitScripts`, and no
+       `partitionLoopRootScripts` symbol remain in `src/`.
+3. [ ] `invokeChildScript` is either removed or has no remaining call sites in
+       `src/` (dead-code elimination); no `DEVFLOW_SCRIPT_ROUND`,
+       `DEVFLOW_LOOP_MAX`, or `DEVFLOW_SCRIPT_PARENT` is set anywhere in
+       `src/`.
+4. [ ] Requirements contain **no** §9.12 and no references to
+       `phaseScripts.loop`; §9.11 is the only exit-script orchestration model
+       and §9.11.3 no longer mentions coexistence.
+5. [ ] `README.md`, `docs/architecture.md`, and ADR-0008/0014/0015 describe
+       only the `NEXT_SCRIPT` flow; ADR-0014's loop-block decision is removed
+       or marked superseded by ADR-0015.
+6. [ ] `rg 'phaseScripts'` over `src/`, `templates/`, `docs/devflow-requirements.md`,
+       `docs/architecture.md`, and `README.md` returns no matches (ADR history
+       and closed cards may still mention it).
+7. [ ] `deno task test` passes; the new automated coverage in Test Scenarios
+       exercises the rejection in AC #1.
 
 ## Impact Analysis
 
 <!-- phase-gate: complete by exit planning -->
 
-### Delete / simplify
+### Scope
 
 | Area                                        | Action                                                    |
 | ------------------------------------------- | --------------------------------------------------------- |
-| `src/services/transition.ts`                | Remove loop branch and `runLoopBlock`                     |
-| `src/domain/script-names.ts`                | Remove `partitionLoopRootScripts`                         |
-| `src/domain/board.ts`                       | Remove `PhaseScriptConfig`, `LoopConfig`                  |
-| `src/services/scripts.ts`                   | Remove or reduce `invokeChildScript` if unused            |
-| `src/services/templates.ts`                 | Remove `loadTemplatePhaseScripts` if unused               |
-| Tests                                       | Remove loop-specific cases; keep driver tests from 000008 |
-| `templates/stories/board.phaseScripts.json` | Delete                                                    |
-| Docs                                        | Remove §9.12, legacy README/architecture                  |
+| `src/services/transition.ts`     | Remove loop branch in `runHopExitScripts` and delete `runLoopBlock`; drop `invokeChildScript`/`partitionLoopRootScripts` imports |
+| `src/domain/script-names.ts`     | Remove `partitionLoopRootScripts` and its tests                                                                                  |
+| `src/domain/board.ts`            | Remove `PhaseScriptConfig`, `LoopConfig`, and the `phaseScripts` field from `BoardConfig`; reject `phaseScripts` keys on parse   |
+| `src/services/scripts.ts`        | Remove `invokeChildScript` and `DEVFLOW_SCRIPT_PARENT` / `DEVFLOW_SCRIPT_ROUND` / `DEVFLOW_LOOP_MAX` env wiring                  |
+| `src/services/templates.ts`      | Remove `loadTemplatePhaseScripts`; stop reading `board.phaseScripts.json`                                                        |
+| `src/commands/init-board.ts`     | Drop the `phaseScripts` assembly path and `PhaseScriptConfig` import                                                             |
+| Tests                            | Remove loop-specific tests (`board_test.ts`, `script-names_test.ts`, `scripts_test.ts`, `transition_test.ts`); keep 000008 driver tests; add a parse-rejection test |
+| `templates/stories/README.md`    | Remove the `board.phaseScripts.json` paragraph                                                                                   |
+| `templates/stories/scripts/building-lib.sh` | Drop the `board.phaseScripts.json` token from the loop-migration heuristic regex                                      |
+| Docs                             | Remove §9.12 and legacy README/architecture/ADR sections (per Spec Updates)                                                      |
 
-### Risks
+### Risks and constraints
 
 - External boards (if any) still using loop config would break — document in
   release notes / migration: use `NEXT_SCRIPT` (000009 pattern).
+- Immutable docs (`docs/devflow-requirements.md`, `docs/architecture.md`,
+  `docs/adr/*`) are edited only in this story's Spec Updates rows during
+  building; no silent spec drift outside those tasks.
 
 ## Test Scenarios
 
@@ -107,22 +120,45 @@ _This story **updates** specs to reflect removal. Anchors after edit:_
 
 | # | Type      | Scenario                                                                | Expected                                      |
 | - | --------- | ----------------------------------------------------------------------- | --------------------------------------------- |
-| 1 | automated | `deno task test`                                                        | pass; no tests reference loop config          |
-| 2 | automated | `rg phaseScripts` in `src/` `templates/` `docs/devflow-requirements.md` | no loop schema (ADR/history may mention)      |
-| 3 | automated | `devflow board validate stories`                                        | pass without phaseScripts                     |
-| 4 | automated | Board JSON with `phaseScripts.loop` rejected or ignored per final spec  | validate-board fails fast if config forbidden |
+| 1 | automated | `deno task test` | full suite passes; no remaining tests reference loop config, `invokeChildScript`, `runLoopBlock`, or `partitionLoopRootScripts` |
+| 2 | automated | `rg -n 'phaseScripts' src/ templates/ docs/devflow-requirements.md docs/architecture.md README.md` | exit code 1 (no matches) |
+| 3 | automated | `rg -n 'runLoopBlock\|partitionLoopRootScripts\|invokeChildScript\|DEVFLOW_SCRIPT_ROUND\|DEVFLOW_LOOP_MAX\|DEVFLOW_SCRIPT_PARENT' src/` | exit code 1 (no matches) |
+| 4 | automated | New `src/domain/board_test.ts` case: `parseBoardConfig` on a config with a `phaseScripts` key | throws an error naming the rejected key |
+| 5 | automated | `deno task test src/domain/board_test.ts` (covers #4) and `deno task test src/services/transition_test.ts` | both pass with loop cases removed |
+| 6 | manual    | `./devflow board validate stories` after edits | exits 0; stories board has no `phaseScripts` (per 000009) |
 
 ## Build Tasks
 
 <!-- phase-gate: complete by exit planning | all [x] by exit building -->
 
-1. [ ] Remove loop types and parsing from `board.ts` + tests.
-2. [ ] Remove loop orchestration from `transition.ts` + tests.
-3. [ ] Remove `partitionLoopRootScripts`, loop-only `invokeChildScript` usage.
-4. [ ] Remove template `board.phaseScripts.json` loading.
-5. [ ] Edit requirements (§9.12 removal, cross-ref cleanup) per Spec References.
-6. [ ] Edit architecture, README, ADR-0014/0008/0015 per Spec References.
-7. [ ] `deno task test`; `rg` audit (#2, #7).
+1. [ ] Remove `LoopConfig` / `PhaseScriptConfig` types and the `phaseScripts`
+       field from `src/domain/board.ts`; make `parseBoardConfig` reject
+       configs containing a `phaseScripts` key with a clear error; update
+       `board_test.ts` (drop loop cases, add a rejection test for AC #1 /
+       Scenario #4).
+2. [ ] Remove `runLoopBlock` and the loop branch in `runHopExitScripts` in
+       `src/services/transition.ts`; remove now-dead imports; trim
+       `transition_test.ts` of loop scenarios.
+3. [ ] Delete `partitionLoopRootScripts` from `src/domain/script-names.ts` and
+       its tests in `script-names_test.ts`.
+4. [ ] Remove `invokeChildScript` (and the `DEVFLOW_SCRIPT_PARENT` /
+       `DEVFLOW_SCRIPT_ROUND` / `DEVFLOW_LOOP_MAX` env wiring) from
+       `src/services/scripts.ts`; delete the corresponding `scripts_test.ts`
+       case.
+5. [ ] Remove `loadTemplatePhaseScripts` from `src/services/templates.ts` and
+       drop the `phaseScripts` assembly in `src/commands/init-board.ts`;
+       update `templates_test.ts` if any loop-config assertion remains.
+6. [ ] Clean `templates/stories/README.md` (remove the
+       `board.phaseScripts.json` paragraph) and remove the
+       `board.phaseScripts.json` token from the heuristic regex in
+       `templates/stories/scripts/building-lib.sh`.
+7. [ ] Edit `docs/devflow-requirements.md`: delete §9.12; remove
+       `phaseScripts.loop` references in §5.4, §9.8, §11.4, §11.5, §11.9,
+       §15, §18; simplify §9.11.3 (drop coexistence subsection).
+8. [ ] Edit `docs/architecture.md` (remove legacy loop orchestration
+       subsection), `README.md` (drop the deprecated loop section), and ADRs
+       0008/0014/0015 per Spec References.
+9. [ ] Run `deno task test` plus the `rg` audits in Test Scenarios #2 and #3.
 
 ## Spec Updates
 
@@ -130,20 +166,33 @@ _This story **updates** specs to reflect removal. Anchors after edit:_
 
 | Document                                           | Action                          | Status  |
 | -------------------------------------------------- | ------------------------------- | ------- |
-| `docs/devflow-requirements.md`                     | Remove §9.12; clean legacy refs | pending |
-| `docs/architecture.md`                             | Remove legacy loop subsection   | pending |
-| `docs/adr/0014-script-composition-and-loops.md`    | Trim or mark historical         | pending |
-| `docs/adr/0015-script-flow-control.md`             | Remove coexistence §            | pending |
-| `docs/adr/0008-transition-runner-orchestration.md` | Drop loop bullet                | pending |
-| `README.md`                                        | Remove deprecated loop section  | pending |
+| `docs/devflow-requirements.md`                     | Remove §9.12; clean legacy refs in §5.4, §9.8, §11.4, §11.5, §11.9, §15, §18; simplify §9.11.3 | pending |
+| `docs/architecture.md`                             | Remove legacy loop orchestration subsection and `phaseScripts` mentions                        | pending |
+| `docs/adr/0014-script-composition-and-loops.md`    | Mark superseded by ADR-0015 (or trim to hierarchical-layout decision only)                     | pending |
+| `docs/adr/0015-script-flow-control.md`             | Remove coexistence notes and references to §9.12                                               | pending |
+| `docs/adr/0008-transition-runner-orchestration.md` | Drop the ADR-0014 loop bullet and legacy orchestration paragraph                               | pending |
+| `README.md`                                        | Remove the "Legacy loop blocks (deprecated)" section                                           | pending |
+| `templates/stories/README.md`                      | Remove the `board.phaseScripts.json` paragraph                                                 | pending |
 
 ## Notes
 
 - Card history in **000003** / **000005** / **000007** referenced loop blocks;
   no need to edit closed cards.
-- Validate-board should **reject** unknown `phaseScripts` keys if the schema is
-  removed entirely (preferred) or ignore with warning — decide in planning and
-  document in requirements.
+- **Decision (open question resolved):** when the schema is removed,
+  `parseBoardConfig` / `devflow board validate` **rejects** any `board.json`
+  containing a `phaseScripts` key with a clear error (fail-fast). Rationale:
+  silent ignore would let stale loop configuration linger unnoticed in
+  downstream boards after the product no longer honours it; an explicit error
+  is the cheaper failure mode and matches the existing inline-validation
+  posture (ADR-0012). The requirements edit in §5.4 / §9.8 must state this.
+- ADR-0014: prefer **mark superseded by ADR-0015** with a one-line pointer
+  over surgical trimming — the hierarchical-layout decision in its
+  predecessor (ADR-0007 / ADR-0008) plus ADR-0015 fully cover the surviving
+  rules; this keeps history intact for audit.
+- `templates/stories/scripts/building-lib.sh` carries a loop-migration
+  heuristic that mentions `board.phaseScripts.json`; the regex token is
+  removed but the broader migration heuristic stays — once 000010 lands no
+  future story is expected to touch loop config.
 
 ## Build Notes
 
