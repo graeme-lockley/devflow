@@ -111,43 +111,50 @@ _Implement behaviour defined in these documents; do not edit them._
 
 Stories board only; no CLI/product code changes. Files touched:
 
-| Path                                                                     | Action                                         |
-| ------------------------------------------------------------------------ | ---------------------------------------------- |
-| `.devflow/boards/stories/board.json`                                     | Remove `phaseScripts` key entirely             |
-| `.devflow/boards/stories/scripts/building-002-pi`                        | Add — port of `building/steps/01-pi.sh`        |
-| `.devflow/boards/stories/scripts/building-003-fmt`                       | Add — port of `building/steps/02-fmt.sh`       |
-| `.devflow/boards/stories/scripts/building-004-gate-ci`                   | Add — port of `building/steps/03-gate-ci.sh`, sets `NEXT_SCRIPT=building-002` + `BUILD_ROUND++` on failure (≤5) |
-| `.devflow/boards/stories/scripts/building-005-gate-scenarios`            | Add — port of `04-gate-scenarios.sh`, same retry semantics |
-| `.devflow/boards/stories/scripts/building-006-check-building-quality`    | Rename from `building-003-check-building-quality` |
-| `.devflow/boards/stories/scripts/building-007-check-spec-updates`        | Rename from `building-005-check-spec-updates`  |
-| `.devflow/boards/stories/scripts/building-008-check-git-scope`           | Rename from `building-007-check-git-scope`     |
-| `.devflow/boards/stories/scripts/building-001-check-entry`               | Reset `BUILD_ROUND` (`devflow variable set`) at hop start |
-| `.devflow/boards/stories/scripts/building/steps/`                        | Delete directory and all contents              |
-| `.devflow/boards/stories/scripts/building-lib.sh`                        | Replace `DEVFLOW_SCRIPT_ROUND`/`DEVFLOW_LOOP_MAX` with `BUILD_ROUND`/`BUILD_ROUND_MAX` (=5) helpers |
-| `.devflow/boards/stories/scripts/lib/building-loop-feedback.sh`          | Adapt to `BUILD_ROUND`; keep prior-round log feed to pi |
-| `.devflow/boards/stories/scripts/README.md`                              | Document flat layout + retry convention (no loop bands) |
-| `templates/stories/board.phaseScripts.json`                              | Delete (loop was sole content)                 |
-| `templates/stories/scripts/`                                             | Mirror live board (add 002–005, renumber 006–008, remove `building/steps/`) |
-| `.devflow/boards/stories/skills/build-story/SKILL.md`                    | Update script path references to flat layout   |
+| Path                                                                  | Action                                                                                                          |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `.devflow/boards/stories/board.json`                                  | Remove `phaseScripts` key entirely                                                                              |
+| `.devflow/boards/stories/scripts/building-002-pi`                     | Add — port of `building/steps/01-pi.sh`                                                                         |
+| `.devflow/boards/stories/scripts/building-003-fmt`                    | Add — port of `building/steps/02-fmt.sh`                                                                        |
+| `.devflow/boards/stories/scripts/building-004-gate-ci`                | Add — port of `building/steps/03-gate-ci.sh`, sets `NEXT_SCRIPT=building-002` + `BUILD_ROUND++` on failure (≤5) |
+| `.devflow/boards/stories/scripts/building-005-gate-scenarios`         | Add — port of `04-gate-scenarios.sh`, same retry semantics                                                      |
+| `.devflow/boards/stories/scripts/building-006-check-building-quality` | Rename from `building-003-check-building-quality`                                                               |
+| `.devflow/boards/stories/scripts/building-007-check-spec-updates`     | Rename from `building-005-check-spec-updates`                                                                   |
+| `.devflow/boards/stories/scripts/building-008-check-git-scope`        | Rename from `building-007-check-git-scope`                                                                      |
+| `.devflow/boards/stories/scripts/building-001-check-entry`            | Reset `BUILD_ROUND` (`devflow variable set`) at hop start                                                       |
+| `.devflow/boards/stories/scripts/building/steps/`                     | Delete directory and all contents                                                                               |
+| `.devflow/boards/stories/scripts/building-lib.sh`                     | Replace `DEVFLOW_SCRIPT_ROUND`/`DEVFLOW_LOOP_MAX` with `BUILD_ROUND`/`BUILD_ROUND_MAX` (=5) helpers             |
+| `.devflow/boards/stories/scripts/lib/building-loop-feedback.sh`       | Adapt to `BUILD_ROUND`; keep prior-round log feed to pi                                                         |
+| `.devflow/boards/stories/scripts/README.md`                           | Document flat layout + retry convention (no loop bands)                                                         |
+| `templates/stories/board.phaseScripts.json`                           | Delete (loop was sole content)                                                                                  |
+| `templates/stories/scripts/`                                          | Mirror live board (add 002–005, renumber 006–008, remove `building/steps/`)                                     |
+| `.devflow/boards/stories/skills/build-story/SKILL.md`                 | Update script path references to flat layout                                                                    |
 
 ### Risks and constraints
 
-- Renumbering `003/005/007` → `006/007/008` may break operator muscle memory; mitigated by README note and skill update in same story.
-- Parity with the existing 5-round loop + prior-round pi feedback requires careful port of bash gates; round state now lives in board variables, not env, so `building-001` must reset `BUILD_ROUND` and successful gates must not over-reset mid-hop.
-- `templates/stories/` must stay byte-identical (modulo generic paths) to the live board, otherwise newly initialised boards diverge.
-- Out of scope per story body: editing `docs/devflow-requirements.md`, `docs/architecture.md`, ADRs, or removing legacy loop code from the CLI (that is stories-000010).
+- Renumbering `003/005/007` → `006/007/008` may break operator muscle memory;
+  mitigated by README note and skill update in same story.
+- Parity with the existing 5-round loop + prior-round pi feedback requires
+  careful port of bash gates; round state now lives in board variables, not env,
+  so `building-001` must reset `BUILD_ROUND` and successful gates must not
+  over-reset mid-hop.
+- `templates/stories/` must stay byte-identical (modulo generic paths) to the
+  live board, otherwise newly initialised boards diverge.
+- Out of scope per story body: editing `docs/devflow-requirements.md`,
+  `docs/architecture.md`, ADRs, or removing legacy loop code from the CLI (that
+  is stories-000010).
 
 ## Test Scenarios
 
 <!-- phase-gate: complete by exit planning | executed by exit verifying -->
 
-| # | Type      | Scenario                                                             | Expected                                           | Result |
-| - | --------- | -------------------------------------------------------------------- | -------------------------------------------------- | ------ |
+| # | Type      | Scenario                                                             | Expected                                           | Result               |
+| - | --------- | -------------------------------------------------------------------- | -------------------------------------------------- | -------------------- |
 | 1 | automated | `deno task test` (full suite)                                        | pass                                               | **pass** (271 tests) |
-| 2 | automated | `devflow board validate stories`                                     | pass; no loop config errors                        | **pass** |
-| 3 | automated | Template init copies flat building scripts, no `phaseScripts` loop   | new board has 002–005, no `building/steps`         | **pass** |
-| 4 | manual    | Advance a card through building with intentional CI failure then fix | retries from 002; ≤5 rounds; eventual pass or fail | verified in code |
-| 5 | manual    | `DEVFLOW_SKIP_PI=1` path still works on `building-002-pi`            | pi skipped; gates still run                        | verified in code |
+| 2 | automated | `devflow board validate stories`                                     | pass; no loop config errors                        | **pass**             |
+| 3 | automated | Template init copies flat building scripts, no `phaseScripts` loop   | new board has 002–005, no `building/steps`         | **pass**             |
+| 4 | manual    | Advance a card through building with intentional CI failure then fix | retries from 002; ≤5 rounds; eventual pass or fail | verified in code     |
+| 5 | manual    | `DEVFLOW_SKIP_PI=1` path still works on `building-002-pi`            | pi skipped; gates still run                        | verified in code     |
 
 ## Build Tasks
 
@@ -167,11 +174,11 @@ Stories board only; no CLI/product code changes. Files touched:
 
 <!-- phase-gate: planned by exit planning | completed by exit finishing -->
 
-| Document                       | Planned change                                          | Status |
-| ------------------------------ | ------------------------------------------------------- | ------ |
-| `docs/devflow-requirements.md` | none — driver semantics already specified in 000008     | n/a    |
-| `docs/architecture.md`         | none — no module boundary changes                       | n/a    |
-| `docs/adr/`                    | none — covered by ADR-0015 (script flow control)        | n/a    |
+| Document                       | Planned change                                           | Status |
+| ------------------------------ | -------------------------------------------------------- | ------ |
+| `docs/devflow-requirements.md` | none — driver semantics already specified in 000008      | n/a    |
+| `docs/architecture.md`         | none — no module boundary changes                        | n/a    |
+| `docs/adr/`                    | none — covered by ADR-0015 (script flow control)         | n/a    |
 | `README.md`                    | none — repo-level README unaffected by stories migration | n/a    |
 
 ## Notes
@@ -188,9 +195,9 @@ Stories board only; no CLI/product code changes. Files touched:
   resolves the prefix to `building-002-pi` lexically.
 - `BUILD_ROUND_MAX` is fixed at 5 in `building-lib.sh` to mirror the old
   `maxRounds: 5` loop config; not configurable per card in this story.
-- Scenario #2 (`devflow board validate stories`) and scenario #3 (template
-  init) are listed as automated; if no existing test harness covers them, they
-  will be added as new test files under `src/` during building so AC #7 holds.
+- Scenario #2 (`devflow board validate stories`) and scenario #3 (template init)
+  are listed as automated; if no existing test harness covers them, they will be
+  added as new test files under `src/` during building so AC #7 holds.
 
 ### Verification summary (2026-05-19)
 
@@ -199,20 +206,27 @@ Stories board only; no CLI/product code changes. Files touched:
 - **Commands run:**
   - `deno task test`: pass (271 tests)
   - `devflow board validate stories`: pass
-  - Template init test: pass (building-002 through 005 present, no building/steps)
+  - Template init test: pass (building-002 through 005 present, no
+    building/steps)
 - **Verification notes:**
   - AC #1: Confirmed `board.json` has no `phaseScripts` key
   - AC #2: Confirmed `scripts/building/steps/` directory does not exist
-  - AC #3: Verified all four flat scripts (002-pi, 003-fmt, 004-gate-ci, 005-gate-scenarios) exist
-  - AC #4: Examined gate scripts; confirmed `NEXT_SCRIPT=building-002` + `BUILD_ROUND` retry logic (max 5 rounds)
-  - AC #5: Verified templates match live board scripts (diff shows no differences); `board.phaseScripts.json` correctly absent
-  - AC #6: Confirmed `scripts/README.md` documents flat building layout with retry mechanism
+  - AC #3: Verified all four flat scripts (002-pi, 003-fmt, 004-gate-ci,
+    005-gate-scenarios) exist
+  - AC #4: Examined gate scripts; confirmed `NEXT_SCRIPT=building-002` +
+    `BUILD_ROUND` retry logic (max 5 rounds)
+  - AC #5: Verified templates match live board scripts (diff shows no
+    differences); `board.phaseScripts.json` correctly absent
+  - AC #6: Confirmed `scripts/README.md` documents flat building layout with
+    retry mechanism
   - AC #7: Full test suite passes
-  - Manual scenarios #4 and #5: Not executed end-to-end but implementation verified in script code
+  - Manual scenarios #4 and #5: Not executed end-to-end but implementation
+    verified in script code
 
 ### Finished (2026-05-19)
 
-Story complete. Spec updates: all n/a (board migration only, no doc changes required). Ready for done.
+Story complete. Spec updates: all n/a (board migration only, no doc changes
+required). Ready for done.
 
 ## Build Notes
 
@@ -233,11 +247,11 @@ variable (max 5 rounds). All templates synced.
 - **Task 2**: Created flat scripts `building-002-pi`, `building-003-fmt`,
   `building-004-gate-ci`, `building-005-gate-scenarios` from
   `building/steps/01-04`. Renumbered existing exit scripts: `building-003` →
-  `006` (check-building-quality), `building-005` → `007`
-  (check-spec-updates), `building-007` → `008` (check-git-scope).
+  `006` (check-building-quality), `building-005` → `007` (check-spec-updates),
+  `building-007` → `008` (check-git-scope).
 - **Task 3**: Gate scripts `building-004-gate-ci` and
-  `building-005-gate-scenarios` now set `NEXT_SCRIPT=building-002` and
-  increment `BUILD_ROUND` on failure (up to 5 rounds), exit 0 to trigger retry.
+  `building-005-gate-scenarios` now set `NEXT_SCRIPT=building-002` and increment
+  `BUILD_ROUND` on failure (up to 5 rounds), exit 0 to trigger retry.
 - **Task 4**: `building-002-pi` reads `BUILD_ROUND` via `devflow variable get`
   and passes to `building_loop_feedback` for prior-round gate logs.
   `building-loop-feedback.sh` unchanged (already generic).
@@ -251,9 +265,9 @@ variable (max 5 rounds). All templates synced.
   reference from `building-007` to `building-008` (git-scope check); synced to
   `templates/stories/skills/build-story/SKILL.md`.
 - **Task 8**: Updated test files `src/services/pi-invocation-pattern_test.ts`
-  (changed `building/steps/01-pi.sh` to `building-002-pi` in
-  `PI_ENTRY_SCRIPTS`) and `src/services/templates_test.ts` (removed loop config
-  assertions, verified flat building scripts 002–005). All 271 tests pass.
+  (changed `building/steps/01-pi.sh` to `building-002-pi` in `PI_ENTRY_SCRIPTS`)
+  and `src/services/templates_test.ts` (removed loop config assertions, verified
+  flat building scripts 002–005). All 271 tests pass.
 
 ### Deviations from Impact Analysis
 
@@ -276,8 +290,8 @@ None. Implementation matched the planned migration exactly.
 <!-- phase-gate: complete or explicit none by exit preparing -->
 
 - **stories-000008** — script flow driver in CLI (dependency; must be complete).
-- **stories-000010** — removes legacy loop product code from the CLI
-  (follow-on; out of scope here).
+- **stories-000010** — removes legacy loop product code from the CLI (follow-on;
+  out of scope here).
 
 ## Attachments
 

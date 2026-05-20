@@ -47,9 +47,8 @@ Deno.test("initBoard with template copies building scripts", async () => {
     { template: "stories" },
   );
 
-  const board = await loadBoardConfig(dir, "stories");
-  // No loop config in the new flat layout
-  assertEquals(board.phaseScripts, undefined);
+  await loadBoardConfig(dir, "stories");
+  // No loop config in the new flat layout; phaseScripts removed from product
 
   // Verify flat building scripts exist
   await Deno.stat(

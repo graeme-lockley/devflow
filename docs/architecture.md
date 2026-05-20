@@ -182,8 +182,7 @@ for each single-phase hop:
   pre-validate --skip tokens against scripts on all hops (when skip non-empty)
   pre-validate NEXT_SCRIPT on card when set (first hop from phase)
   run exit scripts (scripts service):
-    — if phaseScripts[phase].loop: legacy loop orchestration (§9.12)
-    — else: script flow driver (§9.11): NEXT_SCRIPT jumps + lexical advance
+    — script flow driver (§9.11): NEXT_SCRIPT jumps + lexical advance
     — omit or visit-without-run scripts in skip set for this hop
     — record { skipped: true } and { nextScript } in run.json as applicable
   run commit-message script (scripts service) — M6
@@ -192,29 +191,19 @@ for each single-phase hop:
 ```
 
 `RunAdvanceOptions.skip` is passed to `runHopExitScripts`, which computes the
-set of script names to omit for the hop's `from` phase, rejects legacy loop-step
-and commit-message targets, and substitutes a synthetic success record for each
-skipped script without invoking it.
+set of script names to omit for the hop's `from` phase, rejects commit-message
+targets, and substitutes a synthetic success record for each skipped script
+without invoking it.
 
 **Script flow driver**
 ([§9.11](./devflow-requirements.md#911-script-flow-control-next_script),
 [ADR-0015](./adr/0015-script-flow-control.md)):
 
-- Used when the phase has **no** `board.phaseScripts[phase].loop` configuration.
 - Runs root exit scripts via `NEXT_SCRIPT` jumps and lexical successors
   (§9.11.2).
 - Reads/clears card variable `NEXT_SCRIPT`; records `nextScript` on run records.
 - Enforces `board.maxScriptExecutionsPerHop` (default 100) per hop.
 - Non-zero script exit fails the hop immediately.
-
-**Legacy loop orchestration** (deprecated;
-[§9.12](./devflow-requirements.md#912-legacy-phase-loop-blocks-deprecated),
-[ADR-0014](./adr/0014-script-composition-and-loops.md)):
-
-- Used when `board.phaseScripts[phase].loop` is present.
-- Runs entry scripts, loop block (`loop.steps`, `maxRounds`), exit scripts.
-- Logs round boundaries; records `loop[round]:step` in `run.json`.
-- Scheduled for removal when legacy loop support is deleted from the product.
 
 Owns **orchestration** only. Does not embed script-matching regex (delegates to
 `scripts.ts`).
@@ -226,10 +215,6 @@ Owns **orchestration** only. Does not embed script-matching regex (delegates to
   and subdirectories are not auto-discovered.
 - Invoke with `Deno.Command` or direct execution per
   [ADR-0007](./adr/0007-script-invocation.md).
-- **Child script invocation** (legacy loop steps or parent-invoked from script
-  code): [ADR-0014](./adr/0014-script-composition-and-loops.md)
-  `invokeChildScript` sets `DEVFLOW_SCRIPT_PARENT`, `DEVFLOW_SCRIPT_ROUND`,
-  `DEVFLOW_LOOP_MAX` (deprecated with loop removal).
 - **Prefix resolution** for `NEXT_SCRIPT` and `--skip`:
   `resolveExitScriptPrefix(prefix, scriptNames)` → exactly one root script name
   ([ADR-0015](./adr/0015-script-flow-control.md)).
@@ -261,9 +246,8 @@ Owns **orchestration** only. Does not embed script-matching regex (delegates to
 - **Board config validation**
   ([§5.4](./devflow-requirements.md#54-board-configuration-file)): includes
   optional `maxScriptExecutionsPerHop` (integer ≥ 1) per
-  [ADR-0015](./adr/0015-script-flow-control.md); optional legacy
-  `phaseScripts.<phase>.loop` per
-  [ADR-0014](./adr/0014-script-composition-and-loops.md).
+  [ADR-0015](./adr/0015-script-flow-control.md); rejects deprecated
+  `phaseScripts` configuration.
 - Atomic write via infra ([ADR-0005](./adr/0005-atomic-json-writes.md)).
 - **Single writer** for `state.json` — only Devflow commands mutate it
   ([§6.5](./devflow-requirements.md#65-ownership-of-card-files)).
@@ -273,9 +257,7 @@ Owns **orchestration** only. Does not embed script-matching regex (delegates to
 - Pure functions mirroring
   [§17](./devflow-requirements.md#17-validation-requirements).
 - `validate` command aggregates board + card checks without modifying files.
-- **Board validation** includes `maxScriptExecutionsPerHop` when present; legacy
-  `phaseScripts.loop` steps must reference existing executable files;
-  `maxRounds` ≥ 1.
+- **Board validation** includes `maxScriptExecutionsPerHop` when present.
 
 ### 5.9 Console output (`src/services/console.ts`)
 

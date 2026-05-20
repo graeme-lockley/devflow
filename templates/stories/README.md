@@ -21,15 +21,6 @@ Exit scripts run when **leaving** a phase (lexical order). Each hop also runs
 | building         | `building-001-check-entry` → loop → `building-003` / `005` / `007` | `building.commit-message`  |
 | built … finished | `*-001-noop` each                                                  | `<phase>.commit-message`   |
 
-## Building phase loop
-
-When the init phase list includes `building`, `board.phaseScripts.json`
-configures a native loop (entry → `building/steps/*` → exit). Steps: pi
-(`build-story`), `deno fmt`, `deno task ci`, then card Test Scenarios; up to 5
-rounds on failure.
-
-Requires `build-story` and `commit-message` skills (copied with this template).
-
 ## pi-mono
 
 `planning-003-do-planning` invokes **pi-mono** with the `plan-story` skill when

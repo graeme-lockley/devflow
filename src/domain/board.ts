@@ -1,15 +1,6 @@
 import { writeTextFileAtomic } from "../infra/atomic-write.ts";
 import { boardConfigFile, boardsRoot } from "../infra/paths.ts";
 
-export interface LoopConfig {
-  steps: string[];
-  maxRounds: number;
-}
-
-export interface PhaseScriptConfig {
-  loop?: LoopConfig;
-}
-
 export interface BoardConfig {
   name: string;
   idPrefix: string;
@@ -19,7 +10,6 @@ export interface BoardConfig {
   blockedPhase: string;
   createdAt: string;
   updatedAt: string;
-  phaseScripts?: Record<string, PhaseScriptConfig>;
   maxScriptExecutionsPerHop?: number;
 }
 
@@ -138,6 +128,13 @@ export function parseBoardConfig(raw: unknown, boardName: string): BoardConfig {
     throw new Error(`board "${boardName}": "updatedAt" must be a string`);
   }
 
+  // Reject deprecated phaseScripts configuration (req §5.4, §9.8)
+  if ("phaseScripts" in o) {
+    throw new Error(
+      `board "${boardName}": "phaseScripts" is no longer supported. Use NEXT_SCRIPT flow control in exit scripts instead (see docs/adr/0015-script-flow-control.md).`,
+    );
+  }
+
   let maxScriptExecutionsPerHop: number | undefined;
   if ("maxScriptExecutionsPerHop" in o) {
     if (
@@ -152,70 +149,6 @@ export function parseBoardConfig(raw: unknown, boardName: string): BoardConfig {
     maxScriptExecutionsPerHop = o.maxScriptExecutionsPerHop;
   }
 
-  let phaseScripts: Record<string, PhaseScriptConfig> | undefined;
-  if ("phaseScripts" in o) {
-    if (
-      typeof o.phaseScripts !== "object" || o.phaseScripts === null ||
-      Array.isArray(o.phaseScripts)
-    ) {
-      throw new Error(
-        `board "${boardName}": "phaseScripts" must be a JSON object`,
-      );
-    }
-    phaseScripts = {};
-    const psObj = o.phaseScripts as Record<string, unknown>;
-    for (const [phase, config] of Object.entries(psObj)) {
-      if (
-        typeof config !== "object" || config === null || Array.isArray(config)
-      ) {
-        throw new Error(
-          `board "${boardName}": phaseScripts["${phase}"] must be an object`,
-        );
-      }
-      const configObj = config as Record<string, unknown>;
-      const phaseConfig: PhaseScriptConfig = {};
-
-      if ("loop" in configObj) {
-        if (
-          typeof configObj.loop !== "object" || configObj.loop === null ||
-          Array.isArray(configObj.loop)
-        ) {
-          throw new Error(
-            `board "${boardName}": phaseScripts["${phase}"].loop must be an object`,
-          );
-        }
-        const loopObj = configObj.loop as Record<string, unknown>;
-        if (!("steps" in loopObj) || !("maxRounds" in loopObj)) {
-          throw new Error(
-            `board "${boardName}": phaseScripts["${phase}"].loop must have "steps" and "maxRounds"`,
-          );
-        }
-        if (
-          !Array.isArray(loopObj.steps) ||
-          !loopObj.steps.every((s) => typeof s === "string")
-        ) {
-          throw new Error(
-            `board "${boardName}": phaseScripts["${phase}"].loop.steps must be an array of strings`,
-          );
-        }
-        if (
-          typeof loopObj.maxRounds !== "number" ||
-          !Number.isInteger(loopObj.maxRounds) || loopObj.maxRounds < 1
-        ) {
-          throw new Error(
-            `board "${boardName}": phaseScripts["${phase}"].loop.maxRounds must be an integer >= 1`,
-          );
-        }
-        phaseConfig.loop = {
-          steps: loopObj.steps as string[],
-          maxRounds: loopObj.maxRounds,
-        };
-      }
-
-      phaseScripts[phase] = phaseConfig;
-    }
-  }
-
   return {
     name: o.name,
     idPrefix: o.idPrefix,
@@ -225,7 +158,6 @@ export function parseBoardConfig(raw: unknown, boardName: string): BoardConfig {
     blockedPhase: o.blockedPhase,
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
-    ...(phaseScripts ? { phaseScripts } : {}),
     ...(maxScriptExecutionsPerHop !== undefined
       ? { maxScriptExecutionsPerHop }
       : {}),

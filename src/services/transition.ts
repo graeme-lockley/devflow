@@ -27,7 +27,6 @@ import {
 import {
   buildScriptEnv,
   commitMessageScriptName,
-  invokeChildScript,
   invokeScript,
   listExitScripts,
   resolveCommitMessage,
@@ -36,7 +35,6 @@ import {
 import { commit, stageAll } from "./git.ts";
 import { boardScriptsDir } from "../infra/paths.ts";
 import {
-  partitionLoopRootScripts,
   resolveExitScriptPrefix,
   sortExitScriptNames,
 } from "../domain/script-names.ts";
@@ -409,121 +407,6 @@ async function runScriptFlowDriver(
   return { ok: true, records, state: nextState };
 }
 
-interface LoopBlockResult {
-  ok: true;
-  records: RunScriptRecord[];
-}
-
-interface LoopBlockFailure {
-  ok: false;
-  failure: HopFailure;
-}
-
-/**
- * Runs a loop block: iterate steps up to maxRounds, restart on failure (req §9.11).
- */
-async function runLoopBlock(
-  repoRoot: string,
-  board: BoardConfig,
-  state: CardState,
-  _hop: { from: string; to: string },
-  run: TransitionRunContext,
-  loopSteps: string[],
-  maxRounds: number,
-  env: Record<string, string>,
-): Promise<LoopBlockResult | LoopBlockFailure> {
-  const scriptsDir = `${repoRoot}/${boardScriptsDir(board.name)}`;
-  const records: RunScriptRecord[] = [];
-  const streamScriptOutput = getLogLevel() === "info" ||
-    getLogLevel() === "verbose";
-
-  for (let round = 1; round <= maxRounds; round++) {
-    if (streamScriptOutput) {
-      logInfo(`round ${round}/${maxRounds}: starting`);
-    }
-
-    let allStepsSucceeded = true;
-    for (const stepPath of loopSteps) {
-      const scriptPath = `${scriptsDir}/${stepPath}`;
-      if (streamScriptOutput) {
-        logInfo(`round ${round}/${maxRounds}: step ${stepPath}`);
-      }
-
-      const result = await invokeChildScript(
-        scriptPath,
-        board.name,
-        state.id,
-        env,
-        repoRoot,
-        {
-          streamOutput: streamScriptOutput,
-          parentScript: "loop-orchestrator",
-          round,
-          maxRounds,
-        },
-      );
-
-      records.push({
-        name: `loop[${round}]:${stepPath}`,
-        exitCode: result.exitCode,
-      });
-      await appendScriptOutput(
-        run,
-        `loop[${round}]:${stepPath}`,
-        result.stdout,
-        result.stderr,
-        {
-          alreadyStreamed: streamScriptOutput,
-        },
-      );
-
-      if (result.exitCode !== 0) {
-        allStepsSucceeded = false;
-        if (round >= maxRounds) {
-          // Exhausted max rounds
-          await writeRunJson(run, "failed", records);
-          return {
-            ok: false,
-            failure: {
-              script:
-                `loop exhausted at round ${round}/${maxRounds}, step ${stepPath}`,
-              exitCode: result.exitCode,
-              logPath: `${run.runDirRel}/output.log`,
-              run,
-            },
-          };
-        }
-        // Restart loop from first step
-        if (streamScriptOutput) {
-          logInfo(
-            `round ${round}/${maxRounds}: step ${stepPath} failed (exit ${result.exitCode}), restarting loop`,
-          );
-        }
-        break; // Exit step loop to restart round
-      }
-    }
-
-    if (allStepsSucceeded) {
-      if (streamScriptOutput) {
-        logInfo(`loop completed successfully after ${round} round(s)`);
-      }
-      return { ok: true, records };
-    }
-  }
-
-  // Should not reach here
-  await writeRunJson(run, "failed", records);
-  return {
-    ok: false,
-    failure: {
-      script: "loop",
-      exitCode: 1,
-      logPath: `${run.runDirRel}/output.log`,
-      run,
-    },
-  };
-}
-
 export async function runHopExitScripts(
   repoRoot: string,
   board: BoardConfig,
@@ -534,7 +417,6 @@ export async function runHopExitScripts(
 ): Promise<RunHopScriptsResult | RunHopScriptsFailure> {
   const scriptNames = await listExitScripts(repoRoot, board.name, hop.from);
   const records: RunScriptRecord[] = [];
-  const scriptsDir = `${repoRoot}/${boardScriptsDir(board.name)}`;
 
   const hopCtx: ScriptHopContext = {
     repoRoot,
@@ -560,8 +442,7 @@ export async function runHopExitScripts(
     }
   }
 
-  // Validate that skipped scripts are not in loop band or commit-message (req stories-000005)
-  const loopConfig = board.phaseScripts?.[hop.from]?.loop;
+  // Validate that skipped scripts are not commit-message (req stories-000005)
   const commitMsgScript = commitMessageScriptName(hop.from);
   for (const skippedScript of skipForThisHop) {
     // Check if it's the commit-message script
@@ -578,26 +459,6 @@ export async function runHopExitScripts(
         state,
       };
     }
-
-    // Check if it's in the loop band
-    if (loopConfig) {
-      const { entry, exit } = partitionLoopRootScripts(scriptNames, hop.from);
-      const isLoopStep = !entry.includes(skippedScript) &&
-        !exit.includes(skippedScript);
-      if (isLoopStep) {
-        await writeRunJson(run, "failed", records);
-        return {
-          ok: false,
-          failure: {
-            script: `cannot skip loop step ${skippedScript}`,
-            exitCode: 1,
-            logPath: `${run.runDirRel}/output.log`,
-            run,
-          },
-          state,
-        };
-      }
-    }
   }
 
   inFlightHop = {
@@ -610,141 +471,21 @@ export async function runHopExitScripts(
   };
 
   try {
-    const level = getLogLevel();
-    const streamScriptOutput = level === "info" || level === "verbose";
-
-    // Check for loop configuration (req §9.11, ADR-0014)
-    const loopConfig = board.phaseScripts?.[hop.from]?.loop;
-
-    if (!loopConfig) {
-      // Use script flow driver (req §9.11)
-      const driverResult = await runScriptFlowDriver(
-        repoRoot,
-        board,
-        state,
-        hop,
-        run,
-        scriptNames,
-        env,
-        skip,
-      );
-      if (!driverResult.ok) {
-        return driverResult;
-      }
-      return { ok: true, run, records: driverResult.records };
-    } else {
-      // Loop configuration present: entry → loop → exit (req §9.11.3)
-      const { entry: entryScripts, exit: exitScripts } =
-        partitionLoopRootScripts(scriptNames, hop.from);
-
-      // Run entry scripts
-      for (const name of entryScripts) {
-        // Check if this script should be skipped (req stories-000005)
-        if (skipForThisHop.has(name)) {
-          logSkipped(name, "--skip");
-          records.push({ name, exitCode: 0, skipped: true });
-          continue;
-        }
-
-        inFlightHop.script = name;
-        const scriptPath = `${scriptsDir}/${name}`;
-        if (streamScriptOutput) {
-          logInfo(`running ${name}`);
-        }
-        const result = await invokeScript(
-          scriptPath,
-          board.name,
-          state.id,
-          env,
-          repoRoot,
-          { streamOutput: streamScriptOutput },
-        );
-        records.push({ name, exitCode: result.exitCode });
-        await appendScriptOutput(run, name, result.stdout, result.stderr, {
-          alreadyStreamed: streamScriptOutput,
-        });
-
-        if (result.exitCode !== 0) {
-          await writeRunJson(run, "failed", records);
-          return {
-            ok: false,
-            failure: {
-              script: name,
-              exitCode: result.exitCode,
-              logPath: `${run.runDirRel}/output.log`,
-              run,
-            },
-            state,
-          };
-        }
-      }
-
-      // Run loop block
-      const loopResult = await runLoopBlock(
-        repoRoot,
-        board,
-        state,
-        hop,
-        run,
-        loopConfig.steps,
-        loopConfig.maxRounds,
-        env,
-      );
-
-      if (!loopResult.ok) {
-        return {
-          ok: false,
-          failure: loopResult.failure,
-          state,
-        };
-      }
-
-      records.push(...loopResult.records);
-
-      // Run exit scripts
-      for (const name of exitScripts) {
-        // Check if this script should be skipped (req stories-000005)
-        if (skipForThisHop.has(name)) {
-          logSkipped(name, "--skip");
-          records.push({ name, exitCode: 0, skipped: true });
-          continue;
-        }
-
-        inFlightHop.script = name;
-        const scriptPath = `${scriptsDir}/${name}`;
-        if (streamScriptOutput) {
-          logInfo(`running ${name}`);
-        }
-        const result = await invokeScript(
-          scriptPath,
-          board.name,
-          state.id,
-          env,
-          repoRoot,
-          { streamOutput: streamScriptOutput },
-        );
-        records.push({ name, exitCode: result.exitCode });
-        await appendScriptOutput(run, name, result.stdout, result.stderr, {
-          alreadyStreamed: streamScriptOutput,
-        });
-
-        if (result.exitCode !== 0) {
-          await writeRunJson(run, "failed", records);
-          return {
-            ok: false,
-            failure: {
-              script: name,
-              exitCode: result.exitCode,
-              logPath: `${run.runDirRel}/output.log`,
-              run,
-            },
-            state,
-          };
-        }
-      }
+    // Use script flow driver (req §9.11, ADR-0015)
+    const driverResult = await runScriptFlowDriver(
+      repoRoot,
+      board,
+      state,
+      hop,
+      run,
+      scriptNames,
+      env,
+      skip,
+    );
+    if (!driverResult.ok) {
+      return driverResult;
     }
-
-    return { ok: true, run, records };
+    return { ok: true, run, records: driverResult.records };
   } finally {
     clearInFlightHop();
   }

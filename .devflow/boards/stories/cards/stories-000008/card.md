@@ -133,20 +133,20 @@ only._
 
 <!-- phase-gate: complete by exit planning | executed by exit verifying -->
 
-| #  | Type      | Scenario                                                          | Expected                                | Test                                       | Result |
-| -- | --------- | ----------------------------------------------------------------- | --------------------------------------- | ------------------------------------------ | ------ |
-| 1  | automated | `resolveExitScriptPrefix`: one match, zero, two matches           | one → name; zero/two → error            | `src/domain/script-names_flow_test.ts`     | pass   |
-| 2  | automated | Driver: three scripts `a-001`, `a-002`, `a-003`; no `NEXT_SCRIPT` | runs 001→002→003; hop succeeds          | `src/services/transition_test.ts`          | pass   |
-| 3  | automated | Driver: `a-002` sets `NEXT_SCRIPT=a-001`; third script unset      | runs 001→002→001→003                    | `src/services/transition_test.ts`          | pass   |
-| 4  | automated | Driver: script exits 1 with `NEXT_SCRIPT` set                     | transition fails; variable unchanged    | `src/services/transition_test.ts`          | pass   |
-| 5  | automated | Driver: invalid prefix (ambiguous / unknown / wrong phase)        | fail; `NEXT_SCRIPT` not cleared         | `src/services/transition_test.ts`          | pass   |
-| 6  | automated | Driver: `NEXT_SCRIPT` targets commit-message name                 | fail before run                         | `src/services/transition_test.ts`          | pass   |
-| 7  | automated | Driver: hop entry with `NEXT_SCRIPT=a-002` preset                 | starts at 002, not 001                  | `src/services/transition_test.ts`          | pass   |
-| 8  | automated | Driver: cap `maxScriptExecutionsPerHop=3`, infinite jump          | fails on 4th execution with cap message | `src/services/transition_test.ts`          | pass   |
-| 9  | automated | Driver + `--skip a-002`: `NEXT_SCRIPT=a-002` after `a-001`        | skip record for 002; runs 003           | `src/services/transition_test.ts`          | pass   |
-| 10 | automated | Phase with `phaseScripts.loop` still uses `runLoopBlock`          | existing loop tests pass unchanged      | `src/services/transition_test.ts`          | pass   |
-| 11 | automated | `run.json` includes `nextScript` when jump consumed               | field present on prior script record    | `src/services/transition_test.ts`          | pass   |
-| 12 | automated | Advance with invalid `NEXT_SCRIPT` on card at start               | exit 1 before scripts; variable kept    | `src/services/transition_test.ts`          | pass   |
+| #  | Type      | Scenario                                                          | Expected                                | Test                                   | Result |
+| -- | --------- | ----------------------------------------------------------------- | --------------------------------------- | -------------------------------------- | ------ |
+| 1  | automated | `resolveExitScriptPrefix`: one match, zero, two matches           | one → name; zero/two → error            | `src/domain/script-names_flow_test.ts` | pass   |
+| 2  | automated | Driver: three scripts `a-001`, `a-002`, `a-003`; no `NEXT_SCRIPT` | runs 001→002→003; hop succeeds          | `src/services/transition_test.ts`      | pass   |
+| 3  | automated | Driver: `a-002` sets `NEXT_SCRIPT=a-001`; third script unset      | runs 001→002→001→003                    | `src/services/transition_test.ts`      | pass   |
+| 4  | automated | Driver: script exits 1 with `NEXT_SCRIPT` set                     | transition fails; variable unchanged    | `src/services/transition_test.ts`      | pass   |
+| 5  | automated | Driver: invalid prefix (ambiguous / unknown / wrong phase)        | fail; `NEXT_SCRIPT` not cleared         | `src/services/transition_test.ts`      | pass   |
+| 6  | automated | Driver: `NEXT_SCRIPT` targets commit-message name                 | fail before run                         | `src/services/transition_test.ts`      | pass   |
+| 7  | automated | Driver: hop entry with `NEXT_SCRIPT=a-002` preset                 | starts at 002, not 001                  | `src/services/transition_test.ts`      | pass   |
+| 8  | automated | Driver: cap `maxScriptExecutionsPerHop=3`, infinite jump          | fails on 4th execution with cap message | `src/services/transition_test.ts`      | pass   |
+| 9  | automated | Driver + `--skip a-002`: `NEXT_SCRIPT=a-002` after `a-001`        | skip record for 002; runs 003           | `src/services/transition_test.ts`      | pass   |
+| 10 | automated | Phase with `phaseScripts.loop` still uses `runLoopBlock`          | existing loop tests pass unchanged      | `src/services/transition_test.ts`      | pass   |
+| 11 | automated | `run.json` includes `nextScript` when jump consumed               | field present on prior script record    | `src/services/transition_test.ts`      | pass   |
+| 12 | automated | Advance with invalid `NEXT_SCRIPT` on card at start               | exit 1 before scripts; variable kept    | `src/services/transition_test.ts`      | pass   |
 
 ## Build Tasks
 
@@ -179,7 +179,8 @@ only._
 | `README.md`                                        | Board script composition (`NEXT_SCRIPT`)                                       | done   |
 
 Documentation shipped in commit `341b8b7` before building (see **Build Notes**).
-Building phase implemented `src/` only per `<!-- building-scope: core-product-only -->`.
+Building phase implemented `src/` only per
+`<!-- building-scope: core-product-only -->`.
 
 ## Notes
 
@@ -198,21 +199,23 @@ Building phase implemented `src/` only per `<!-- building-scope: core-product-on
 - Commands: `deno task test src/domain/script-names_flow_test.ts` (6 passed),
   `deno test --filter "script flow" src/services/transition_test.ts` (8 passed),
   `deno test --filter "loop block" src/services/transition_test.ts` (2 passed),
-  `deno task test` (271 passed, 0 failed), `./devflow validate-card stories-000008`
-  (pass), `./devflow validate` (pass)
-- Scenario #6: commit-message guard implemented in `transition.ts`; not separately
-  integration-tested because commit-message scripts are excluded from exit-script
-  discovery (§9.3), so no `<phase>-<sequence>` prefix can resolve to them
-- Scenario #11: asserted in scenario #3 integration test (`runJson.scripts[1].nextScript`)
+  `deno task test` (271 passed, 0 failed),
+  `./devflow validate-card stories-000008` (pass), `./devflow validate` (pass)
+- Scenario #6: commit-message guard implemented in `transition.ts`; not
+  separately integration-tested because commit-message scripts are excluded from
+  exit-script discovery (§9.3), so no `<phase>-<sequence>` prefix can resolve to
+  them
+- Scenario #11: asserted in scenario #3 integration test
+  (`runJson.scripts[1].nextScript`)
 
 ### Finished (2026-05-19)
 
-Story complete. Spec updates: requirements §9.11 script flow driver, architecture,
-ADR-0015, README, and related cross-refs — all **done** (committed `341b8b7`
-before build). Product: `runScriptFlowDriver`, `resolveExitScriptPrefix`,
-`maxScriptExecutionsPerHop`, `NEXT_SCRIPT` preflight, `nextScript` in run.json;
-271 tests pass. Follow-up: **stories-000009** (board migration),
-**stories-000010** (remove legacy loop). Ready for done.
+Story complete. Spec updates: requirements §9.11 script flow driver,
+architecture, ADR-0015, README, and related cross-refs — all **done** (committed
+`341b8b7` before build). Product: `runScriptFlowDriver`,
+`resolveExitScriptPrefix`, `maxScriptExecutionsPerHop`, `NEXT_SCRIPT` preflight,
+`nextScript` in run.json; 271 tests pass. Follow-up: **stories-000009** (board
+migration), **stories-000010** (remove legacy loop). Ready for done.
 
 ## Build Notes
 
@@ -318,15 +321,16 @@ mismatches.
 
 ### Test fixes (round 3)
 
-**Issue**: Gate script `04-gate-scenarios.sh` failed because Test Scenarios table
-lacked explicit test file paths or commands that `building_run_scenario_tests()`
-expects.
+**Issue**: Gate script `04-gate-scenarios.sh` failed because Test Scenarios
+table lacked explicit test file paths or commands that
+`building_run_scenario_tests()` expects.
 
 **Root cause**: The Test Scenarios table only contained scenario descriptions
 without backticked test file paths (e.g., `` `src/.../test.ts` ``) that the gate
 script parses to generate test commands.
 
 **Fix**: Added "Test" column to Test Scenarios table with explicit file paths:
+
 - Scenario #1: `src/domain/script-names_flow_test.ts`
 - Scenarios #2-12: `src/services/transition_test.ts`
 
@@ -336,11 +340,14 @@ script parses to generate test commands.
 ### Finishing close-out
 
 - **Shipped:** Script flow driver (ADR-0015) in `src/domain/script-names.ts`,
-  `src/domain/board.ts`, `src/services/transition.ts`, `src/services/transition-logs.ts`;
-  tests in `script-names_flow_test.ts` and `transition_test.ts`.
-- **Unchanged:** Stories board `board.json` loop config and `building/steps/` (000009).
-- **Harness fix (dogfood):** `building-lib.sh` `stories_board_infrastructure_in_scope`
-  respects `building-scope: core-product-only` so core-only cards pass `building-007`
+  `src/domain/board.ts`, `src/services/transition.ts`,
+  `src/services/transition-logs.ts`; tests in `script-names_flow_test.ts` and
+  `transition_test.ts`.
+- **Unchanged:** Stories board `board.json` loop config and `building/steps/`
+  (000009).
+- **Harness fix (dogfood):** `building-lib.sh`
+  `stories_board_infrastructure_in_scope` respects
+  `building-scope: core-product-only` so core-only cards pass `building-007`
   (see templates mirror).
 - **Deferred:** Legacy loop removal → **stories-000010**.
 

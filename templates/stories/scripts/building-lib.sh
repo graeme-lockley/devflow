@@ -122,7 +122,7 @@ stories_board_infrastructure_in_scope() {
     return 1
   fi
   grep -qiE \
-    '\.devflow/boards/[^/[:space:]`]+/(scripts|skills|assets)/|board\.phaseScripts\.json|(Remove|Sync|Flatten|Mirror|Refactor).{0,60}(phaseScripts|\.devflow/boards/[^/[:space:]`]+/(scripts|skills|assets))' \
+    '\.devflow/boards/[^/[:space:]`]+/(scripts|skills|assets)/|(Remove|Sync|Flatten|Mirror|Refactor).{0,60}(phaseScripts|\.devflow/boards/[^/[:space:]`]+/(scripts|skills|assets))' \
     "$card_md"
 }
 

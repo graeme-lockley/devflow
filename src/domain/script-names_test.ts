@@ -3,7 +3,6 @@ import {
   exitScriptSequenceNumber,
   isCommitMessageScript,
   matchesExitScript,
-  partitionLoopRootScripts,
   sortExitScriptNames,
 } from "./script-names.ts";
 
@@ -42,22 +41,6 @@ Deno.test("sortExitScriptNames lexical order", () => {
     ]),
     ["planning-001-a", "planning-002-b", "planning-010-z"],
   );
-});
-
-Deno.test("partitionLoopRootScripts entry and exit bands (req §9.11.3)", () => {
-  const names = [
-    "building-001-check-entry",
-    "building-003-check-building-quality",
-    "building-005-check-spec-updates",
-    "building-007-check-git-scope",
-  ];
-  const { entry, exit } = partitionLoopRootScripts(names, "building");
-  assertEquals(entry, ["building-001-check-entry"]);
-  assertEquals(exit, [
-    "building-003-check-building-quality",
-    "building-005-check-spec-updates",
-    "building-007-check-git-scope",
-  ]);
 });
 
 Deno.test("exitScriptSequenceNumber parses phase-NNN prefix", () => {

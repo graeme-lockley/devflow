@@ -6,26 +6,15 @@
 ## Context
 
 Phase retry workflows (e.g., stories **building**: pi → fmt → CI → scenarios)
-were implemented with **legacy loop blocks** in `board.json` and child scripts
-under `scripts/<phase>/steps/`
-([ADR-0014](./0014-script-composition-and-loops.md)). That model requires:
-
-- `phaseScripts.<phase>.loop` configuration (`steps`, `maxRounds`).
-- Harness-only restart-on-failure and entry/loop/exit band partitioning.
-- `invokeChildScript`, `DEVFLOW_SCRIPT_ROUND`, and `DEVFLOW_LOOP_MAX`.
-- Loop-step skip restrictions
-  ([§11.9](../devflow-requirements.md#119-selective-skip--skip)).
-
-Board authors and operators want **flat root exit scripts** and **explicit flow
-control in scripts** using existing card variables, without JSON loop
-configuration or subdirectory step trees.
+were previously implemented with **legacy loop blocks** in `board.json` and
+child scripts under `scripts/<phase>/steps/` (ADR-0014, now removed). Board
+authors and operators want **flat root exit scripts** and **explicit flow
+control in scripts** using existing card variables.
 
 ## Decision
 
-Devflow will run exit scripts for a phase hop using a **script flow driver**
-([§9.11](../devflow-requirements.md#911-script-flow-control-next_script)) unless
-the phase still has **legacy loop configuration**
-([§9.12](../devflow-requirements.md#912-legacy-phase-loop-blocks-deprecated)).
+Devflow runs exit scripts for a phase hop using a **script flow driver**
+([§9.11](../devflow-requirements.md#911-script-flow-control-next_script)).
 
 ### 1. Card variable `NEXT_SCRIPT`
 
@@ -56,18 +45,10 @@ the phase still has **legacy loop configuration**
 - Counts each driver iteration (including skipped visits) per hop.
 - On exceed, fail transition with diagnostic message.
 
-### 4. Coexistence and removal
-
-- Phases with `phaseScripts.<phase>.loop` continue using legacy loop execution
-  until product code and docs for loop blocks are removed.
-- [ADR-0014](./0014-script-composition-and-loops.md) is **superseded** by this
-  ADR for new boards; hierarchical helpers and non-auto-run subdirectories
-  remain valid (section 9.1).
-
-### 5. Implementation placement
+### 4. Implementation placement
 
 - **Transition runner** (`src/services/transition.ts`): `runScriptFlowDriver`
-  (or equivalent) called from `runHopExitScripts` when no legacy loop config.
+  (or equivalent) called from `runHopExitScripts`.
 - **Domain** (`src/domain/script-names.ts`):
   `resolveScriptPrefix(prefix, scripts)` → exactly one match or error.
 - **Board config** (`src/domain/board.ts`): parse `maxScriptExecutionsPerHop`.
@@ -82,26 +63,20 @@ the phase still has **legacy loop configuration**
   workflows.
 - Retry policy lives in scripts (visible, testable bash).
 - Resume mid-phase via pre-set `NEXT_SCRIPT` before `card advance`.
-- Structured `nextScript` in `run.json` replaces loop round metadata for new
-  model.
+- Structured `nextScript` in `run.json` replaces loop round metadata.
 
 **Negative**
 
 - Scripts must exit **0** to continue even when signalling failure to retry (set
   `NEXT_SCRIPT` then exit 0).
-- Runaway jump cycles possible; mitigated by execution cap, not harness round
-  limits.
-- Dual code paths (driver vs legacy loop) until loop removal story completes.
+- Runaway jump cycles possible; mitigated by execution cap.
 
 ## References
 
 - Requirements
   [§9.11](../devflow-requirements.md#911-script-flow-control-next_script)
-- Requirements
-  [§9.12](../devflow-requirements.md#912-legacy-phase-loop-blocks-deprecated)
-  (deprecated)
 - Requirements [§11.4](../devflow-requirements.md#114-transition-algorithm)
 - Requirements [§11.9](../devflow-requirements.md#119-selective-skip--skip)
 - [ADR-0008](./0008-transition-runner-orchestration.md) — transition runner
-- [ADR-0014](./0014-script-composition-and-loops.md) — superseded for loop
-  blocks
+- [ADR-0014](./0014-script-composition-and-loops.md) — superseded (removed from
+  product in stories-000010)

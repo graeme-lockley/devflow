@@ -259,14 +259,6 @@ as a safeguard against runaway jumps.
 Non-exit helpers may live in subdirectories (`scripts/lib/`, and so on) and are
 sourced by root scripts; they are not auto-discovered.
 
-### Legacy loop blocks (deprecated)
-
-Older boards may still use `phaseScripts.<phase>.loop` in `board.json` and child
-scripts under `scripts/<phase>/steps/`. That model is **deprecated**; new boards
-should use `NEXT_SCRIPT` instead. See
-[§9.12](./docs/devflow-requirements.md#912-legacy-phase-loop-blocks-deprecated)
-and [ADR-0014](./docs/adr/0014-script-composition-and-loops.md).
-
 ## This repository
 
 | Path                                                             | Purpose                            |

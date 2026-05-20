@@ -296,32 +296,11 @@ Example:
   flow driver) during a single phase hop. Default **`100`** when omitted. See
   section 9.11.2.
 
-**Optional legacy `phaseScripts` configuration** (deprecated; section 9.12):
+**Rejected configuration:**
 
-Boards may still configure legacy loop blocks until product support is removed.
-New boards must use script flow control (section 9.11) instead.
-
-```json
-{
-  "name": "stories",
-  "phases": [...],
-  "phaseScripts": {
-    "building": {
-      "loop": {
-        "steps": [
-          "building/steps/01-pi.sh",
-          "building/steps/02-gate-ci.sh",
-          "building/steps/03-gate-scenarios.sh"
-        ],
-        "maxRounds": 5
-      }
-    }
-  }
-}
-```
-
-Legacy loop configuration is validated on `devflow validate-board` (section
-9.12).
+Boards containing a `phaseScripts` key are rejected by `devflow board validate`
+and card operations. Legacy loop blocks were removed in favor of script flow
+control (section 9.11, ADR-0015). Use `NEXT_SCRIPT` for flow control instead.
 
 ### 5.5 Board rules
 
@@ -696,12 +675,11 @@ hop, any root exit script whose name begins with that prefix is omitted from the
 sequence; all other root exit scripts run in lexical order. Skipped actions are
 recorded in run metadata and card history.
 
-**Child scripts** (invoked by root scripts, or by the legacy loop orchestrator
-in section 9.12) are not automatically discovered. Boards may name them using
-conventions such as `<phase>-<parent-NNN>-<child-NN>-<name>` (e.g.,
-`building-002-01-pi`) or place them in subdirectories (e.g.,
-`building/steps/01-pi.sh`). Devflow does not enforce child naming; parent
-scripts or loop config specify child paths.
+**Child scripts** (invoked by root scripts) are not automatically discovered.
+Boards may name them using conventions such as
+`<phase>-<parent-NNN>-<child-NN>-<name>` (e.g., `building-002-01-pi`) or place
+them in subdirectories (e.g., `building/steps/01-pi.sh`). Devflow does not
+enforce child naming; parent scripts specify child paths.
 
 ### 9.4 Script arguments
 
@@ -777,10 +755,6 @@ phase. The harness does not retry on non-zero exit; retry workflows are
 implemented in scripts (for example by setting `NEXT_SCRIPT` back to an earlier
 prefix while tracking a round counter in another variable).
 
-**Legacy loop blocks** (section 9.12, deprecated): When a phase still configures
-`phaseScripts.<phase>.loop`, Devflow uses legacy loop execution instead of the
-script flow driver for that hop.
-
 ### 9.9 Script execution environment
 
 When Devflow invokes any script (exit script or commit-message script):
@@ -803,10 +777,9 @@ mid-run is undefined.
 
 ### 9.11 Script flow control (`NEXT_SCRIPT`)
 
-Phases that do **not** use legacy loop configuration (section 9.12) run root
-exit scripts through the **script flow driver** during each hop's exit-script
-pass. The driver supports linear lexical execution with optional jumps
-controlled by the card variable `NEXT_SCRIPT`.
+Root exit scripts run through the **script flow driver** during each hop's
+exit-script pass. The driver supports linear lexical execution with optional
+jumps controlled by the card variable `NEXT_SCRIPT`.
 
 #### 9.11.1 Reserved card variable `NEXT_SCRIPT`
 
@@ -873,15 +846,7 @@ omit `NEXT_SCRIPT` when no further retry is desired.
 harness safeguard against runaway jumps. Operators who hit the cap adjust board
 configuration or fix scripts.
 
-#### 9.11.3 Coexistence with legacy loop blocks
-
-Until legacy loop support is removed from the product (section 9.12):
-
-- If `board.phaseScripts.<from-phase>.loop` is configured, Devflow runs **legacy
-  loop execution** for that hop instead of the script flow driver.
-- Otherwise, Devflow uses the script flow driver for that hop.
-
-#### 9.11.4 `NEXT_SCRIPT` validation
+#### 9.11.3 `NEXT_SCRIPT` validation
 
 The transition fails (card phase unchanged) when:
 
@@ -892,9 +857,9 @@ The transition fails (card phase unchanged) when:
 
 On validation failure, **`NEXT_SCRIPT` is not cleared** so the operator can
 correct the value and re-run `devflow card advance` to resume mid-phase (section
-9.11.5).
+9.11.4).
 
-#### 9.11.5 Resume mid-phase
+#### 9.11.4 Resume mid-phase
 
 When `NEXT_SCRIPT` is set before the hop's exit-script pass begins, the driver
 starts at the resolved script (hop entry step 1) instead of the first lexical
@@ -903,76 +868,6 @@ script. When unset, the driver starts at the first lexical script.
 Scripts that modify card state across retries **must** be idempotent or tolerant
 of partial completion. Devflow does not roll back card or repository changes
 when a later script fails or when the operator re-runs a hop.
-
-### 9.12 Legacy phase loop blocks (deprecated)
-
-**Status:** Deprecated. Superseded by script flow control (section 9.11). Legacy
-configuration and implementation remain until removed from the product; **new
-boards must not add `phaseScripts` loop configuration.**
-
-Boards may still configure a **loop block** for a phase to support retry
-workflows (e.g., implementation → CI → tests with automatic retry on failure).
-
-#### 9.12.1 Loop configuration
-
-Loop configuration is stored in `board.json` under `phaseScripts.<phase>.loop`:
-
-```json
-{
-  "phaseScripts": {
-    "building": {
-      "loop": {
-        "steps": [
-          "building/steps/01-pi.sh",
-          "building/steps/02-gate-ci.sh",
-          "building/steps/03-gate-scenarios.sh"
-        ],
-        "maxRounds": 5
-      }
-    }
-  }
-}
-```
-
-- **`steps`**: array of script paths relative to `scripts/` directory; executed
-  in order.
-- **`maxRounds`**: integer ≥ 1; maximum number of times to run the loop.
-
-#### 9.12.2 Loop execution semantics
-
-When a phase transition includes a legacy loop block:
-
-1. Devflow runs root exit scripts **not** in the loop config first (entry
-   scripts).
-2. Devflow enters the loop with round counter initialized to 1.
-3. For each round: a. Run each step in `steps` array sequentially. b. If a step
-   exits non-zero, increment round counter and restart from step 1 (unless
-   `maxRounds` reached). c. If all steps exit 0, exit the loop and proceed to
-   remaining exit scripts.
-4. If round counter exceeds `maxRounds` with a failure, the transition fails.
-5. After loop completes successfully, Devflow runs remaining root exit scripts
-   **not** in the loop config (exit scripts).
-
-Loop steps are invoked the same way as root scripts (§9.9) with additional
-environment variables (§18).
-
-#### 9.12.3 Loop ordering and root scripts
-
-Root exit scripts discovered by §9.3 that are **not** listed in `loop.steps` run
-in lexical order relative to the loop block:
-
-- Scripts lexically before the loop's first step name run before the loop
-  (entry).
-- Scripts lexically after the loop's last step name run after the loop (exit).
-
-#### 9.12.4 Loop idempotency requirements
-
-Loop steps that modify card state (e.g., updating `card.md`) **must** be
-idempotent or tolerant of partial completion. Devflow does not roll back changes
-from earlier steps when a later step fails and the loop restarts.
-
-Board authors are responsible for ensuring loop steps can safely re-run multiple
-times on the same card.
 
 ---
 
@@ -1091,9 +986,8 @@ Normal advance behaviour:
 8. Verify the repository is not in an unresolved merge, rebase, cherry-pick, or revert state (section 13.7).
 9. Acquire the repository operation lock and the card lock for the entire command.
 9b. If `--skip` was passed, validate every skip token against the union of exit
-    scripts across all hops in this advance (section 11.9). Reject unknown tokens,
-    legacy loop-step targets (section 9.12), and commit-message script names
-    before any hop runs.
+    scripts across all hops in this advance (section 11.9). Reject unknown tokens
+    and commit-message script names before any hop runs.
 9c. If card variable `NEXT_SCRIPT` is set, validate that its prefix resolves to
     exactly one root exit script on the first hop's `from` phase (section 9.11.4).
     On failure, exit non-zero before any script runs and do not clear
@@ -1101,11 +995,8 @@ Normal advance behaviour:
 10. For each single-phase hop between current phase and target phase:
    a. Identify the current phase and the next phase.
    b. Run the current phase's exit scripts:
-      - If `board.phaseScripts.<from>.loop` is configured (section 9.12), run
-        legacy loop execution (entry scripts, loop block, exit scripts) with
-        `--skip` applied to entry/exit bands only (section 11.9).
-      - Otherwise, run the script flow driver (section 9.11.2) over all root
-        exit scripts for the phase, honouring `--skip` and `NEXT_SCRIPT`.
+      - Run the script flow driver (section 9.11.2) over all root exit scripts
+        for the phase, honouring `--skip` and `NEXT_SCRIPT`.
       - If any script fails (exit code not 0), stop immediately (section 11.5).
       - For each script omitted via `--skip`, record `skipped: true` in run
         metadata and append an `actionSkipped` history event before the hop's
@@ -1143,13 +1034,6 @@ commit-message target, and so on). `NEXT_SCRIPT` must remain set on the card.
 For **script execution cap exceeded** (section 9.11.2), the error message must
 include `maxScriptExecutionsPerHop`, the execution count, and the last script
 invoked.
-
-For **legacy loop block failures** (section 9.12), the error message must
-include:
-
-- The failing step script name
-- The round number when failure occurred (or "exhausted" if maxRounds reached)
-- The loop configuration (step list, maxRounds)
 
 A failed transition may leave the repository work tree dirty (script
 modifications, logs, and a `transitionFailed` entry in `state.json`). Devflow
@@ -1269,9 +1153,6 @@ bypass the commit-message script or the rest of the transition algorithm.
 - In a multi-phase advance, every token must match at least one exit script on
   some hop in the run; otherwise the command fails before any script runs.
 - The commit-message script (`<phase>.commit-message`) cannot be skipped.
-- A skip token that resolves only to scripts in a phase's **legacy loop step
-  band** (section 9.12.3) is rejected while legacy loop configuration exists for
-  that phase.
 
 **Interaction with `NEXT_SCRIPT` (section 9.11):**
 
@@ -1935,19 +1816,6 @@ DEVFLOW_RUN_DIR       # absolute path to the current hop's run directory (update
 DEVFLOW_LOG_LEVEL     # console output level: info | verbose | summary (section 16.2)
 DEVFLOW_REPO_ROOT     # Git work tree root (same as the script working directory)
 ```
-
-**Additional environment variables for legacy loop steps** (section 9.12,
-deprecated):
-
-```text
-DEVFLOW_SCRIPT_PARENT # name of the invoking script (set for child scripts invoked by parent or loop orchestrator)
-DEVFLOW_SCRIPT_ROUND  # current loop round (1-indexed); unset if not in a legacy loop block
-DEVFLOW_LOOP_MAX      # maxRounds configured for the loop; unset if not in a legacy loop block
-```
-
-Root exit scripts using the script flow driver (section 9.11) do not receive
-these variables unless a board still invokes child scripts manually from script
-code (not orchestrated by Devflow).
 
 `DEVFLOW_LOG_LEVEL` reflects the active Devflow console output mode:
 

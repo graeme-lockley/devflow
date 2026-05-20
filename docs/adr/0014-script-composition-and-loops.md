@@ -1,13 +1,11 @@
 # ADR-0014: Script composition and phase loops
 
-**Status:** Superseded by [ADR-0015](./0015-script-flow-control.md) (loop
-blocks;\
-hierarchical script layout remains valid)\
+**Status:** Superseded by [ADR-0015](./0015-script-flow-control.md)\
 **Date:** 2026-05-16
 
-> **Note:** Loop block decisions below are **deprecated**. New boards use
-> [ADR-0015](./0015-script-flow-control.md) (`NEXT_SCRIPT` script flow driver).
-> Loop implementation is removed in stories-000010.
+> **Note:** This ADR described loop block decisions that have been **removed
+> from the product** (stories-000010). The hierarchical script layout decision
+> (§9.3) remains in effect and is now part of ADR-0007.
 
 ## Context
 

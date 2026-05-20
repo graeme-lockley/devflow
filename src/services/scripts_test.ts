@@ -192,44 +192,6 @@ Deno.test("listExitScripts ignores subdirectories (root scripts only)", async ()
   assertEquals(listed, ["building-001-root"]);
 });
 
-Deno.test("invokeChildScript adds loop env vars (req §9.11, §18)", async () => {
-  const dir = await Deno.makeTempDir();
-  const scriptsDir = `${dir}/${boardScriptsDir("stories")}`;
-  await Deno.mkdir(scriptsDir, { recursive: true });
-  await writeScript(
-    scriptsDir,
-    "echo-loop-vars",
-    '#!/usr/bin/env bash\necho -n "${DEVFLOW_SCRIPT_PARENT}:${DEVFLOW_SCRIPT_ROUND}:${DEVFLOW_LOOP_MAX}"\n',
-  );
-
-  const { buildScriptEnv, invokeChildScript } = await import("./scripts.ts");
-  const runDir = `${dir}/run`;
-  await Deno.mkdir(runDir, { recursive: true });
-  const env = buildScriptEnv({
-    repoRoot: dir,
-    boardName: "stories",
-    cardId: "stories-000001",
-    fromPhase: "building",
-    toPhase: "verifying",
-    runDirAbs: runDir,
-  });
-
-  const result = await invokeChildScript(
-    `${scriptsDir}/echo-loop-vars`,
-    "stories",
-    "stories-000001",
-    env,
-    dir,
-    {
-      parentScript: "building-002-build-loop",
-      round: 3,
-      maxRounds: 5,
-    },
-  );
-  assertEquals(result.exitCode, 0);
-  assertEquals(result.stdout, "building-002-build-loop:3:5");
-});
-
 Deno.test("buildScriptEnv sets DEVFLOW_CLI (req §6.3, §9.9)", async () => {
   const dir = await Deno.makeTempDir();
   const { buildScriptEnv } = await import("./scripts.ts");
