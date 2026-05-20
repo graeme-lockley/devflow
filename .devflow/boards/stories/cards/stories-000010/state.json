@@ -2,10 +2,10 @@
   "id": "stories-000010",
   "board": "stories",
   "title": "Remove former looping mechanism",
-  "phase": "finishing",
+  "phase": "done",
   "previousPhase": null,
   "createdAt": "2026-05-18T04:09:51.475Z",
-  "updatedAt": "2026-05-20T04:01:33.432Z",
+  "updatedAt": "2026-05-20T04:05:22.899Z",
   "variables": {},
   "history": [
     {
@@ -46,6 +46,13 @@
       "at": "2026-05-20T04:01:33.432Z",
       "from": "verifying",
       "to": "finishing",
+      "mode": "normal"
+    },
+    {
+      "type": "phaseChanged",
+      "at": "2026-05-20T04:05:22.899Z",
+      "from": "finishing",
+      "to": "done",
       "mode": "normal"
     }
   ],

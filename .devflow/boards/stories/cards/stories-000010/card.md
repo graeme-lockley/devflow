@@ -164,13 +164,13 @@ _This story **updates** specs to reflect removal. Anchors after edit:_
 
 | Document                                           | Action                                                                                         | Status  |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------- |
-| `docs/devflow-requirements.md`                     | Remove §9.12; clean legacy refs in §5.4, §9.8, §11.4, §11.5, §11.9, §15, §18; simplify §9.11.3 | pending |
-| `docs/architecture.md`                             | Remove legacy loop orchestration subsection and `phaseScripts` mentions                        | pending |
-| `docs/adr/0014-script-composition-and-loops.md`    | Mark superseded by ADR-0015 (or trim to hierarchical-layout decision only)                     | pending |
-| `docs/adr/0015-script-flow-control.md`             | Remove coexistence notes and references to §9.12                                               | pending |
-| `docs/adr/0008-transition-runner-orchestration.md` | Drop the ADR-0014 loop bullet and legacy orchestration paragraph                               | pending |
-| `README.md`                                        | Remove the "Legacy loop blocks (deprecated)" section                                           | pending |
-| `templates/stories/README.md`                      | Remove the `board.phaseScripts.json` paragraph                                                 | pending |
+| `docs/devflow-requirements.md`                     | Remove §9.12; clean legacy refs in §5.4, §9.8, §11.4, §11.5, §11.9, §15, §18; simplify §9.11.3 | done |
+| `docs/architecture.md`                             | Remove legacy loop orchestration subsection and `phaseScripts` mentions                        | done |
+| `docs/adr/0014-script-composition-and-loops.md`    | Mark superseded by ADR-0015 (or trim to hierarchical-layout decision only)                     | done |
+| `docs/adr/0015-script-flow-control.md`             | Remove coexistence notes and references to §9.12                                               | done |
+| `docs/adr/0008-transition-runner-orchestration.md` | Drop the ADR-0014 loop bullet and legacy orchestration paragraph                               | done |
+| `README.md`                                        | Remove the "Legacy loop blocks (deprecated)" section                                           | done |
+| `templates/stories/README.md`                      | Remove the `board.phaseScripts.json` paragraph                                                 | done |
 
 ## Notes
 
@@ -210,6 +210,10 @@ _This story **updates** specs to reflect removal. Anchors after edit:_
   - rg phaseScripts returns only valid mentions
   - Full test suite passes
 - Commands: deno task test (pass), devflow board validate stories (pass)
+
+### Finished (2026-05-20)
+
+Story complete. Spec updates: all seven immutable docs updated to remove legacy loop block implementation and documentation (§9.12, ADR-0014 loop decision, loop orchestration sections in architecture and README). All source code, templates, tests, and documentation now reflect script flow driver (ADR-0015) as the sole orchestration model. Ready for done.
 
 ## Build Notes
 
