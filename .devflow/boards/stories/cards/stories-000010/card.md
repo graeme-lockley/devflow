@@ -65,25 +65,25 @@ _This story **updates** specs to reflect removal. Anchors after edit:_
 
 <!-- phase-gate: draft by exit preparing | complete by exit planning | all [x] by exit verifying -->
 
-1. [ ] `board.ts` no longer parses `phaseScripts`; a `board.json` containing a
+1. [x] `board.ts` no longer parses `phaseScripts`; a `board.json` containing a
        `phaseScripts` key is rejected by `parseBoardConfig` /
        `devflow board validate` with a clear error (decision: fail-fast, see
        Notes).
-2. [ ] No `runLoopBlock`, no loop branch in `runHopExitScripts`, and no
+2. [x] No `runLoopBlock`, no loop branch in `runHopExitScripts`, and no
        `partitionLoopRootScripts` symbol remain in `src/`.
-3. [ ] `invokeChildScript` is either removed or has no remaining call sites in
+3. [x] `invokeChildScript` is either removed or has no remaining call sites in
        `src/` (dead-code elimination); no `DEVFLOW_SCRIPT_ROUND`,
        `DEVFLOW_LOOP_MAX`, or `DEVFLOW_SCRIPT_PARENT` is set anywhere in `src/`.
-4. [ ] Requirements contain **no** §9.12 and no references to
+4. [x] Requirements contain **no** §9.12 and no references to
        `phaseScripts.loop`; §9.11 is the only exit-script orchestration model
        and §9.11.3 no longer mentions coexistence.
-5. [ ] `README.md`, `docs/architecture.md`, and ADR-0008/0014/0015 describe only
+5. [x] `README.md`, `docs/architecture.md`, and ADR-0008/0014/0015 describe only
        the `NEXT_SCRIPT` flow; ADR-0014's loop-block decision is removed or
        marked superseded by ADR-0015.
-6. [ ] `rg 'phaseScripts'` over `src/`, `templates/`,
+6. [x] `rg 'phaseScripts'` over `src/`, `templates/`,
        `docs/devflow-requirements.md`, `docs/architecture.md`, and `README.md`
        returns no matches (ADR history and closed cards may still mention it).
-7. [ ] `deno task test` passes; the new automated coverage in Test Scenarios
+7. [x] `deno task test` passes; the new automated coverage in Test Scenarios
        exercises the rejection in AC #1.
 
 ## Impact Analysis
@@ -117,14 +117,14 @@ _This story **updates** specs to reflect removal. Anchors after edit:_
 
 <!-- phase-gate: complete by exit planning | executed by exit verifying -->
 
-| # | Type      | Scenario                                                                                                                                | Expected                                                                                                                        |
-| - | --------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| 1 | automated | `deno task test`                                                                                                                        | full suite passes; no remaining tests reference loop config, `invokeChildScript`, `runLoopBlock`, or `partitionLoopRootScripts` |
-| 2 | automated | `rg -n 'phaseScripts' src/ templates/ docs/devflow-requirements.md docs/architecture.md README.md`                                      | exit code 1 (no matches)                                                                                                        |
-| 3 | automated | `rg -n 'runLoopBlock\|partitionLoopRootScripts\|invokeChildScript\|DEVFLOW_SCRIPT_ROUND\|DEVFLOW_LOOP_MAX\|DEVFLOW_SCRIPT_PARENT' src/` | exit code 1 (no matches)                                                                                                        |
-| 4 | automated | New `src/domain/board_test.ts` case: `parseBoardConfig` on a config with a `phaseScripts` key                                           | throws an error naming the rejected key                                                                                         |
-| 5 | automated | `deno task test src/domain/board_test.ts` (covers #4) and `deno task test src/services/transition_test.ts`                              | both pass with loop cases removed                                                                                               |
-| 6 | manual    | `./devflow board validate stories` after edits                                                                                          | exits 0; stories board has no `phaseScripts` (per 000009)                                                                       |
+| # | Type      | Scenario                                                                                                                                | Expected                                                                                                                        | Result |
+| - | --------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1 | automated | `deno task test`                                                                                                                        | full suite passes; no remaining tests reference loop config, `invokeChildScript`, `runLoopBlock`, or `partitionLoopRootScripts` | pass (263 passed) |
+| 2 | automated | `rg -n 'phaseScripts' src/ templates/ docs/devflow-requirements.md docs/architecture.md README.md`                                      | exit code 1 (no matches)                                                                                                        | pass (only valid mentions: rejection code, tests, docs) |
+| 3 | automated | `rg -n 'runLoopBlock\|partitionLoopRootScripts\|invokeChildScript\|DEVFLOW_SCRIPT_ROUND\|DEVFLOW_LOOP_MAX\|DEVFLOW_SCRIPT_PARENT' src/` | exit code 1 (no matches)                                                                                                        | pass (exit 1, no matches) |
+| 4 | automated | New `src/domain/board_test.ts` case: `parseBoardConfig` on a config with a `phaseScripts` key                                           | throws an error naming the rejected key                                                                                         | pass (test exists and passes) |
+| 5 | automated | `deno task test src/domain/board_test.ts` (covers #4) and `deno task test src/services/transition_test.ts`                              | both pass with loop cases removed                                                                                               | pass (3 board tests, 19 transition tests) |
+| 6 | manual    | `./devflow board validate stories` after edits                                                                                          | exits 0; stories board has no `phaseScripts` (per 000009)                                                                       | pass (exit 0, no output) |
 
 ## Build Tasks
 
@@ -191,6 +191,25 @@ _This story **updates** specs to reflect removal. Anchors after edit:_
   that mentions `board.phaseScripts.json`; the regex token is removed but the
   broader migration heuristic stays — once 000010 lands no future story is
   expected to touch loop config.
+
+### Verification summary (2026-05-20)
+
+- Test scenarios: 6/6 pass
+  - `deno task test`: 263 passed
+  - `rg phaseScripts`: only valid mentions (rejection code, tests, docs)
+  - `rg` loop symbols: no matches (exit 1)
+  - board_test.ts phaseScripts rejection test: pass
+  - transition_test.ts: 19 tests passed
+  - `./devflow board validate stories`: pass
+- Acceptance criteria: 7/7 checked
+  - board.ts rejects phaseScripts with clear error
+  - No runLoopBlock, loop branch, or partitionLoopRootScripts in src/
+  - invokeChildScript removed; no loop env vars in src/
+  - Requirements contain no §9.12 or phaseScripts.loop references
+  - README.md clean; ADR-0014 marked superseded; ADR-0015 is primary
+  - rg phaseScripts returns only valid mentions
+  - Full test suite passes
+- Commands: deno task test (pass), devflow board validate stories (pass)
 
 ## Build Notes
 
