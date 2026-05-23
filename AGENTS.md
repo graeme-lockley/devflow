@@ -65,6 +65,13 @@ chore: initialize repository
 
 Only create commits when explicitly requested.
 
+## Consumer repositories
+
+This `AGENTS.md` is for **implementing Devflow**. Repositories that **use**
+Devflow should ship [`docs/AGENT-USAGE.md`](docs/AGENT-USAGE.md) (and paste
+[`docs/AGENT-USAGE.include.md`](docs/AGENT-USAGE.include.md) into their own
+`AGENTS.md`).
+
 ## Project context
 
 - **Specification:**

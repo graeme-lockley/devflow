@@ -13,6 +13,11 @@ during transitions.
 Full behaviour is specified in
 [`docs/devflow-requirements.md`](./docs/devflow-requirements.md).
 
+**Coding agents:** operational rules for consumer repos are in
+[`docs/AGENT-USAGE.md`](./docs/AGENT-USAGE.md). Paste
+[`docs/AGENT-USAGE.include.md`](./docs/AGENT-USAGE.include.md) into your
+project's `AGENTS.md`.
+
 ## Concepts
 
 | Concept        | Description                                                                 |
@@ -184,6 +189,13 @@ jsr:@kestrel/devflow@0.1.2
 jsr:@kestrel/devflow@^0.1.2
 ```
 
+### Agent setup
+
+Add to your project's `AGENTS.md` (see
+[`docs/AGENT-USAGE.include.md`](./docs/AGENT-USAGE.include.md)) and keep
+[`docs/AGENT-USAGE.md`](./docs/AGENT-USAGE.md) in the repo or vendor it from
+your pinned JSR version.
+
 ### Consumer project requirements
 
 - **Git repository** — Devflow creates commits on phase transitions
@@ -261,12 +273,13 @@ sourced by root scripts; they are not auto-discovered.
 
 ## This repository
 
-| Path                                                             | Purpose                            |
-| ---------------------------------------------------------------- | ---------------------------------- |
-| [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) | Requirements specification         |
-| [`main.ts`](./main.ts)                                           | CLI entry point                    |
-| [`src/`](./src/)                                                 | TypeScript implementation          |
-| [`devflow`](./devflow)                                           | Shell wrapper (`deno run main.ts`) |
+| Path                                                             | Purpose                                  |
+| ---------------------------------------------------------------- | ---------------------------------------- |
+| [`docs/AGENT-USAGE.md`](./docs/AGENT-USAGE.md)                   | Agent operational guide (consumer repos) |
+| [`docs/devflow-requirements.md`](./docs/devflow-requirements.md) | Requirements specification               |
+| [`main.ts`](./main.ts)                                           | CLI entry point                          |
+| [`src/`](./src/)                                                 | TypeScript implementation                |
+| [`devflow`](./devflow)                                           | Shell wrapper (`deno run main.ts`)       |
 
 ## Requirements
 
